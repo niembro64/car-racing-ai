@@ -56,7 +56,9 @@ const updateCanvasDimensions = () => {
 };
 
 const track = new Track(TRACK_WIDTH_HALF);
-const ga = new GeneticAlgorithm(12345);
+// Use truly random seed based on current time and Math.random()
+const randomSeed = Date.now() + Math.random() * 1000000;
+const ga = new GeneticAlgorithm(randomSeed);
 
 const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(true);

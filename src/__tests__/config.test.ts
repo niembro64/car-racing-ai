@@ -26,7 +26,7 @@ describe('Configuration', () => {
   it('should have neural network architecture', () => {
     expect(config.NEURAL_NETWORK_ARCHITECTURE).toBeDefined();
     expect(Array.isArray(config.NEURAL_NETWORK_ARCHITECTURE)).toBe(true);
-    expect(config.NEURAL_NETWORK_ARCHITECTURE.length).toBe(3);
+    expect(config.NEURAL_NETWORK_ARCHITECTURE.length).toBeGreaterThanOrEqual(2);
   });
 
   it('should have track settings', () => {

@@ -5,11 +5,11 @@
 // ----------------------------------------------------------------------------
 // GENETIC ALGORITHM
 // ----------------------------------------------------------------------------
-export const GA_POPULATION_SIZE = 20;
-export const GA_MUTATION_RATE = 0.4;
+export const GA_POPULATION_SIZE = 100;
+export const GA_MUTATION_RATE = 0.1;
 export const GA_MUTATION_MIN_MULTIPLIER = 0.001;
 export const GA_MUTATION_MAX_MULTIPLIER = 0.2;
-export const GA_MUTATION_CURVE_POWER = 0.1;
+export const GA_MUTATION_CURVE_POWER = 2.0;
 
 // ----------------------------------------------------------------------------
 // CAR PHYSICS
@@ -23,11 +23,12 @@ export const CAR_HEIGHT = 28;
 // SENSORS (RAYS)
 // ----------------------------------------------------------------------------
 export const SENSOR_RAY_ANGLES = [
-  Math.PI * 0, // Forward (0°)
-  // Math.PI * 0.1, // Right 18°
-  // Math.PI * -0.1, // Left 18°
-  Math.PI * 0.15, // Right 18°
-  Math.PI * -0.15, // Left 18°
+  Math.PI * 0.0, // Forward (0°)
+  // Math.PI * -0.01, // Forward (0°)
+  Math.PI * 0.2, // Right 18°
+  Math.PI * -0.2, // Left 18°
+  Math.PI * 0.4, // Right 18°
+  Math.PI * -0.4, // Left 18°
 ];
 
 // ----------------------------------------------------------------------------

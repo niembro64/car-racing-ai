@@ -41,9 +41,11 @@ export class GeneticAlgorithm {
     console.log('Starting with random population');
     console.log(`Spawning ${GA_POPULATION_SIZE} cars at (${track.startPosition.x.toFixed(1)}, ${track.startPosition.y.toFixed(1)}), angle=${(track.startAngle * 180 / Math.PI).toFixed(1)}°`);
 
-    // Random initialization with unique seeds for diversity
+    // Truly random initialization - each car gets a unique random seed
     for (let i = 0; i < GA_POPULATION_SIZE; i++) {
-      const brain = NeuralNetwork.createRandom(this.rng.next() * 1000000 + i * 12345);
+      // Use Math.random() directly for true randomness in initial population
+      const brainSeed = Date.now() + Math.random() * 1000000 + i * Math.random() * 1000;
+      const brain = NeuralNetwork.createRandom(brainSeed);
       const car = new Car(
         track.startPosition.x,
         track.startPosition.y,
