@@ -1,7 +1,7 @@
 import type { NeuralInput, NeuralOutput } from '@/types/neural';
 import { clamp } from './math/geom';
 import { SeededRandom } from './math/geom';
-import { NETWORK_LAYERS } from '@/config';
+import { NEURAL_NETWORK_ARCHITECTURE } from '@/config';
 
 // Simple feed-forward neural network implementation
 interface Layer {
@@ -20,7 +20,7 @@ export class NeuralNetwork {
 
   constructor(weights: NetworkStructure | undefined, seed: number) {
     this.rng = new SeededRandom(seed);
-    this.layerSizes = NETWORK_LAYERS;
+    this.layerSizes = NEURAL_NETWORK_ARCHITECTURE;
 
     if (weights) {
       this.structure = JSON.parse(JSON.stringify(weights));
@@ -104,10 +104,10 @@ export class NeuralNetwork {
 
   // Run the network with sensor inputs
   run(input: NeuralInput): NeuralOutput {
-    if (input.rays.length !== NETWORK_LAYERS[0]) {
+    if (input.rays.length !== NEURAL_NETWORK_ARCHITECTURE[0]) {
       throw new Error(
         'Expected input rays length ' +
-          NETWORK_LAYERS[0] +
+          NEURAL_NETWORK_ARCHITECTURE[0] +
           ', got ' +
           input.rays.length
       );

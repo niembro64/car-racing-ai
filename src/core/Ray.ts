@@ -1,6 +1,6 @@
 import type { Point, Segment, RayHit } from './math/geom';
 import { castRay } from './math/geom';
-import { RAY_ANGLES } from '@/config';
+import { SENSOR_RAY_ANGLES } from '@/config';
 
 export class RayCaster {
 
@@ -22,7 +22,7 @@ export class RayCaster {
     const distances: number[] = [];
     const hits: (RayHit | null)[] = [];
 
-    for (const relativeAngle of RAY_ANGLES) {
+    for (const relativeAngle of SENSOR_RAY_ANGLES) {
       const rayAngle = heading + relativeAngle;
       const direction: Point = {
         x: Math.cos(rayAngle),
@@ -55,10 +55,14 @@ export class RayCaster {
   renderRays(
     ctx: CanvasRenderingContext2D,
     position: Point,
-    hits: (RayHit | null)[]
+    hits: (RayHit | null)[],
+    rayColor: string,
+    hitColor: string,
+    lineWidth: number,
+    hitRadius: number
   ): void {
-    ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = rayColor;
+    ctx.lineWidth = lineWidth;
 
     for (const hit of hits) {
       if (hit) {
@@ -68,9 +72,9 @@ export class RayCaster {
         ctx.stroke();
 
         // Draw hit point
-        ctx.fillStyle = '#10b981';
+        ctx.fillStyle = hitColor;
         ctx.beginPath();
-        ctx.arc(hit.point.x, hit.point.y, 2, 0, Math.PI * 2);
+        ctx.arc(hit.point.x, hit.point.y, hitRadius, 0, Math.PI * 2);
         ctx.fill();
       }
     }

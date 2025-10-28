@@ -4,7 +4,16 @@ import {
   computeCumulativeLengths,
   closestPointOnPolyline,
 } from './math/geom';
-import { TRACK_HALF_WIDTH } from '@/config';
+import {
+  TRACK_WIDTH_HALF,
+  TRACK_SURFACE_COLOR,
+  TRACK_BOUNDARY_COLOR,
+  TRACK_CENTERLINE_COLOR,
+  START_FINISH_LINE_COLOR,
+  TRACK_BOUNDARY_WIDTH,
+  TRACK_CENTERLINE_WIDTH,
+  START_FINISH_LINE_WIDTH
+} from '@/config';
 
 export class Track {
   centerline: Point[];
@@ -285,8 +294,8 @@ export class Track {
 
   // Render track on canvas
   render(ctx: CanvasRenderingContext2D): void {
-    // Fill track area with asphalt gray
-    ctx.fillStyle = '#3a3a3a';
+    // Fill track area with asphalt
+    ctx.fillStyle = TRACK_SURFACE_COLOR;
     ctx.beginPath();
     ctx.moveTo(this.outerWall[0].x, this.outerWall[0].y);
     for (let i = 1; i < this.outerWall.length; i++) {
@@ -301,9 +310,9 @@ export class Track {
     ctx.closePath();
     ctx.fill('evenodd');
 
-    // Draw outer wall (white)
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 3;
+    // Draw outer wall
+    ctx.strokeStyle = TRACK_BOUNDARY_COLOR;
+    ctx.lineWidth = TRACK_BOUNDARY_WIDTH;
     ctx.beginPath();
     ctx.moveTo(this.outerWall[0].x, this.outerWall[0].y);
     for (let i = 1; i < this.outerWall.length; i++) {
@@ -312,7 +321,7 @@ export class Track {
     ctx.closePath();
     ctx.stroke();
 
-    // Draw inner wall (white)
+    // Draw inner wall
     ctx.beginPath();
     ctx.moveTo(this.innerWall[0].x, this.innerWall[0].y);
     for (let i = 1; i < this.innerWall.length; i++) {
@@ -321,9 +330,9 @@ export class Track {
     ctx.closePath();
     ctx.stroke();
 
-    // Draw centerline (yellow dashed)
-    ctx.strokeStyle = '#fbbf24';
-    ctx.lineWidth = 2;
+    // Draw centerline (dashed)
+    ctx.strokeStyle = TRACK_CENTERLINE_COLOR;
+    ctx.lineWidth = TRACK_CENTERLINE_WIDTH;
     ctx.setLineDash([10, 10]);
     ctx.beginPath();
     ctx.moveTo(this.centerline[0].x, this.centerline[0].y);
@@ -344,8 +353,8 @@ export class Track {
     const nx = -dy / len;
     const ny = dx / len;
 
-    ctx.strokeStyle = '#10b981';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = START_FINISH_LINE_COLOR;
+    ctx.lineWidth = START_FINISH_LINE_WIDTH;
     ctx.beginPath();
     ctx.moveTo(p1.x + nx * this.halfWidth, p1.y + ny * this.halfWidth);
     ctx.lineTo(p1.x - nx * this.halfWidth, p1.y - ny * this.halfWidth);

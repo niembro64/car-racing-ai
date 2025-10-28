@@ -9,10 +9,21 @@ import { NeuralNetwork } from './Neural';
 import { RayCaster } from './Ray';
 import type { NeuralInput, NeuralOutput } from '@/types/neural';
 import {
-  CAR_SPEED,
-  CAR_TURN_FACTOR,
+  CAR_FORWARD_SPEED,
+  CAR_STEERING_SENSITIVITY,
   CAR_WIDTH,
-  CAR_HEIGHT
+  CAR_HEIGHT,
+  ELITE_CAR_COLOR,
+  CAR_LABEL_COLOR_ALIVE,
+  CAR_LABEL_COLOR_DEAD,
+  ELITE_CAR_RAY_COLOR,
+  ELITE_CAR_RAY_HIT_COLOR,
+  ELITE_CAR_RAY_WIDTH,
+  ELITE_CAR_RAY_HIT_RADIUS,
+  NORMAL_CAR_RAY_COLOR,
+  NORMAL_CAR_RAY_HIT_COLOR,
+  NORMAL_CAR_RAY_WIDTH,
+  NORMAL_CAR_RAY_HIT_RADIUS
 } from '@/config';
 
 export class Car {
@@ -119,7 +130,7 @@ export class Car {
   // Apply physics based on AI output
   private applyPhysics(output: NeuralOutput, dt: number): void {
     // Constant forward speed
-    this.speed = CAR_SPEED;
+    this.speed = CAR_FORWARD_SPEED;
 
     // Update position
     const headingX = Math.cos(this.angle);
@@ -128,7 +139,7 @@ export class Car {
     this.y += headingY * this.speed * dt;
 
     // Turning is proportional to speed (direction from neural network)
-    this.angle += output.direction * this.speed * CAR_TURN_FACTOR * dt;
+    this.angle += output.direction * this.speed * CAR_STEERING_SENSITIVITY * dt;
     this.angle = normalizeAngle(this.angle);
 
     // Prevent NaN propagation
@@ -212,7 +223,22 @@ export class Car {
 
     // Render rays if requested and car is alive
     if (showRays && this.alive) {
-      this.rayCaster.renderRays(ctx, { x: this.x, y: this.y }, this.lastRayHits);
+      // Use lead/elite styling if this car's color matches the lead car color
+      const isLeadCar = this.color === ELITE_CAR_COLOR;
+      const rayColor = isLeadCar ? ELITE_CAR_RAY_COLOR : NORMAL_CAR_RAY_COLOR;
+      const hitColor = isLeadCar ? ELITE_CAR_RAY_HIT_COLOR : NORMAL_CAR_RAY_HIT_COLOR;
+      const lineWidth = isLeadCar ? ELITE_CAR_RAY_WIDTH : NORMAL_CAR_RAY_WIDTH;
+      const hitRadius = isLeadCar ? ELITE_CAR_RAY_HIT_RADIUS : NORMAL_CAR_RAY_HIT_RADIUS;
+
+      this.rayCaster.renderRays(
+        ctx,
+        { x: this.x, y: this.y },
+        this.lastRayHits,
+        rayColor,
+        hitColor,
+        lineWidth,
+        hitRadius
+      );
     }
 
     // Render percentage label above car (shows current progress including negative)
@@ -222,7 +248,7 @@ export class Car {
       const absValue = Math.abs(percentage);
       const formatted = absValue.toFixed(1).padStart(4, ' '); // "XX.X" format
       ctx.save();
-      ctx.fillStyle = this.alive ? '#1f2937' : '#9ca3af';
+      ctx.fillStyle = this.alive ? CAR_LABEL_COLOR_ALIVE : CAR_LABEL_COLOR_DEAD;
       ctx.font = 'bold 16px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';

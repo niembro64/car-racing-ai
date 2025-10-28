@@ -3,14 +3,14 @@ import { NeuralNetwork } from './Neural';
 import { Track } from './Track';
 import { SeededRandom } from './math/geom';
 import {
-  POPULATION_SIZE,
-  MUTATION_RATE,
-  MUTATION_MIN_MULTIPLIER,
-  MUTATION_MAX_MULTIPLIER,
-  MUTATION_CURVE_POWER,
+  GA_POPULATION_SIZE,
+  GA_MUTATION_RATE,
+  GA_MUTATION_MIN_MULTIPLIER,
+  GA_MUTATION_MAX_MULTIPLIER,
+  GA_MUTATION_CURVE_POWER,
   ELITE_CAR_COLOR,
   NORMAL_CAR_COLOR,
-  NETWORK_LAYERS
+  NEURAL_NETWORK_ARCHITECTURE
 } from '@/config';
 
 export class GeneticAlgorithm {
@@ -29,10 +29,10 @@ export class GeneticAlgorithm {
       return 0; // Elite car - no mutation
     }
 
-    // Exponential curve from MUTATION_MIN_MULTIPLIER to MUTATION_MAX_MULTIPLIER
-    const progress = (index - 1) / (POPULATION_SIZE - 2);
-    const range = MUTATION_MAX_MULTIPLIER - MUTATION_MIN_MULTIPLIER;
-    return MUTATION_MIN_MULTIPLIER + range * Math.pow(progress, MUTATION_CURVE_POWER);
+    // Exponential curve from GA_MUTATION_MIN_MULTIPLIER to GA_MUTATION_MAX_MULTIPLIER
+    const progress = (index - 1) / (GA_POPULATION_SIZE - 2);
+    const range = GA_MUTATION_MAX_MULTIPLIER - GA_MUTATION_MIN_MULTIPLIER;
+    return GA_MUTATION_MIN_MULTIPLIER + range * Math.pow(progress, GA_MUTATION_CURVE_POWER);
   }
 
   // Calculate weighted average of multiple brains
@@ -91,10 +91,10 @@ export class GeneticAlgorithm {
     const population: Car[] = [];
 
     console.log('Starting with random population');
-    console.log(`Spawning ${POPULATION_SIZE} cars at (${track.startPosition.x.toFixed(1)}, ${track.startPosition.y.toFixed(1)}), angle=${(track.startAngle * 180 / Math.PI).toFixed(1)}°`);
+    console.log(`Spawning ${GA_POPULATION_SIZE} cars at (${track.startPosition.x.toFixed(1)}, ${track.startPosition.y.toFixed(1)}), angle=${(track.startAngle * 180 / Math.PI).toFixed(1)}°`);
 
     // Random initialization with unique seeds for diversity
-    for (let i = 0; i < POPULATION_SIZE; i++) {
+    for (let i = 0; i < GA_POPULATION_SIZE; i++) {
       const brain = NeuralNetwork.createRandom(this.rng.next() * 1000000 + i * 12345);
       const car = new Car(
         track.startPosition.x,
@@ -163,16 +163,16 @@ export class GeneticAlgorithm {
     // Use minimum threshold to prevent extreme mutation rates for very short generations
     const minGenerationTime = 1.0; // seconds
     const effectiveTime = Math.max(generationTime, minGenerationTime);
-    const adaptiveMutationRate = MUTATION_RATE / effectiveTime;
+    const adaptiveMutationRate = GA_MUTATION_RATE / effectiveTime;
 
-    console.log(`Generation time: ${generationTime.toFixed(2)}s, Adaptive σ: ${adaptiveMutationRate.toFixed(4)} (base: ${MUTATION_RATE.toFixed(3)})`);
+    console.log(`Generation time: ${generationTime.toFixed(2)}s, Adaptive σ: ${adaptiveMutationRate.toFixed(4)} (base: ${GA_MUTATION_RATE.toFixed(3)})`);
 
     // Calculate mutation range for logging
     const minMult = this.getMutationMultiplier(1);
-    const midMult = this.getMutationMultiplier(Math.floor(POPULATION_SIZE / 2));
-    const maxMult = this.getMutationMultiplier(POPULATION_SIZE - 1);
+    const midMult = this.getMutationMultiplier(Math.floor(GA_POPULATION_SIZE / 2));
+    const maxMult = this.getMutationMultiplier(GA_POPULATION_SIZE - 1);
     console.log(`Starting Gen ${this.generation}:`);
-    console.log(`  Brain 1: ${minMult.toFixed(2)}×, Brain ${Math.floor(POPULATION_SIZE/2)}: ${midMult.toFixed(2)}×, Brain ${POPULATION_SIZE-1}: ${maxMult.toFixed(2)}×`);
+    console.log(`  Brain 1: ${minMult.toFixed(2)}×, Brain ${Math.floor(GA_POPULATION_SIZE/2)}: ${midMult.toFixed(2)}×, Brain ${GA_POPULATION_SIZE-1}: ${maxMult.toFixed(2)}×`);
 
     // First car is exact elite copy
     nextGeneration.push(
@@ -186,7 +186,7 @@ export class GeneticAlgorithm {
     );
 
     // Rest are mutations with progressive mutation rates
-    for (let i = 1; i < POPULATION_SIZE; i++) {
+    for (let i = 1; i < GA_POPULATION_SIZE; i++) {
       const mutationSeed = this.rng.next() * 1000000 + i + this.generation * 10000;
       const multiplier = this.getMutationMultiplier(i);
       const sigma = adaptiveMutationRate * multiplier;
@@ -207,9 +207,9 @@ export class GeneticAlgorithm {
     if (nextGeneration.length >= 4) {
       const samples = [
         1,
-        Math.floor(POPULATION_SIZE * 0.33),
-        Math.floor(POPULATION_SIZE * 0.66),
-        POPULATION_SIZE - 1
+        Math.floor(GA_POPULATION_SIZE * 0.33),
+        Math.floor(GA_POPULATION_SIZE * 0.66),
+        GA_POPULATION_SIZE - 1
       ];
       console.log('Mutation diversity check:');
       samples.forEach(idx => {

@@ -17,20 +17,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, type Ref } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
-import { TRACK_HALF_WIDTH, MUTATION_RATE } from '@/config';
+import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, CANVAS_BACKGROUND_COLOR, ELITE_CAR_COLOR } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const canvasWidth = 800;
 const canvasHeight = 600;
 
-const track = new Track(TRACK_HALF_WIDTH);
+const track = new Track(TRACK_WIDTH_HALF);
 const ga = new GeneticAlgorithm(12345);
 
-const population = ref<Car[]>([]);
+const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(true);
 const speedMultiplier = ref(1);
 const debugNN = ref(false);
@@ -61,7 +61,7 @@ const generationTimeDisplay = computed(() => {
 const adaptiveMutationRate = computed(() => {
   const minGenerationTime = 1.0;
   const effectiveTime = Math.max(generationTime.value, minGenerationTime);
-  const rate = MUTATION_RATE / effectiveTime;
+  const rate = GA_MUTATION_RATE / effectiveTime;
   const formatted = rate.toFixed(4).padStart(6, ' '); // "X.XXXX" format
   return `σ=${formatted}`;
 });
@@ -96,7 +96,7 @@ const updatePhysics = (dt: number) => {
 // Render frame
 const render = (ctx: CanvasRenderingContext2D) => {
   // Clear canvas with grass background
-  ctx.fillStyle = '#4a7c4e';
+  ctx.fillStyle = CANVAS_BACKGROUND_COLOR;
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
   // Render track
@@ -117,9 +117,9 @@ const render = (ctx: CanvasRenderingContext2D) => {
   const deadCars = population.value.filter(car => !car.alive);
   const aliveCars = population.value.filter(car => car.alive);
 
-  // Separate elite (green car)
-  const elite = aliveCars.find(car => car.color === '#10b981');
-  const others = aliveCars.filter(car => car.color !== '#10b981');
+  // Separate elite (lead car)
+  const elite = aliveCars.find(car => car.color === ELITE_CAR_COLOR);
+  const others = aliveCars.filter(car => car.color !== ELITE_CAR_COLOR);
 
   // Render dead cars first
   for (const car of deadCars) {
