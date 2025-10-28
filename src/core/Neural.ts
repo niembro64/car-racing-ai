@@ -104,15 +104,20 @@ export class NeuralNetwork {
 
   // Run the network with sensor inputs
   run(input: NeuralInput): NeuralOutput {
-    if (input.rays.length !== 7) {
-      throw new Error('Expected 7 ray distances');
+    if (input.rays.length !== NETWORK_LAYERS[0]) {
+      throw new Error(
+        'Expected input rays length ' +
+          NETWORK_LAYERS[0] +
+          ', got ' +
+          input.rays.length
+      );
     }
 
     // Input array is just the 7 rays
     const inputArray = input.rays;
 
     // Check for NaN
-    if (inputArray.some(v => isNaN(v) || !isFinite(v))) {
+    if (inputArray.some((v) => isNaN(v) || !isFinite(v))) {
       console.warn('NaN detected in input, returning safe defaults');
       return { direction: 0 };
     }
@@ -135,7 +140,12 @@ export class NeuralNetwork {
 
     // Debug: log raw outputs occasionally
     if ((window as any).__debugCarNN && Math.random() < 0.001) {
-      console.log('NN raw output:', output[0].toFixed(3), '-> direction:', direction.toFixed(2));
+      console.log(
+        'NN raw output:',
+        output[0].toFixed(3),
+        '-> direction:',
+        direction.toFixed(2)
+      );
     }
 
     return { direction };
@@ -154,7 +164,11 @@ export class NeuralNetwork {
   }
 
   // Mutate weights by adding gaussian noise
-  private mutateWeights(weights: NetworkStructure, sigma: number, seed: number): NetworkStructure {
+  private mutateWeights(
+    weights: NetworkStructure,
+    sigma: number,
+    seed: number
+  ): NetworkStructure {
     const mutated = JSON.parse(JSON.stringify(weights));
     const mutationRng = new SeededRandom(seed);
 
@@ -163,11 +177,7 @@ export class NeuralNetwork {
       for (let i = 0; i < layer.weights.length; i++) {
         for (let j = 0; j < layer.weights[i].length; j++) {
           const noise = mutationRng.gaussian(0, sigma);
-          layer.weights[i][j] = clamp(
-            layer.weights[i][j] + noise,
-            -10,
-            10
-          );
+          layer.weights[i][j] = clamp(layer.weights[i][j] + noise, -10, 10);
         }
       }
 
