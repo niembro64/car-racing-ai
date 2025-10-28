@@ -47,6 +47,10 @@ export const TRACK_RADIUS_X = 250;
 export const TRACK_RADIUS_Y = 150;
 export const TRACK_SEGMENTS = 32; // Number of segments in the oval
 
+// Track circle visualization (for debugging)
+export const SHOW_TRACK_CIRCLES = true; // Show circles that define track borders
+export const TRACK_CIRCLE_INTERVAL = 5; // Place a circle every N centerline points
+
 // ----------------------------------------------------------------------------
 // RENDERING
 // ----------------------------------------------------------------------------

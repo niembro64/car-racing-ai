@@ -177,6 +177,8 @@ export class Car {
   }
 
   // Check collision with walls
+  // Note: Only checks intersection with actual wall segments.
+  // If walls overlap creating pockets, those pockets are valid track space.
   private checkCollision(wallSegments: Segment[]): void {
     if (!this.alive) return;
 

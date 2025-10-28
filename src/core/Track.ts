@@ -10,7 +10,9 @@ import {
   TRACK_CENTER_Y,
   TRACK_RADIUS_X,
   TRACK_RADIUS_Y,
-  TRACK_SEGMENTS
+  TRACK_SEGMENTS,
+  SHOW_TRACK_CIRCLES,
+  TRACK_CIRCLE_INTERVAL
 } from '@/config';
 
 export class Track {
@@ -22,6 +24,7 @@ export class Track {
   halfWidth: number;
   startPosition: Point;
   startAngle: number;
+  circles: Point[]; // Circle centers for visualization
 
   constructor(halfWidth: number) {
     this.halfWidth = halfWidth;
@@ -30,31 +33,41 @@ export class Track {
     this.centerline = this.createComplexTrack();
     console.log(`Centerline has ${this.centerline.length} points`);
 
-    // Offset to create walls
-    this.innerWall = offsetPolyline(this.centerline, -halfWidth);
-    this.outerWall = offsetPolyline(this.centerline, halfWidth);
+    // Create walls using circle-based approach
+    const { innerWall, outerWall, circles } = this.createWallsWithCircles(this.centerline, halfWidth);
+    this.innerWall = innerWall;
+    this.outerWall = outerWall;
+    this.circles = circles;
     console.log(`Walls created: inner=${this.innerWall.length}, outer=${this.outerWall.length}`);
 
-    // Create wall segments
+    // Create wall segments and filter out those inside the track
     this.wallSegments = [];
 
     // Inner wall segments
+    const innerSegments: Segment[] = [];
     for (let i = 0; i < this.innerWall.length; i++) {
-      this.wallSegments.push({
+      innerSegments.push({
         p1: this.innerWall[i],
         p2: this.innerWall[(i + 1) % this.innerWall.length]
       });
     }
 
     // Outer wall segments
+    const outerSegments: Segment[] = [];
     for (let i = 0; i < this.outerWall.length; i++) {
-      this.wallSegments.push({
+      outerSegments.push({
         p1: this.outerWall[i],
         p2: this.outerWall[(i + 1) % this.outerWall.length]
       });
     }
 
-    console.log(`Total wall segments: ${this.wallSegments.length}`);
+    // Filter out segments that are inside the track
+    const filteredInner = this.filterInsideSegments(innerSegments, this.centerline, halfWidth);
+    const filteredOuter = this.filterInsideSegments(outerSegments, this.centerline, halfWidth);
+
+    this.wallSegments = [...filteredInner, ...filteredOuter];
+
+    console.log(`Total wall segments: ${this.wallSegments.length} (before filter: ${innerSegments.length + outerSegments.length})`);
 
     // Compute cumulative lengths for fitness calculation
     this.cumulativeLengths = computeCumulativeLengths(this.centerline);
@@ -70,6 +83,85 @@ export class Track {
     console.log(`Start position: (${this.startPosition.x.toFixed(1)}, ${this.startPosition.y.toFixed(1)})`);
     console.log(`Start angle: ${(this.startAngle * 180 / Math.PI).toFixed(1)}°`);
     console.log(`Track length: ${this.getTotalLength().toFixed(1)}`);
+  }
+
+  // Create walls using circles at regular intervals along centerline
+  // Note: Walls may overlap/self-intersect on tight curves - this is acceptable.
+  // Overlapping regions are treated as valid track space (inside the track).
+  // Collision detection only triggers when a car hits an actual wall segment.
+  private createWallsWithCircles(centerline: Point[], radius: number): { innerWall: Point[]; outerWall: Point[]; circles: Point[] } {
+    const innerWall: Point[] = [];
+    const outerWall: Point[] = [];
+    const circles: Point[] = [];
+
+    // Use configurable interval for circle placement
+    const sampleInterval = TRACK_CIRCLE_INTERVAL;
+
+    for (let i = 0; i < centerline.length; i += sampleInterval) {
+      const curr = centerline[i];
+      const next = centerline[(i + 1) % centerline.length];
+
+      // Store circle center for visualization
+      circles.push({ x: curr.x, y: curr.y });
+
+      // Calculate tangent direction
+      const dx = next.x - curr.x;
+      const dy = next.y - curr.y;
+      const len = Math.sqrt(dx * dx + dy * dy);
+
+      if (len > 0.001) {
+        // Normalize tangent
+        const tx = dx / len;
+        const ty = dy / len;
+
+        // Perpendicular normal (pointing right)
+        const nx = -ty;
+        const ny = tx;
+
+        // Create inner and outer wall points
+        innerWall.push({
+          x: curr.x - nx * radius,
+          y: curr.y - ny * radius
+        });
+
+        outerWall.push({
+          x: curr.x + nx * radius,
+          y: curr.y + ny * radius
+        });
+      }
+    }
+
+    console.log(`Circle-based walls: ${circles.length} circles created (interval=${sampleInterval})`);
+    return { innerWall, outerWall, circles };
+  }
+
+  // Check if a point is inside the track (within any circle's radius from centerline)
+  private isPointInsideTrack(point: Point, centerline: Point[], radius: number): boolean {
+    // A point is inside the track if it's within radius distance of ANY centerline point
+    for (const center of centerline) {
+      const dx = point.x - center.x;
+      const dy = point.y - center.y;
+      const distSq = dx * dx + dy * dy;
+
+      if (distSq <= radius * radius) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Filter out wall segments whose midpoint is inside the track
+  // These are segments that don't actually form the boundary
+  private filterInsideSegments(segments: Segment[], centerline: Point[], radius: number): Segment[] {
+    return segments.filter(segment => {
+      // Calculate midpoint of segment
+      const midX = (segment.p1.x + segment.p2.x) / 2;
+      const midY = (segment.p1.y + segment.p2.y) / 2;
+      const midpoint = { x: midX, y: midY };
+
+      // Keep segment only if its midpoint is NOT inside the track
+      return !this.isPointInsideTrack(midpoint, centerline, radius);
+    });
   }
 
   // Catmull-Rom spline interpolation between points
@@ -109,8 +201,8 @@ export class Track {
       }
     }
 
-    // Close the loop
-    points.push({ ...points[0] });
+    // DON'T duplicate first point - modulo wrapping handles closure
+    // This ensures tangent continuity at start/end junction
 
     return points;
   }
@@ -166,15 +258,42 @@ export class Track {
       { x: 155, y: 425 },
       { x: 138, y: 385 },
 
-      // Smooth return up left side to complete loop
-      { x: 128, y: 345 },
-      { x: 120, y: 320 },
-      { x: 108, y: 305 },
+      // Smooth return up left side
+      // Must create symmetric spacing around loop closure for C² continuity
+      // The spacing approaching the start must mirror the spacing leaving it
+      { x: 125, y: 340 },
+      { x: 115, y: 315 },
+      { x: 90, y: 302 },   // ~60 units from start (mirrors waypoint[2] spacing)
+      { x: 50, y: 300 },   // 50 units from start (mirrors waypoint[1] spacing)
     ];
 
     // Use more segments for ultra-smooth curves
     const result = this.interpolateWaypoints(waypoints, 20);
     console.log(`Track created with ${result.length} centerline points`);
+
+    // Verify tangent continuity (C¹) and curvature continuity (C²) at closure
+    const pMinus2 = result[result.length - 2];
+    const pMinus1 = result[result.length - 1];
+    const p0 = result[0];
+    const p1 = result[1];
+    const p2 = result[2];
+
+    // Check tangent (first derivative)
+    const tangentAtEnd = Math.atan2(p0.y - pMinus1.y, p0.x - pMinus1.x);
+    const tangentAtStart = Math.atan2(p1.y - p0.y, p1.x - p0.x);
+    const tangentDiff = Math.abs(tangentAtEnd - tangentAtStart) * 180 / Math.PI;
+
+    // Check curvature (second derivative) - approximate using change in tangent
+    const tangentBefore = Math.atan2(pMinus1.y - pMinus2.y, pMinus1.x - pMinus2.x);
+    const tangentAfter = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+    const curvatureAtEnd = tangentAtEnd - tangentBefore;
+    const curvatureAtStart = tangentAfter - tangentAtStart;
+    const curvatureDiff = Math.abs(curvatureAtEnd - curvatureAtStart) * 180 / Math.PI;
+
+    console.log(`=== Loop Closure Continuity ===`);
+    console.log(`C¹ (Tangent): end=${(tangentAtEnd * 180 / Math.PI).toFixed(1)}°, start=${(tangentAtStart * 180 / Math.PI).toFixed(1)}°, diff=${tangentDiff.toFixed(1)}°`);
+    console.log(`C² (Curvature): diff=${curvatureDiff.toFixed(1)}° (should be ~0° for smooth closure)`);
+
     return result;
   }
 
@@ -311,5 +430,17 @@ export class Track {
       p1.y - ny * this.halfWidth
     );
     ctx.stroke();
+
+    // Draw circles that define track borders (if enabled)
+    if (SHOW_TRACK_CIRCLES) {
+      ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)'; // Semi-transparent red
+      ctx.lineWidth = 1;
+
+      for (const center of this.circles) {
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, this.halfWidth, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
   }
 }
