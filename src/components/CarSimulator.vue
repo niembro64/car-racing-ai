@@ -4,10 +4,10 @@
 
     <div class="hud">
       <div class="stat">Generation: {{ ga.generation }}</div>
+      <div class="stat">Time: {{ generationTimeDisplay }} | {{ adaptiveMutationRate }}</div>
       <div class="stat">Alive: {{ aliveCount }} / {{ population.length }}</div>
       <div class="stat">Best: {{ bestFitnessPercent }}</div>
       <div class="stat">Speed: {{ speedMultiplier }}x</div>
-      <div class="stat">Mutation: {{ (ga.currentSigma * 100).toFixed(1) }}%</div>
     </div>
 
     <div class="controls">
@@ -21,23 +21,24 @@ import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
+import { TRACK_HALF_WIDTH, MUTATION_RATE } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const canvasWidth = 800;
 const canvasHeight = 600;
 
-const track = new Track(40);
+const track = new Track(TRACK_HALF_WIDTH);
 const ga = new GeneticAlgorithm(12345);
 
 const population = ref<Car[]>([]);
 const showRays = ref(true);
 const speedMultiplier = ref(1);
 const debugNN = ref(false);
+const generationTime = ref(0);
 
 let animationFrameId: number | null = null;
 let lastTime = 0;
 const FIXED_DT = 1 / 60; // 60 Hz physics
-let generationTime = 0;
 
 const aliveCount = computed(() => {
   return population.value.filter(car => car.alive).length;
@@ -46,24 +47,39 @@ const aliveCount = computed(() => {
 const bestFitnessPercent = computed(() => {
   const trackLength = track.getTotalLength();
   const percentage = (ga.bestFitness / trackLength) * 100;
-  const sign = percentage >= 0 ? '+' : '';
-  return `${sign}${percentage.toFixed(1)}%`;
+  const sign = percentage >= 0 ? '+' : '-';
+  const absValue = Math.abs(percentage);
+  const formatted = absValue.toFixed(1).padStart(4, ' '); // "XX.X" format
+  return `${sign}${formatted}%`;
+});
+
+const generationTimeDisplay = computed(() => {
+  const formatted = generationTime.value.toFixed(1).padStart(4, ' '); // "XX.X" format
+  return `${formatted}s`;
+});
+
+const adaptiveMutationRate = computed(() => {
+  const minGenerationTime = 1.0;
+  const effectiveTime = Math.max(generationTime.value, minGenerationTime);
+  const rate = MUTATION_RATE / effectiveTime;
+  const formatted = rate.toFixed(4).padStart(6, ' '); // "X.XXXX" format
+  return `σ=${formatted}`;
 });
 
 // Initialize simulation
 const init = () => {
   population.value = ga.initializePopulation(track);
-  generationTime = 0;
+  generationTime.value = 0;
 };
 
 // Evolve to next generation (can be called manually or automatically)
 const evolveToNextGeneration = (reason: string) => {
   const aliveCarCount = population.value.filter(car => car.alive).length;
-  console.log(`Generation ended: ${reason}. ${aliveCarCount}/${population.value.length} cars alive. Time: ${generationTime.toFixed(2)}s`);
+  console.log(`Generation ended: ${reason}. ${aliveCarCount}/${population.value.length} cars alive. Time: ${generationTime.value.toFixed(2)}s`);
 
-  // Evolve to next generation
-  population.value = ga.evolvePopulation(population.value, track);
-  generationTime = 0;
+  // Evolve to next generation (pass generation time for adaptive mutation rate)
+  population.value = ga.evolvePopulation(population.value, track, generationTime.value);
+  generationTime.value = 0;
 };
 
 // Update physics
@@ -74,7 +90,7 @@ const updatePhysics = (dt: number) => {
     }
   }
 
-  generationTime += dt;
+  generationTime.value += dt;
 };
 
 // Render frame
@@ -239,7 +255,7 @@ canvas {
   display: flex;
   gap: 32px;
   color: #374151;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   background: #ffffff;
   padding: 12px 28px;
@@ -267,7 +283,7 @@ button {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   font-weight: 600;
   transition: all 0.2s ease;

@@ -18,7 +18,7 @@ export class NeuralNetwork {
   private rng: SeededRandom;
   private layerSizes: number[];
 
-  constructor(weights?: NetworkStructure, seed: number = Date.now()) {
+  constructor(weights: NetworkStructure | undefined, seed: number) {
     this.rng = new SeededRandom(seed);
     this.layerSizes = NETWORK_LAYERS;
 
@@ -58,9 +58,14 @@ export class NeuralNetwork {
     return { layers };
   }
 
-  // ReLU activation
-  private relu(x: number): number {
-    return Math.max(0, x);
+  // GELU activation (Gaussian Error Linear Unit)
+  // Used in GPT, BERT, Vision Transformers - state-of-the-art activation
+  // Formula: GELU(x) ≈ 0.5 * x * (1 + tanh(√(2/π) * (x + 0.044715 * x³)))
+  private gelu(x: number): number {
+    const clampedX = clamp(x, -10, 10);
+    const cube = clampedX * clampedX * clampedX;
+    const inner = Math.sqrt(2 / Math.PI) * (clampedX + 0.044715 * cube);
+    return 0.5 * clampedX * (1 + Math.tanh(inner));
   }
 
   // Sigmoid activation
@@ -83,9 +88,9 @@ export class NeuralNetwork {
           sum += current[k] * layer.weights[j][k];
         }
 
-        // Use ReLU for hidden layers, sigmoid for output
+        // Use GELU for hidden layers, sigmoid for output
         if (i < this.structure.layers.length - 1) {
-          next.push(this.relu(sum));
+          next.push(this.gelu(sum));
         } else {
           next.push(this.sigmoid(sum));
         }
@@ -99,45 +104,41 @@ export class NeuralNetwork {
 
   // Run the network with sensor inputs
   run(input: NeuralInput): NeuralOutput {
-    if (input.rays.length !== 8) {
-      throw new Error('Expected 8 ray distances');
+    if (input.rays.length !== 7) {
+      throw new Error('Expected 7 ray distances');
     }
 
-    // Prepare input array: 8 rays + speed
-    const inputArray = [...input.rays, input.speed];
+    // Input array is just the 7 rays
+    const inputArray = input.rays;
 
     // Check for NaN
     if (inputArray.some(v => isNaN(v) || !isFinite(v))) {
       console.warn('NaN detected in input, returning safe defaults');
-      return { speed: 0, direction: 0 };
+      return { direction: 0 };
     }
 
     const output = this.forward(inputArray);
 
-    if (!output || output.length !== 2) {
+    if (!output || output.length !== 1) {
       console.warn('Invalid network output, returning safe defaults');
-      return { speed: 0, direction: 0 };
+      return { direction: 0 };
     }
 
-    // Map outputs to appropriate ranges
-    // Speed: map [0,1] to [-1,1] (negative = reverse, positive = forward)
-    const speed = clamp(output[0] * 2 - 1, -1, 1);
-
-    // Direction: map [0,1] to [-1,1] (negative = left, positive = right)
-    const direction = clamp(output[1] * 2 - 1, -1, 1);
+    // Map output to [-1, 1] range (negative = left, positive = right)
+    const direction = clamp(output[0] * 2 - 1, -1, 1);
 
     // Final NaN check
-    if (isNaN(speed) || isNaN(direction)) {
+    if (isNaN(direction)) {
       console.warn('NaN in output after clipping, returning safe defaults');
-      return { speed: 0, direction: 0 };
+      return { direction: 0 };
     }
 
     // Debug: log raw outputs occasionally
     if ((window as any).__debugCarNN && Math.random() < 0.001) {
-      console.log('NN raw outputs:', output.map(o => o.toFixed(3)), '-> mapped:', { speed: speed.toFixed(2), direction: direction.toFixed(2) });
+      console.log('NN raw output:', output[0].toFixed(3), '-> direction:', direction.toFixed(2));
     }
 
-    return { speed, direction };
+    return { direction };
   }
 
   // Export weights as JSON
@@ -146,11 +147,10 @@ export class NeuralNetwork {
   }
 
   // Create a mutated copy of this network
-  mutate(sigma: number = 0.02, seed?: number): NeuralNetwork {
+  mutate(sigma: number, seed: number): NeuralNetwork {
     const currentWeights = this.toJSON();
-    const newSeed = seed !== undefined ? seed : Math.random() * 1000000;
-    const mutatedWeights = this.mutateWeights(currentWeights, sigma, newSeed);
-    return new NeuralNetwork(mutatedWeights, newSeed);
+    const mutatedWeights = this.mutateWeights(currentWeights, sigma, seed);
+    return new NeuralNetwork(mutatedWeights, seed);
   }
 
   // Mutate weights by adding gaussian noise
@@ -182,12 +182,12 @@ export class NeuralNetwork {
   }
 
   // Create a random network
-  static createRandom(seed: number = Date.now()): NeuralNetwork {
+  static createRandom(seed: number): NeuralNetwork {
     return new NeuralNetwork(undefined, seed);
   }
 
   // Load network from JSON
-  static fromJSON(weights: NetworkStructure, seed: number = Date.now()): NeuralNetwork {
+  static fromJSON(weights: NetworkStructure, seed: number): NeuralNetwork {
     return new NeuralNetwork(weights, seed);
   }
 }

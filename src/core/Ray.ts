@@ -1,23 +1,16 @@
 import type { Point, Segment, RayHit } from './math/geom';
 import { castRay } from './math/geom';
+import { RAY_ANGLES } from '@/config';
 
 export class RayCaster {
-  // Ray angles relative to car heading (in radians) - 360° coverage
-  private static readonly RAY_ANGLES = [
-    0,                 // 0° (forward)
-    Math.PI / 4,       // 45° (right-forward)
-    Math.PI / 2,       // 90° (right)
-    3 * Math.PI / 4,   // 135° (right-back)
-    Math.PI,           // 180° (back)
-    -3 * Math.PI / 4,  // -135° (left-back)
-    -Math.PI / 2,      // -90° (left)
-    -Math.PI / 4       // -45° (left-forward)
-  ];
 
-  private maxRayDistance: number;
+  // Very large casting distance to ensure we always hit a wall
+  private readonly CAST_DISTANCE = 10000;
+  // Normalization factor based on reasonable maximum distance
+  private readonly NORMALIZE_DISTANCE = 1000;
 
-  constructor(maxRayDistance: number = 500) {
-    this.maxRayDistance = maxRayDistance;
+  constructor() {
+    // No parameters needed - rays always hit walls on closed track
   }
 
   // Cast all rays from a position with given heading angle
@@ -29,7 +22,7 @@ export class RayCaster {
     const distances: number[] = [];
     const hits: (RayHit | null)[] = [];
 
-    for (const relativeAngle of RayCaster.RAY_ANGLES) {
+    for (const relativeAngle of RAY_ANGLES) {
       const rayAngle = heading + relativeAngle;
       const direction: Point = {
         x: Math.cos(rayAngle),
@@ -40,17 +33,17 @@ export class RayCaster {
         position,
         direction,
         wallSegments,
-        this.maxRayDistance
+        this.CAST_DISTANCE
       );
 
       hits.push(hit);
 
       if (hit) {
-        // Normalize distance to [0, 1]
-        const normalized = 1 - Math.min(hit.distance / this.maxRayDistance, 1);
+        // Normalize distance to [0, 1] using reasonable maximum
+        const normalized = 1 - Math.min(hit.distance / this.NORMALIZE_DISTANCE, 1);
         distances.push(normalized);
       } else {
-        // No hit means max distance
+        // Should never happen on closed track, but return 0 if no hit
         distances.push(0);
       }
     }

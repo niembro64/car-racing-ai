@@ -4,14 +4,12 @@ import { Track } from './Track';
 import { SeededRandom } from './math/geom';
 import {
   POPULATION_SIZE,
-  INITIAL_SIGMA,
-  MIN_SIGMA,
-  STAGNATION_THRESHOLD,
-  MUTATION_CURVE_TYPE,
+  MUTATION_RATE,
   MUTATION_MIN_MULTIPLIER,
   MUTATION_MAX_MULTIPLIER,
   MUTATION_CURVE_POWER,
   ELITE_CAR_COLOR,
+  NORMAL_CAR_COLOR,
   NETWORK_LAYERS
 } from '@/config';
 
@@ -19,35 +17,22 @@ export class GeneticAlgorithm {
   generation: number = 0;
   bestFitness: number = 0;
   bestWeights: any = null;
-  currentSigma: number = INITIAL_SIGMA;
-
-  private stagnationCounter: number = 0;
-  private lastBestFitness: number = 0;
   private rng: SeededRandom;
 
-  constructor(seed: number = 12345) {
+  constructor(seed: number) {
     this.rng = new SeededRandom(seed);
   }
 
   // Calculate mutation multiplier for a given brain index
   private getMutationMultiplier(index: number): number {
     if (index === 0) {
-      // Elite car - no mutation
-      return 0;
+      return 0; // Elite car - no mutation
     }
 
-    // Calculate progress from 0 to 1 for indices 1 to POPULATION_SIZE-1
+    // Exponential curve from MUTATION_MIN_MULTIPLIER to MUTATION_MAX_MULTIPLIER
     const progress = (index - 1) / (POPULATION_SIZE - 2);
-
-    if (MUTATION_CURVE_TYPE === 'linear') {
-      // Linear interpolation
-      return MUTATION_MIN_MULTIPLIER +
-             (MUTATION_MAX_MULTIPLIER - MUTATION_MIN_MULTIPLIER) * progress;
-    } else {
-      // Exponential curve: multiplier = min + (max - min) * progress^power
-      const range = MUTATION_MAX_MULTIPLIER - MUTATION_MIN_MULTIPLIER;
-      return MUTATION_MIN_MULTIPLIER + range * Math.pow(progress, MUTATION_CURVE_POWER);
-    }
+    const range = MUTATION_MAX_MULTIPLIER - MUTATION_MIN_MULTIPLIER;
+    return MUTATION_MIN_MULTIPLIER + range * Math.pow(progress, MUTATION_CURVE_POWER);
   }
 
   // Calculate weighted average of multiple brains
@@ -114,7 +99,8 @@ export class GeneticAlgorithm {
           track.startPosition.x,
           track.startPosition.y,
           track.startAngle,
-          brain
+          brain,
+          NORMAL_CAR_COLOR
         )
       );
     }
@@ -123,67 +109,67 @@ export class GeneticAlgorithm {
   }
 
   // Evolve to next generation
-  evolvePopulation(population: Car[], track: Track): Car[] {
-    // Sort cars by signedFitness (best to worst) - can be negative, can be > trackLength
-    const sortedCars = [...population].sort((a, b) => b.signedFitness - a.signedFitness);
+  evolvePopulation(population: Car[], track: Track, generationTime: number): Car[] {
+    // Sort cars by maxDistanceReached (farthest position ever reached)
+    const sortedCars = [...population].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
 
     // Log top performers with percentage
     const trackLength = track.getTotalLength();
     const topFitness = sortedCars.slice(0, 5).map((c, i) => {
-      const pct = (c.signedFitness / trackLength * 100).toFixed(1);
-      return `#${i+1}=${pct}%`;
+      const percentage = (c.maxDistanceReached / trackLength * 100);
+      const sign = percentage >= 0 ? '+' : '-';
+      const absValue = Math.abs(percentage);
+      const formatted = absValue.toFixed(1).padStart(4, ' ');
+      return `#${i+1}=${sign}${formatted}%`;
     }).join(', ');
     console.log(`Top 5 fitness: ${topFitness}`);
 
-    const bestSignedFitness = sortedCars[0].signedFitness;
-    const bestPct = (bestSignedFitness / trackLength * 100).toFixed(1);
-    console.log(`Best car: ${bestPct}%, position: (${sortedCars[0].x.toFixed(1)}, ${sortedCars[0].y.toFixed(1)})`);
+    const bestMaxDistance = sortedCars[0].maxDistanceReached;
+    const percentage = (bestMaxDistance / trackLength * 100);
+    const sign = percentage >= 0 ? '+' : '-';
+    const absValue = Math.abs(percentage);
+    const bestPct = absValue.toFixed(1).padStart(4, ' ');
+    console.log(`Best car: ${sign}${bestPct}%, position: (${sortedCars[0].x.toFixed(1)}, ${sortedCars[0].y.toFixed(1)})`);
 
-    // Take only top 10% of cars
-    const topCount = Math.max(1, Math.ceil(sortedCars.length * 0.1));
-    const topCars = sortedCars.slice(0, topCount);
-    console.log(`Averaging top ${topCount} cars (top 10%)`);
+    // Take all cars that reached at least 85% of the best car's distance
+    const threshold = bestMaxDistance * 0.85;
+    const topCars = sortedCars.filter(car => car.maxDistanceReached >= threshold);
+    const topCount = Math.max(1, topCars.length); // Ensure at least 1 car (the best)
+    const thresholdPercentage = (threshold / trackLength * 100);
+    const thresholdSign = thresholdPercentage >= 0 ? '+' : '-';
+    const thresholdAbs = Math.abs(thresholdPercentage);
+    const thresholdPct = thresholdAbs.toFixed(1).padStart(4, ' ');
+    console.log(`Averaging ${topCount} cars (≥85% of best: ${thresholdSign}${thresholdPct}%)`);
 
-    // Calculate weights for top cars
-    // 100th percentile (best) = 1.0, 90th percentile (worst of top 10%) = 0.0
+    // Calculate weights for selected cars - equal weighting for all cars above threshold
     const weights: number[] = [];
     let weightSum = 0;
 
     for (let rank = 0; rank < topCount; rank++) {
-      // Linear weight: rank 0 (best) = 1.0, rank (topCount-1) = 0.0
-      const weight = topCount > 1 ? (topCount - 1 - rank) / (topCount - 1) : 1.0;
+      // Equal weight: all qualifying cars weighted equally
+      const weight = 1.0;
       weights.push(weight);
       weightSum += weight;
     }
 
-    console.log(`Weight distribution: 1st=${weights[0].toFixed(2)}, ${topCount > 1 ? `mid=${weights[Math.floor(topCount/2)].toFixed(2)}, ` : ''}last=${weights[topCount-1].toFixed(2)}`);
+    console.log(`Equal weighting: all ${topCount} qualifying cars weighted at 1.0 (simple average)`);
 
     // Create weighted average brain from top performers
     this.bestWeights = this.averageBrains(topCars.map(c => c.brain.toJSON()), weights, weightSum);
 
-    // Track improvement using signedFitness
-    const improved = bestSignedFitness > this.bestFitness;
-    if (improved) {
-      this.bestFitness = bestSignedFitness;
-      this.stagnationCounter = 0;
+    // Track improvement
+    if (bestMaxDistance > this.bestFitness) {
+      this.bestFitness = bestMaxDistance;
       console.log(`Gen ${this.generation}: New best fitness = ${bestPct}%`);
     } else {
-      this.stagnationCounter++;
-      console.log(`Gen ${this.generation}: Best fitness = ${bestPct}% (stagnation: ${this.stagnationCounter})`);
-    }
-
-    // Adjust mutation rate if stagnating
-    if (this.stagnationCounter >= STAGNATION_THRESHOLD) {
-      this.currentSigma = Math.max(MIN_SIGMA, this.currentSigma * 0.8);
-      console.log(`Reduced sigma to ${this.currentSigma.toFixed(4)}`);
-      this.stagnationCounter = 0;
+      console.log(`Gen ${this.generation}: Best fitness = ${bestPct}%`);
     }
 
     // Create next generation
     this.generation++;
     const nextGeneration: Car[] = [];
 
-    const eliteBrain = NeuralNetwork.fromJSON(this.bestWeights);
+    const eliteBrain = NeuralNetwork.fromJSON(this.bestWeights, this.rng.next() * 1000000);
 
     // Print saved weights at start of generation
     if (this.bestWeights && this.bestWeights.layers && this.bestWeights.layers[0]) {
@@ -193,12 +179,20 @@ export class GeneticAlgorithm {
       console.log(`[Gen ${this.generation}] Saved biases:`, savedSampleBiases.map((b: number) => b.toFixed(4)));
     }
 
+    // Calculate adaptive mutation rate (inverse of generation time)
+    // Use minimum threshold to prevent extreme mutation rates for very short generations
+    const minGenerationTime = 1.0; // seconds
+    const effectiveTime = Math.max(generationTime, minGenerationTime);
+    const adaptiveMutationRate = MUTATION_RATE / effectiveTime;
+
+    console.log(`Generation time: ${generationTime.toFixed(2)}s, Adaptive σ: ${adaptiveMutationRate.toFixed(4)} (base: ${MUTATION_RATE.toFixed(3)})`);
+
     // Calculate mutation range for logging
     const minMult = this.getMutationMultiplier(1);
     const midMult = this.getMutationMultiplier(Math.floor(POPULATION_SIZE / 2));
     const maxMult = this.getMutationMultiplier(POPULATION_SIZE - 1);
-    console.log(`Starting Gen ${this.generation} with ${MUTATION_CURVE_TYPE} mutation curve:`);
-    console.log(`  Brain 1: ${minMult.toFixed(2)}× sigma, Brain ${Math.floor(POPULATION_SIZE/2)}: ${midMult.toFixed(2)}× sigma, Brain ${POPULATION_SIZE-1}: ${maxMult.toFixed(2)}× sigma, base σ=${this.currentSigma.toFixed(3)}`);
+    console.log(`Starting Gen ${this.generation}:`);
+    console.log(`  Brain 1: ${minMult.toFixed(2)}×, Brain ${Math.floor(POPULATION_SIZE/2)}: ${midMult.toFixed(2)}×, Brain ${POPULATION_SIZE-1}: ${maxMult.toFixed(2)}×`);
 
     // First car is exact elite copy
     nextGeneration.push(
@@ -215,7 +209,7 @@ export class GeneticAlgorithm {
     for (let i = 1; i < POPULATION_SIZE; i++) {
       const mutationSeed = this.rng.next() * 1000000 + i + this.generation * 10000;
       const multiplier = this.getMutationMultiplier(i);
-      const sigma = this.currentSigma * multiplier;
+      const sigma = adaptiveMutationRate * multiplier;
 
       const mutatedBrain = eliteBrain.mutate(sigma, mutationSeed);
       nextGeneration.push(
@@ -223,7 +217,8 @@ export class GeneticAlgorithm {
           track.startPosition.x,
           track.startPosition.y,
           track.startAngle,
-          mutatedBrain
+          mutatedBrain,
+          NORMAL_CAR_COLOR
         )
       );
     }
@@ -257,8 +252,7 @@ export class GeneticAlgorithm {
     return JSON.stringify({
       generation: this.generation,
       bestFitness: this.bestFitness,
-      bestWeights: this.bestWeights,
-      sigma: this.currentSigma
+      bestWeights: this.bestWeights
     }, null, 2);
   }
 
@@ -269,7 +263,6 @@ export class GeneticAlgorithm {
       this.generation = data.generation || 0;
       this.bestFitness = data.bestFitness || 0;
       this.bestWeights = data.bestWeights;
-      this.currentSigma = data.sigma || INITIAL_SIGMA;
       console.log('Imported weights successfully');
     } catch (error) {
       console.error('Failed to import weights:', error);
@@ -281,8 +274,6 @@ export class GeneticAlgorithm {
     this.generation = 0;
     this.bestFitness = 0;
     this.bestWeights = null;
-    this.currentSigma = INITIAL_SIGMA;
-    this.stagnationCounter = 0;
     console.log('Reset evolution');
   }
 }

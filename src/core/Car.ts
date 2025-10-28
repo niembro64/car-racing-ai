@@ -9,11 +9,8 @@ import { NeuralNetwork } from './Neural';
 import { RayCaster } from './Ray';
 import type { NeuralInput, NeuralOutput } from '@/types/neural';
 import {
-  CAR_ACCELERATION,
-  CAR_BRAKE_POWER,
-  CAR_DRAG,
-  CAR_STEER_RATE,
-  CAR_MAX_SPEED,
+  CAR_SPEED,
+  CAR_TURN_FACTOR,
   CAR_WIDTH,
   CAR_HEIGHT
 } from '@/config';
@@ -30,6 +27,8 @@ export class Car {
   fitness: number;
   signedFitness: number; // Accumulated signed distance (can be negative, can be > trackLength)
   lastCenterlineDistance: number; // Previous frame's centerline distance for delta calculation
+  maxDistanceReached: number; // Farthest position ever reached on track (used for scoring)
+  startingDistance: number; // Initial centerline distance (for measuring relative progress)
 
   // Dimensions
   width: number = CAR_WIDTH;
@@ -51,7 +50,7 @@ export class Car {
     y: number,
     angle: number,
     brain: NeuralNetwork,
-    color: string = '#0088ff'
+    color: string
   ) {
     this.x = x;
     this.y = y;
@@ -61,8 +60,10 @@ export class Car {
     this.fitness = 0;
     this.signedFitness = 0;
     this.lastCenterlineDistance = 0;
+    this.maxDistanceReached = 0;
+    this.startingDistance = 0;
     this.brain = brain;
-    this.rayCaster = new RayCaster(500);
+    this.rayCaster = new RayCaster();
     this.color = color;
   }
 
@@ -81,20 +82,19 @@ export class Car {
     this.lastRayDistances = distances;
     this.lastRayHits = hits;
 
-    // Prepare neural network input
+    // Prepare neural network input (only rays, speed is constant)
     const input: NeuralInput = {
-      rays: distances,
-      speed: clamp(this.speed / CAR_MAX_SPEED, 0, 1) // Normalize speed
+      rays: distances
     };
 
-    // Get AI output
+    // Get AI output (only direction)
     const output: NeuralOutput = this.brain.run(input);
 
     // Debug log for first car only (to avoid spam)
     if ((window as any).__debugCarNN && Math.random() < 0.01) {
       console.log('Neural Net IO:', {
-        input: { rays: input.rays.map(r => r.toFixed(2)), speed: input.speed.toFixed(2) },
-        output: { speed: output.speed.toFixed(2), direction: output.direction.toFixed(2) }
+        input: { rays: input.rays.map(r => r.toFixed(2)) },
+        output: { direction: output.direction.toFixed(2) }
       });
     }
 
@@ -107,24 +107,8 @@ export class Car {
 
   // Apply physics based on AI output
   private applyPhysics(output: NeuralOutput, dt: number): void {
-    // Set speed directly from neural network output
-    // Output speed is in range [-1, 1], map to actual velocity
-    const desiredSpeed = output.speed * CAR_MAX_SPEED;
-
-    // Smoothly transition to desired speed (with acceleration limit)
-    const speedDiff = desiredSpeed - this.speed;
-    const maxAccel = CAR_ACCELERATION * dt;
-    if (Math.abs(speedDiff) > maxAccel) {
-      this.speed += Math.sign(speedDiff) * maxAccel;
-    } else {
-      this.speed = desiredSpeed;
-    }
-
-    // Apply drag
-    this.speed *= Math.pow(CAR_DRAG, dt);
-
-    // Clamp speed
-    this.speed = clamp(this.speed, -CAR_MAX_SPEED * 0.5, CAR_MAX_SPEED);
+    // Constant forward speed
+    this.speed = CAR_SPEED;
 
     // Update position
     const headingX = Math.cos(this.angle);
@@ -132,15 +116,12 @@ export class Car {
     this.x += headingX * this.speed * dt;
     this.y += headingY * this.speed * dt;
 
-    // Update angle based on direction output
-    // Direction in range [-1, 1] maps to turning rate
-    // -1 = full left turn, 0 = straight, 1 = full right turn
-    // Maximum turn rate is CAR_STEER_RATE radians/second
-    this.angle += output.direction * CAR_STEER_RATE * dt;
+    // Turning is proportional to speed (direction from neural network)
+    this.angle += output.direction * this.speed * CAR_TURN_FACTOR * dt;
     this.angle = normalizeAngle(this.angle);
 
     // Prevent NaN propagation
-    if (isNaN(this.x) || isNaN(this.y) || isNaN(this.angle) || isNaN(this.speed)) {
+    if (isNaN(this.x) || isNaN(this.y) || isNaN(this.angle)) {
       console.warn('NaN detected in car physics, marking as crashed');
       this.alive = false;
       this.speed = 0;
@@ -149,6 +130,15 @@ export class Car {
 
   // Update signed fitness based on centerline distance with wrap-around detection
   updateSignedFitness(currentCenterlineDistance: number, trackLength: number): void {
+    // Initialize on first call
+    if (this.startingDistance === 0 && this.lastCenterlineDistance === 0) {
+      this.startingDistance = currentCenterlineDistance;
+      this.lastCenterlineDistance = currentCenterlineDistance;
+      this.signedFitness = 0;
+      this.maxDistanceReached = 0; // Progress starts at 0
+      return;
+    }
+
     // Calculate delta from last position
     let delta = currentCenterlineDistance - this.lastCenterlineDistance;
 
@@ -161,8 +151,15 @@ export class Car {
       delta = delta + trackLength;
     }
 
-    // Accumulate signed distance
+    // Accumulate signed distance (can be negative, can be > trackLength)
     this.signedFitness += delta;
+
+    // Track maximum cumulative distance reached (for scoring)
+    // maxDistanceReached is used for selection - only tracks forward progress
+    // For display, we use signedFitness which can be negative
+    if (this.signedFitness > this.maxDistanceReached) {
+      this.maxDistanceReached = this.signedFitness;
+    }
 
     // Update last position for next frame
     this.lastCenterlineDistance = currentCenterlineDistance;
@@ -207,16 +204,18 @@ export class Car {
       this.rayCaster.renderRays(ctx, { x: this.x, y: this.y }, this.lastRayHits);
     }
 
-    // Render percentage label above car
+    // Render percentage label above car (shows current progress including negative)
     if (trackLength) {
       const percentage = (this.signedFitness / trackLength) * 100;
-      const sign = percentage >= 0 ? '+' : '';
+      const sign = percentage >= 0 ? '+' : '-';
+      const absValue = Math.abs(percentage);
+      const formatted = absValue.toFixed(1).padStart(4, ' '); // "XX.X" format
       ctx.save();
       ctx.fillStyle = this.alive ? '#1f2937' : '#9ca3af';
-      ctx.font = 'bold 16px sans-serif';
+      ctx.font = 'bold 16px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(`${sign}${percentage.toFixed(0)}%`, this.x, this.y - this.height / 2 - 6);
+      ctx.fillText(`${sign}${formatted}%`, this.x, this.y - this.height / 2 - 6);
       ctx.restore();
     }
 

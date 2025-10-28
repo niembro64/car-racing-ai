@@ -23,7 +23,7 @@ export class Track {
   startPosition: Point;
   startAngle: number;
 
-  constructor(halfWidth: number = TRACK_HALF_WIDTH) {
+  constructor(halfWidth: number) {
     this.halfWidth = halfWidth;
 
     // Create a simple oval/loop track centerline
