@@ -1,13 +1,15 @@
 <template>
   <div class="simulator">
-    <canvas ref="canvasRef" :width="canvasWidth" :height="canvasHeight"></canvas>
+    <canvas
+      ref="canvasRef"
+      :width="canvasWidth"
+      :height="canvasHeight"
+      :style="{ width: displayWidth + 'px', height: displayHeight + 'px' }"
+    ></canvas>
 
     <div class="hud">
       <div class="stat">Generation: {{ ga.generation }}</div>
-      <div class="stat">Time: {{ generationTimeDisplay }} | {{ adaptiveMutationRate }}</div>
-      <div class="stat">Alive: {{ aliveCount }} / {{ population.length }}</div>
-      <div class="stat">Best: {{ bestFitnessPercent }}</div>
-      <div class="stat">Speed: {{ speedMultiplier }}x</div>
+      <div class="stat">{{ adaptiveMutationRate }}</div>
     </div>
 
     <div class="controls">
@@ -24,8 +26,34 @@ import { GeneticAlgorithm } from '@/core/GA';
 import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, CANVAS_BACKGROUND_COLOR, ELITE_CAR_COLOR } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
+// Keep canvas at fixed internal resolution for rendering
 const canvasWidth = 800;
 const canvasHeight = 600;
+
+// Calculate CSS display dimensions
+const displayWidth = ref(800);
+const displayHeight = ref(600);
+
+const updateCanvasDimensions = () => {
+  // Reserve space for HUD (approximately 60px) and controls (approximately 70px)
+  const reservedHeight = 130;
+
+  const maxWidth = window.innerWidth;
+  const maxHeight = window.innerHeight - reservedHeight;
+
+  // Maintain 4:3 aspect ratio (800:600)
+  const aspectRatio = 4 / 3;
+
+  if (maxWidth / maxHeight > aspectRatio) {
+    // Height is the limiting factor
+    displayHeight.value = maxHeight;
+    displayWidth.value = Math.floor(maxHeight * aspectRatio);
+  } else {
+    // Width is the limiting factor
+    displayWidth.value = maxWidth;
+    displayHeight.value = Math.floor(maxWidth / aspectRatio);
+  }
+};
 
 const track = new Track(TRACK_WIDTH_HALF);
 const ga = new GeneticAlgorithm(12345);
@@ -95,9 +123,8 @@ const updatePhysics = (dt: number) => {
 
 // Render frame
 const render = (ctx: CanvasRenderingContext2D) => {
-  // Clear canvas with grass background
-  ctx.fillStyle = CANVAS_BACKGROUND_COLOR;
-  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  // Clear canvas (transparent - background color comes from page)
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
   // Render track
   track.render(ctx);
@@ -224,11 +251,14 @@ const importWeights = () => {
 
 // Lifecycle
 onMounted(() => {
+  updateCanvasDimensions();
+  window.addEventListener('resize', updateCanvasDimensions);
   init();
   animationFrameId = requestAnimationFrame(animate);
 });
 
 onUnmounted(() => {
+  window.removeEventListener('resize', updateCanvasDimensions);
   if (animationFrameId !== null) {
     cancelAnimationFrame(animationFrameId);
   }
@@ -240,33 +270,55 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  padding: 40px 20px;
+  justify-content: center;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  min-height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: #4a7c4e; /* Grass green background */
 }
 
 canvas {
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  background: #ffffff;
+  display: block;
+  margin: 0;
+  padding: 0;
+  /* Use CSS to scale the canvas display size while keeping internal resolution at 800x600 */
+  image-rendering: auto;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .hud {
   display: flex;
-  gap: 32px;
-  color: #374151;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  color: #ffffff;
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
-  background: #ffffff;
-  padding: 12px 28px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  padding: 8px 16px;
+  margin: 0;
 }
 
 .stat {
   font-weight: 600;
-  color: #1f2937;
+  color: #ffffff;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 640px) {
+  .simulator {
+    gap: 6px;
+  }
+
+  .hud {
+    font-size: 12px;
+    gap: 12px;
+    padding: 6px 12px;
+  }
 }
 
 .controls {
@@ -274,24 +326,26 @@ canvas {
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
+  margin: 0;
+  padding: 0;
 }
 
 button {
   padding: 10px 20px;
-  background: #3b82f6;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   font-family: 'Courier New', Courier, monospace;
   font-size: 14px;
   font-weight: 600;
   transition: all 0.2s ease;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0;
 }
 
 button:hover {
-  background: #2563eb;
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
@@ -302,10 +356,25 @@ button:active {
 }
 
 .next-gen-btn {
-  background: #3b82f6;
+  background: #ffffff;
+  color: #3b82f6;
+  border: 2px solid #3b82f6;
 }
 
 .next-gen-btn:hover {
-  background: #2563eb;
+  background: #f0f9ff;
+  color: #2563eb;
+  border-color: #2563eb;
+}
+
+.next-gen-btn:active {
+  background: #e0f2fe;
+}
+
+@media (max-width: 640px) {
+  button {
+    padding: 14px 28px;
+    font-size: 16px;
+  }
 }
 </style>

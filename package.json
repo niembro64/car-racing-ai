@@ -8,6 +8,7 @@
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
+    "tests": "vitest",
     "test:ui": "vitest --ui"
   },
   "dependencies": {

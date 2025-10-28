@@ -17,15 +17,16 @@ import CarSimulator from './components/CarSimulator.vue';
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
-  background: #f5f7fa;
+  background: #4a7c4e; /* Grass green background */
   color: #2c3e50;
 }
 
 #app {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #4a7c4e; /* Grass green background */
 }
 </style>
