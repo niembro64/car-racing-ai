@@ -26,14 +26,8 @@ export class Track {
   constructor(halfWidth: number) {
     this.halfWidth = halfWidth;
 
-    // Create a simple oval/loop track centerline
-    this.centerline = this.createOvalCenterline(
-      TRACK_CENTER_X,
-      TRACK_CENTER_Y,
-      TRACK_RADIUS_X,
-      TRACK_RADIUS_Y,
-      TRACK_SEGMENTS
-    );
+    // Create a complex race track centerline with multiple curve types
+    this.centerline = this.createComplexTrack();
 
     // Offset to create walls
     this.innerWall = offsetPolyline(this.centerline, -halfWidth);
@@ -70,7 +64,100 @@ export class Track {
     );
   }
 
-  // Create an oval-shaped centerline
+  // Catmull-Rom spline interpolation between points
+  private catmullRomSpline(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point {
+    const t2 = t * t;
+    const t3 = t2 * t;
+
+    return {
+      x: 0.5 * (
+        (2 * p1.x) +
+        (-p0.x + p2.x) * t +
+        (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+        (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
+      ),
+      y: 0.5 * (
+        (2 * p1.y) +
+        (-p0.y + p2.y) * t +
+        (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+        (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
+      )
+    };
+  }
+
+  // Interpolate smooth curve through waypoints
+  private interpolateWaypoints(waypoints: Point[], segmentsPerCurve: number = 20): Point[] {
+    const points: Point[] = [];
+
+    for (let i = 0; i < waypoints.length; i++) {
+      const p0 = waypoints[(i - 1 + waypoints.length) % waypoints.length];
+      const p1 = waypoints[i];
+      const p2 = waypoints[(i + 1) % waypoints.length];
+      const p3 = waypoints[(i + 2) % waypoints.length];
+
+      for (let j = 0; j < segmentsPerCurve; j++) {
+        const t = j / segmentsPerCurve;
+        points.push(this.catmullRomSpline(p0, p1, p2, p3, t));
+      }
+    }
+
+    // Close the loop
+    points.push({ ...points[0] });
+
+    return points;
+  }
+
+  // Create a complex race track with multiple corner types
+  private createComplexTrack(): Point[] {
+    // Define waypoints for a challenging track layout
+    // Canvas: 800x600, leaving ~60px margin (accounting for track width)
+    const waypoints: Point[] = [
+      // Start/finish straight (left side)
+      { x: 100, y: 280 },
+      { x: 180, y: 280 },
+
+      // First curve - gentle right sweeper
+      { x: 280, y: 260 },
+      { x: 360, y: 220 },
+
+      // Tight hairpin right (top right area)
+      { x: 450, y: 160 },
+      { x: 520, y: 100 },
+      { x: 600, y: 80 },
+      { x: 680, y: 100 },
+      { x: 720, y: 150 },
+
+      // Fast descent with S-curve
+      { x: 720, y: 240 },
+      { x: 680, y: 320 },  // Left
+      { x: 720, y: 400 },  // Right (S-curve)
+
+      // Sweeping curve to bottom
+      { x: 680, y: 480 },
+      { x: 580, y: 530 },
+      { x: 460, y: 540 },
+
+      // Chicane section
+      { x: 360, y: 520 },
+      { x: 300, y: 480 },  // Left flick
+      { x: 260, y: 450 },  // Right flick
+      { x: 220, y: 500 },  // Left again
+
+      // Hairpin left (bottom left)
+      { x: 160, y: 520 },
+      { x: 100, y: 500 },
+      { x: 80, y: 450 },
+      { x: 80, y: 380 },
+
+      // Final section back to start
+      { x: 90, y: 320 },
+    ];
+
+    // Interpolate smooth curve through waypoints
+    return this.interpolateWaypoints(waypoints, 15);
+  }
+
+  // Create an oval-shaped centerline (legacy, kept for reference)
   private createOvalCenterline(
     cx: number,
     cy: number,
