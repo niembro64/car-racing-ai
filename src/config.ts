@@ -41,7 +41,7 @@ export const WAYPOINTS: Point[] = appendMirroredWaypoints(wp, CANVAS_WIDTH);
 export const GA_POPULATION_SIZE = 200;
 // ----------------------------------------------------------------------------
 export const CAR_FORWARD_SPEED = 80; // Constant forward speed (pixels/second)
-export const CAR_STEERING_SENSITIVITY = .7; // Turning multiplier (speed × direction × this)
+export const CAR_STEERING_SENSITIVITY = 3; // Turning multiplier (speed × direction × this)
 export const CAR_WIDTH = 10;
 export const CAR_HEIGHT = 20;
 
@@ -52,12 +52,12 @@ export const SENSOR_RAY_ANGLES = [
   Math.PI * 0.0,
   // Math.PI * -0.01,
   // Math.PI * 0.01,
-  Math.PI * -0.1,
-  Math.PI * 0.1,
-  Math.PI * 0.2,
-  Math.PI * -0.2,
-  // Math.PI * 0.4,
-  // Math.PI * -0.4,
+  // Math.PI * -0.1,
+  // Math.PI * 0.1,
+  Math.PI * 0.25,
+  Math.PI * -0.25,
+  // Math.PI * 0.49,
+  // Math.PI * -0.49,
   Math.PI * 0.5,
   Math.PI * -0.5,
 ];
@@ -65,7 +65,7 @@ export const SENSOR_RAY_ANGLES = [
 // ----------------------------------------------------------------------------
 // NEURAL NETWORK
 // ----------------------------------------------------------------------------
-export const NEURAL_NETWORK_ARCHITECTURE = [SENSOR_RAY_ANGLES.length + 2, 1]; // rays + previousDirection + centerlineDistance → hidden → direction
+export const NEURAL_NETWORK_ARCHITECTURE = [SENSOR_RAY_ANGLES.length + 2, 4, 1]; // rays + previousDirection + centerlineDistance → hidden → direction
 
 // ----------------------------------------------------------------------------
 // TRACK

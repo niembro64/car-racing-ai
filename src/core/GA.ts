@@ -137,18 +137,18 @@ export class GeneticAlgorithm {
     console.log(`Starting Gen ${this.generation}:`);
     console.log(`  Brain 1: ${minMult.toFixed(2)}×, Brain ${Math.floor(GA_POPULATION_SIZE/2)}: ${midMult.toFixed(2)}×, Brain ${GA_POPULATION_SIZE-1}: ${maxMult.toFixed(2)}×`);
 
-    // First car is exact elite copy
+    // First car is exact elite copy with random angle
     nextGeneration.push(
       new Car(
         track.startPosition.x,
         track.startPosition.y,
-        track.startAngle,
+        this.rng.next() * Math.PI * 2,
         eliteBrain,
         ELITE_CAR_COLOR
       )
     );
 
-    // Rest are mutations with progressive mutation rates
+    // Rest are mutations with progressive mutation rates and random angles
     for (let i = 1; i < GA_POPULATION_SIZE; i++) {
       const mutationSeed = this.rng.next() * 1000000 + i + this.generation * 10000;
       const multiplier = this.getMutationMultiplier(i);
@@ -159,7 +159,7 @@ export class GeneticAlgorithm {
         new Car(
           track.startPosition.x,
           track.startPosition.y,
-          track.startAngle,
+          this.rng.next() * Math.PI * 2,
           mutatedBrain,
           NORMAL_CAR_COLOR
         )
