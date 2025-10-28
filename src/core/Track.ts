@@ -285,8 +285,24 @@ export class Track {
 
   // Render track on canvas
   render(ctx: CanvasRenderingContext2D): void {
-    // Draw outer wall
-    ctx.strokeStyle = '#6b7280';
+    // Fill track area with asphalt gray
+    ctx.fillStyle = '#3a3a3a';
+    ctx.beginPath();
+    ctx.moveTo(this.outerWall[0].x, this.outerWall[0].y);
+    for (let i = 1; i < this.outerWall.length; i++) {
+      ctx.lineTo(this.outerWall[i].x, this.outerWall[i].y);
+    }
+    ctx.closePath();
+    // Cut out inner area
+    ctx.moveTo(this.innerWall[0].x, this.innerWall[0].y);
+    for (let i = 1; i < this.innerWall.length; i++) {
+      ctx.lineTo(this.innerWall[i].x, this.innerWall[i].y);
+    }
+    ctx.closePath();
+    ctx.fill('evenodd');
+
+    // Draw outer wall (white)
+    ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(this.outerWall[0].x, this.outerWall[0].y);
@@ -296,7 +312,7 @@ export class Track {
     ctx.closePath();
     ctx.stroke();
 
-    // Draw inner wall
+    // Draw inner wall (white)
     ctx.beginPath();
     ctx.moveTo(this.innerWall[0].x, this.innerWall[0].y);
     for (let i = 1; i < this.innerWall.length; i++) {
@@ -305,10 +321,10 @@ export class Track {
     ctx.closePath();
     ctx.stroke();
 
-    // Draw centerline (dashed)
-    ctx.strokeStyle = '#d1d5db';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([5, 5]);
+    // Draw centerline (yellow dashed)
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([10, 10]);
     ctx.beginPath();
     ctx.moveTo(this.centerline[0].x, this.centerline[0].y);
     for (let i = 1; i < this.centerline.length; i++) {

@@ -95,8 +95,8 @@ const updatePhysics = (dt: number) => {
 
 // Render frame
 const render = (ctx: CanvasRenderingContext2D) => {
-  // Clear canvas
-  ctx.fillStyle = '#f9fafb';
+  // Clear canvas with grass background
+  ctx.fillStyle = '#4a7c4e';
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
   // Render track
