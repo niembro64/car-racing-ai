@@ -10,9 +10,7 @@ const createTestInput = (values?: number[]): NeuralInput => {
     throw new Error(`Test input must have ${rayCount} rays, got ${values.length}`);
   }
   return {
-    rays: values || Array(rayCount).fill(0).map((_, i) => (i + 1) / (rayCount + 1)),
-    previousDirection: 0,
-    centerlineDistance: 0.5
+    rays: values || Array(rayCount).fill(0).map((_, i) => (i + 1) / (rayCount + 1))
   };
 };
 
@@ -92,9 +90,7 @@ describe('NeuralNetwork', () => {
     const brain = NeuralNetwork.createRandom(12345);
 
     const invalidInput: NeuralInput = {
-      rays: [0.5, 0.3], // Wrong size
-      previousDirection: 0,
-      centerlineDistance: 0.5
+      rays: [0.5, 0.3] // Wrong size
     };
 
     expect(() => brain.run(invalidInput)).toThrow();

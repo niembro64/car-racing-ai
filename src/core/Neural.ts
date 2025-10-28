@@ -104,8 +104,8 @@ export class NeuralNetwork {
 
   // Run the network with sensor inputs
   run(input: NeuralInput): NeuralOutput {
-    // Input array includes rays + previousDirection + centerlineDistance
-    const inputArray = [...input.rays, input.previousDirection, input.centerlineDistance];
+    // Input array is just the rays
+    const inputArray = input.rays;
 
     if (inputArray.length !== NEURAL_NETWORK_ARCHITECTURE[0]) {
       throw new Error(

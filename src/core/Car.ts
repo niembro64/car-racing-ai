@@ -22,8 +22,7 @@ import {
   NORMAL_CAR_RAY_COLOR,
   NORMAL_CAR_RAY_HIT_COLOR,
   NORMAL_CAR_RAY_WIDTH,
-  NORMAL_CAR_RAY_HIT_RADIUS,
-  TRACK_WIDTH_HALF
+  NORMAL_CAR_RAY_HIT_RADIUS
 } from '@/config';
 
 export class Car {
@@ -47,7 +46,6 @@ export class Car {
 
   // Neural network
   brain: NeuralNetwork;
-  previousDirection: number = 0; // Last direction output from brain
 
   // Sensors
   rayCaster: RayCaster;
@@ -56,7 +54,6 @@ export class Car {
 
   // Centerline tracking
   lastCenterlinePoint: Point | null = null;
-  lastCenterlineDistanceToPoint: number = 0; // Euclidean distance from car to centerline
 
   // Color for rendering
   color: string;
@@ -109,27 +106,13 @@ export class Car {
     this.lastRayDistances = distances;
     this.lastRayHits = hits;
 
-    // Get closest point on centerline
+    // Get closest point on centerline (for visualization only)
     const centerlineResult = track.getClosestPointOnCenterline({ x: this.x, y: this.y });
     this.lastCenterlinePoint = centerlineResult.point;
 
-    // Calculate Euclidean distance from car to centerline point
-    const dx = this.x - centerlineResult.point.x;
-    const dy = this.y - centerlineResult.point.y;
-    this.lastCenterlineDistanceToPoint = Math.sqrt(dx * dx + dy * dy);
-
-    // Normalize previous direction using tanh to map (-inf, inf) to (-1, 1)
-    const normalizedPreviousDirection = Math.tanh(this.previousDirection);
-
-    // Normalize centerline distance (0 = on centerline, 1 = at track edge)
-    // Clamp to [0, 1] range
-    const normalizedCenterlineDistance = Math.min(1.0, this.lastCenterlineDistanceToPoint / TRACK_WIDTH_HALF);
-
-    // Prepare neural network input (rays + previous direction + centerline distance)
+    // Prepare neural network input (only rays)
     const input: NeuralInput = {
-      rays: distances,
-      previousDirection: normalizedPreviousDirection,
-      centerlineDistance: normalizedCenterlineDistance
+      rays: distances
     };
 
     // Get AI output (only direction)
@@ -138,17 +121,10 @@ export class Car {
     // Debug log for first car only (to avoid spam)
     if ((window as any).__debugCarNN && Math.random() < 0.01) {
       console.log('Neural Net IO:', {
-        input: {
-          rays: input.rays.map(r => r.toFixed(2)),
-          previousDirection: input.previousDirection.toFixed(2),
-          centerlineDistance: input.centerlineDistance.toFixed(2)
-        },
+        input: { rays: input.rays.map(r => r.toFixed(2)) },
         output: { direction: output.direction.toFixed(2) }
       });
     }
-
-    // Store current direction for next frame
-    this.previousDirection = output.direction;
 
     // Apply physics
     this.applyPhysics(output, dt);
