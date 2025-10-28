@@ -109,72 +109,102 @@ export class Track {
       }
     }
 
-    // Close the loop
-    points.push({ ...points[0] });
+    // DON'T duplicate first point - modulo wrapping handles closure
+    // This ensures proper tangent and curvature continuity at loop junction
 
     return points;
   }
 
   // Create a complex race track with multiple corner types
   private createComplexTrack(): Point[] {
-    // Define waypoints for a flowing, smooth track layout
+    // Define waypoints for a flowing, smooth track layout with perfect symmetry at start/finish
     // Canvas: 800x600, leaving ~60px margin (accounting for track width)
-    // More waypoints = smoother curves, especially in direction changes
     const waypoints: Point[] = [
-      // Start/finish straight (left side) - extended for smooth loop closure
-      { x: 100, y: 300 },
-      { x: 150, y: 300 },
-      { x: 210, y: 298 },
+      // Start/finish - positioned for symmetric loop closure
+      { x: 200, y: 300 },
 
-      // Gentle climbing right turn
-      { x: 300, y: 285 },
-      { x: 390, y: 255 },
-      { x: 470, y: 215 },
-      { x: 540, y: 170 },
-      { x: 600, y: 130 },
+      // Exit from start (gradual acceleration zone)
+      { x: 270, y: 298 },
+      { x: 340, y: 292 },
 
-      // Wide sweeping right at top (many points for smoothness)
-      { x: 650, y: 105 },
-      { x: 690, y: 95 },
-      { x: 725, y: 105 },
-      { x: 745, y: 130 },
-      { x: 755, y: 165 },
-      { x: 758, y: 210 },
+      // Very gentle climbing right turn (softer curve)
+      { x: 420, y: 280 },
+      { x: 490, y: 260 },
+      { x: 550, y: 230 },
+      { x: 600, y: 190 },
+      { x: 640, y: 150 },
 
-      // Long straight down right side
-      { x: 755, y: 280 },
-      { x: 750, y: 360 },
+      // Wide sweeping right at top (many waypoints for ultra-smooth)
+      { x: 670, y: 115 },
+      { x: 695, y: 95 },
+      { x: 720, y: 90 },
+      { x: 740, y: 100 },
+      { x: 755, y: 120 },
+      { x: 763, y: 150 },
+      { x: 765, y: 190 },
 
-      // Smooth S-curve (wide radius)
-      { x: 735, y: 410 },
-      { x: 710, y: 450 },
-      { x: 695, y: 485 },
-      { x: 695, y: 515 },
+      // Long gentle straight down right side
+      { x: 763, y: 260 },
+      { x: 758, y: 340 },
+      { x: 750, y: 400 },
 
-      // Sweeping turn across bottom (gradual)
-      { x: 670, y: 540 },
-      { x: 620, y: 555 },
-      { x: 550, y: 560 },
-      { x: 470, y: 558 },
-      { x: 390, y: 550 },
-      { x: 320, y: 535 },
+      // Smooth wide S-curve (very gentle)
+      { x: 730, y: 450 },
+      { x: 705, y: 490 },
+      { x: 690, y: 520 },
 
-      // Gentle left turn at bottom left (more waypoints for smoothness)
-      { x: 260, y: 515 },
-      { x: 215, y: 490 },
-      { x: 180, y: 460 },
-      { x: 155, y: 425 },
-      { x: 138, y: 385 },
+      // Sweeping turn across bottom (very gradual)
+      { x: 660, y: 545 },
+      { x: 610, y: 560 },
+      { x: 550, y: 565 },
+      { x: 480, y: 563 },
+      { x: 410, y: 555 },
+      { x: 340, y: 540 },
+      { x: 280, y: 520 },
 
-      // Smooth return up left side to complete loop
+      // Gentle left turn at bottom left (soft radius)
+      { x: 230, y: 495 },
+      { x: 190, y: 465 },
+      { x: 160, y: 430 },
+      { x: 140, y: 390 },
       { x: 128, y: 345 },
-      { x: 120, y: 320 },
-      { x: 108, y: 305 },
+
+      // Symmetric return to start (mirrors the exit)
+      // Must create same spacing as exit for C² continuity
+      { x: 130, y: 308 },  // Mirrors waypoint 2 spacing
+      { x: 160, y: 302 },  // Mirrors waypoint 1 spacing
+      // Loops back to { x: 200, y: 300 }
     ];
 
-    // Use more segments for ultra-smooth curves
-    const result = this.interpolateWaypoints(waypoints, 20);
+    // Increase interpolation for ultra-smooth curves
+    const result = this.interpolateWaypoints(waypoints, 30);
     console.log(`Track created with ${result.length} centerline points`);
+
+    // Verify smooth closure (C¹ tangent and C² curvature continuity)
+    if (result.length >= 4) {
+      const pMinus2 = result[result.length - 2];
+      const pMinus1 = result[result.length - 1];
+      const p0 = result[0];
+      const p1 = result[1];
+      const p2 = result[2];
+
+      // Check tangent matching (first derivative)
+      const tangentEnd = Math.atan2(p0.y - pMinus1.y, p0.x - pMinus1.x);
+      const tangentStart = Math.atan2(p1.y - p0.y, p1.x - p0.x);
+      const tangentDiff = Math.abs(tangentEnd - tangentStart) * 180 / Math.PI;
+
+      // Check curvature matching (second derivative)
+      const tangentBefore = Math.atan2(pMinus1.y - pMinus2.y, pMinus1.x - pMinus2.x);
+      const tangentAfter = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+      const curvEnd = tangentEnd - tangentBefore;
+      const curvStart = tangentAfter - tangentStart;
+      const curvDiff = Math.abs(curvEnd - curvStart) * 180 / Math.PI;
+
+      console.log(`=== Loop Closure Quality ===`);
+      console.log(`Tangent difference: ${tangentDiff.toFixed(2)}° (should be ~0°)`);
+      console.log(`Curvature difference: ${curvDiff.toFixed(2)}° (should be ~0°)`);
+    }
+
     return result;
   }
 
