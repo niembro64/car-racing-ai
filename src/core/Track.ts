@@ -11,7 +11,9 @@ import {
   START_FINISH_LINE_COLOR,
   TRACK_BOUNDARY_WIDTH,
   TRACK_CENTERLINE_WIDTH,
-  START_FINISH_LINE_WIDTH
+  START_FINISH_LINE_WIDTH,
+  WAYPOINTS,
+  SEGMENTS_PER_CURVE,
 } from '@/config';
 
 export class Track {
@@ -111,7 +113,7 @@ export class Track {
   // Interpolate smooth curve through waypoints
   private interpolateWaypoints(
     waypoints: Point[],
-    segmentsPerCurve: number = 20
+    segmentsPerCurve: number
   ): Point[] {
     const points: Point[] = [];
 
@@ -135,38 +137,8 @@ export class Track {
 
   // Create a complex race track with multiple corner types
   private createComplexTrack(): Point[] {
-    // Define waypoints for a flowing, smooth track layout with perfect symmetry at start/finish
-    // Canvas: 800x600, with 60px margin on all sides (accounting for 40px track half-width)
-    // Smaller track for better visibility
-    // Strategy: Rounded rectangle loop - car travels LEFT to RIGHT through start line
-    // Path goes: right along top → down right side → left along bottom → up left side → back to start
-    // IMPORTANT:
-    // - Add many waypoints at sharp turns to prevent wall overlap
-    // - NO overlapping or crossing paths - simple closed loop
-    // - Put start/finish in MIDDLE of long straight with TIGHT even spacing for minimal curvature
-    const waypoints: Point[] = [
-      { x: 400, y: 90 },
-      // { x: 700, y: 90 },
-      // { x: 670, y: 95 },
-      { x: 530, y: 290 },
-      { x: 550, y: 390 },
-      { x: 468, y: 500 },
-      { x: 308, y: 450 },
-      // { x: 285, y: 470 },
-      // { x: 290, y: 410 },
-      // { x: 103, y: 400 },
-      { x: 110, y: 360 },
-      { x: 130, y: 200 },
-      // { x: 59, y: 92 },
-      // { x: 159, y: 122 },
-      // { x: 200, y: 200 },
-      // { x: 250, y: 200 },
-      // { x: 300, y: 190 },
-      // { x: 350, y: 120 },
-    ];
-
     // High interpolation for ultra-smooth curves
-    const result = this.interpolateWaypoints(waypoints, 35);
+    const result = this.interpolateWaypoints(WAYPOINTS, SEGMENTS_PER_CURVE);
     console.log(`Track created with ${result.length} centerline points`);
 
     // Verify smooth closure (C¹ tangent and C² curvature continuity)

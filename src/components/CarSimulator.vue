@@ -14,6 +14,7 @@
 
     <div class="controls">
       <button @click="nextGeneration" class="next-gen-btn">Next Generation</button>
+      <button @click="reset" class="reset-btn">Reset</button>
     </div>
   </div>
 </template>
@@ -23,16 +24,16 @@ import { ref, onMounted, onUnmounted, computed, type Ref } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
-import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, ELITE_CAR_COLOR } from '@/config';
+import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, ELITE_CAR_COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, GENERATION_MARKER_COLOR, GENERATION_MARKER_RADIUS } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
-const canvasWidth = 800;
-const canvasHeight = 600;
+const canvasWidth = CANVAS_WIDTH;
+const canvasHeight = CANVAS_HEIGHT;
 
 // Calculate CSS display dimensions
-const displayWidth = ref(800);
-const displayHeight = ref(600);
+const displayWidth = ref(CANVAS_WIDTH);
+const displayHeight = ref(CANVAS_HEIGHT);
 
 const updateCanvasDimensions = () => {
   // Reserve space for HUD (approximately 60px) and controls (approximately 70px)
@@ -64,6 +65,7 @@ const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(true);
 const speedMultiplier = ref(1);
 const generationTime = ref(0);
+const generationMarkers = ref<{ x: number; y: number; generation: number }[]>([]);
 
 let animationFrameId: number | null = null;
 const FIXED_DT = 1 / 60; // 60 Hz physics
@@ -80,12 +82,18 @@ const adaptiveMutationRate = computed(() => {
 const init = () => {
   population.value = ga.initializePopulation(track);
   generationTime.value = 0;
+  generationMarkers.value = [];
 };
 
 // Evolve to next generation (can be called manually or automatically)
 const evolveToNextGeneration = (reason: string) => {
   const aliveCarCount = population.value.filter(car => car.alive).length;
   console.log(`Generation ended: ${reason}. ${aliveCarCount}/${population.value.length} cars alive. Time: ${generationTime.value.toFixed(2)}s`);
+
+  // Find the best car (by maxDistanceReached) and save its position
+  const sortedCars = [...population.value].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
+  const bestCar = sortedCars[0];
+  generationMarkers.value.push({ x: bestCar.x, y: bestCar.y, generation: ga.generation });
 
   // Evolve to next generation (pass generation time for adaptive mutation rate)
   population.value = ga.evolvePopulation(population.value, track, generationTime.value);
@@ -101,6 +109,12 @@ const updatePhysics = (dt: number) => {
   }
 
   generationTime.value += dt;
+
+  // Check if all cars have crashed - if so, automatically evolve to next generation
+  const allDead = population.value.every(car => !car.alive);
+  if (allDead) {
+    evolveToNextGeneration('all cars crashed');
+  }
 };
 
 // Render frame
@@ -110,6 +124,22 @@ const render = (ctx: CanvasRenderingContext2D) => {
 
   // Render track
   track.render(ctx);
+
+  // Render generation markers (red dots showing best car position from each generation)
+  ctx.fillStyle = GENERATION_MARKER_COLOR;
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+
+  for (const marker of generationMarkers.value) {
+    // Draw the dot
+    ctx.beginPath();
+    ctx.arc(marker.x, marker.y, GENERATION_MARKER_RADIUS, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw the generation number above the dot
+    ctx.fillText(marker.generation.toString(), marker.x, marker.y - GENERATION_MARKER_RADIUS - 2);
+  }
 
   // Update fitness for all cars before rendering (for percentage display)
   const trackLength = track.getTotalLength();
@@ -167,6 +197,11 @@ const animate = () => {
 // Manually trigger next generation
 const nextGeneration = () => {
   evolveToNextGeneration('manual trigger');
+};
+
+// Reset the simulation by reloading the page
+const reset = () => {
+  window.location.reload();
 };
 
 // Lifecycle
@@ -276,19 +311,35 @@ button:active {
 }
 
 .next-gen-btn {
-  background: #ffffff;
-  color: #3b82f6;
-  border: 2px solid #3b82f6;
+  background: #d1d5db;
+  color: #000000;
+  border: 2px solid #9ca3af;
 }
 
 .next-gen-btn:hover {
-  background: #f0f9ff;
-  color: #2563eb;
-  border-color: #2563eb;
+  background: #e5e7eb;
+  color: #000000;
+  border-color: #6b7280;
 }
 
 .next-gen-btn:active {
-  background: #e0f2fe;
+  background: #c0c4c9;
+}
+
+.reset-btn {
+  background: #d1d5db;
+  color: #000000;
+  border: 2px solid #9ca3af;
+}
+
+.reset-btn:hover {
+  background: #e5e7eb;
+  color: #000000;
+  border-color: #6b7280;
+}
+
+.reset-btn:active {
+  background: #c0c4c9;
 }
 
 @media (max-width: 640px) {

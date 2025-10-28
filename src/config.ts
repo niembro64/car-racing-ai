@@ -1,15 +1,40 @@
-// ============================================================================
-// CAR RACING AI - CONFIGURATION
-// ============================================================================
+import { Point } from './core/math/geom';
+
+export function appendMirroredWaypoints(
+  waypoints: Point[],
+  canvasWidth: number
+): Point[] {
+  if (waypoints.length <= 1) return [...waypoints];
+
+  const mirrorX = (p: Point): Point => ({ x: canvasWidth - p.x, y: p.y });
+  const tail = waypoints.slice(1);
+  const mirroredTail = tail.slice().reverse().map(mirrorX);
+
+  return [...waypoints, ...mirroredTail];
+}
 
 // ----------------------------------------------------------------------------
 // GENETIC ALGORITHM
 // ----------------------------------------------------------------------------
-export const GA_POPULATION_SIZE = 200;
+export const GA_POPULATION_SIZE = 100;
 export const GA_MUTATION_RATE = 0.2;
-export const GA_MUTATION_MIN_MULTIPLIER = 0.001;
+export const GA_MUTATION_MIN_MULTIPLIER = 0;
 export const GA_MUTATION_MAX_MULTIPLIER = 0.2;
 export const GA_MUTATION_CURVE_POWER = 9.0;
+
+export const SEGMENTS_PER_CURVE = 40;
+export const TRACK_WIDTH_HALF = 50;
+export const CANVAS_WIDTH = 800;
+export const CANVAS_HEIGHT = 600;
+
+export const wp: Point[] = [
+  { x: 400, y: 60 },
+  { x: 700, y: 100 },
+  { x: 700, y: 500 },
+  { x: 500, y: 500 },
+  { x: 500, y: 220 },
+];
+export const WAYPOINTS: Point[] = appendMirroredWaypoints(wp, CANVAS_WIDTH);
 
 // ----------------------------------------------------------------------------
 // CAR PHYSICS
@@ -23,31 +48,28 @@ export const CAR_HEIGHT = 28;
 // SENSORS (RAYS)
 // ----------------------------------------------------------------------------
 export const SENSOR_RAY_ANGLES = [
-  Math.PI * 0.0, // Forward (0°)
-  // Math.PI * -0.01, // Forward (0°)
-  // Math.PI * 0.07, // Right 18°
-  // Math.PI * -0.07, // Left 18°
-  // Math.PI * 0.14, // Right 18°
-  // Math.PI * -0.14, // Left 18°
-  Math.PI * 0.25, // Right 18°
-  Math.PI * -0.25, // Left 18°
-  Math.PI * 0.5, // Right 18°
-  Math.PI * -0.5, // Left 18°
+  Math.PI * 0.0,
+  Math.PI * -0.03,
+  Math.PI * 0.03,
+  Math.PI * -0.1,
+  Math.PI * 0.1,
+  Math.PI * 0.25,
+  Math.PI * -0.25,
 ];
 
 // ----------------------------------------------------------------------------
 // NEURAL NETWORK
 // ----------------------------------------------------------------------------
-export const NEURAL_NETWORK_ARCHITECTURE = [SENSOR_RAY_ANGLES.length, 3, 1]; // rays → hidden → direction
+export const NEURAL_NETWORK_ARCHITECTURE = [SENSOR_RAY_ANGLES.length, 4, 1]; // rays → hidden → direction
 
 // ----------------------------------------------------------------------------
 // TRACK
 // ----------------------------------------------------------------------------
-export const TRACK_WIDTH_HALF = 55; // Half-width of track in pixels
 
 // ----------------------------------------------------------------------------
 // RENDERING - CANVAS
 // ----------------------------------------------------------------------------
+
 export const CANVAS_BACKGROUND_COLOR = '#4a7c4e'; // Grass green
 
 // ----------------------------------------------------------------------------
@@ -87,3 +109,9 @@ export const NORMAL_CAR_RAY_COLOR = '#ffffff'; // White transparent
 export const NORMAL_CAR_RAY_HIT_COLOR = '#0088ff';
 export const NORMAL_CAR_RAY_WIDTH = 1;
 export const NORMAL_CAR_RAY_HIT_RADIUS = 4;
+
+// ----------------------------------------------------------------------------
+// RENDERING - GENERATION MARKERS
+// ----------------------------------------------------------------------------
+export const GENERATION_MARKER_COLOR = '#ff8888'; // Red
+export const GENERATION_MARKER_RADIUS = 3;
