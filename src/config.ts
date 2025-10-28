@@ -5,11 +5,11 @@
 // ----------------------------------------------------------------------------
 // GENETIC ALGORITHM
 // ----------------------------------------------------------------------------
-export const GA_POPULATION_SIZE = 100;
-export const GA_MUTATION_RATE = 0.1;
+export const GA_POPULATION_SIZE = 200;
+export const GA_MUTATION_RATE = 0.2;
 export const GA_MUTATION_MIN_MULTIPLIER = 0.001;
 export const GA_MUTATION_MAX_MULTIPLIER = 0.2;
-export const GA_MUTATION_CURVE_POWER = 2.0;
+export const GA_MUTATION_CURVE_POWER = 9.0;
 
 // ----------------------------------------------------------------------------
 // CAR PHYSICS
@@ -25,10 +25,14 @@ export const CAR_HEIGHT = 28;
 export const SENSOR_RAY_ANGLES = [
   Math.PI * 0.0, // Forward (0°)
   // Math.PI * -0.01, // Forward (0°)
-  Math.PI * 0.2, // Right 18°
-  Math.PI * -0.2, // Left 18°
-  Math.PI * 0.4, // Right 18°
-  Math.PI * -0.4, // Left 18°
+  // Math.PI * 0.07, // Right 18°
+  // Math.PI * -0.07, // Left 18°
+  // Math.PI * 0.14, // Right 18°
+  // Math.PI * -0.14, // Left 18°
+  Math.PI * 0.25, // Right 18°
+  Math.PI * -0.25, // Left 18°
+  Math.PI * 0.5, // Right 18°
+  Math.PI * -0.5, // Left 18°
 ];
 
 // ----------------------------------------------------------------------------
@@ -39,7 +43,7 @@ export const NEURAL_NETWORK_ARCHITECTURE = [SENSOR_RAY_ANGLES.length, 3, 1]; // 
 // ----------------------------------------------------------------------------
 // TRACK
 // ----------------------------------------------------------------------------
-export const TRACK_WIDTH_HALF = 40; // Half-width of track in pixels
+export const TRACK_WIDTH_HALF = 55; // Half-width of track in pixels
 
 // ----------------------------------------------------------------------------
 // RENDERING - CANVAS
