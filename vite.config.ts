@@ -13,5 +13,11 @@ export default defineConfig({
     host: true, // Listen on all network interfaces
     port: 5173,
     strictPort: false
+  },
+  base: '/genetic-racing/', // Base path for deployment at https://niemo.io/genetic-racing
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    emptyOutDir: true
   }
 })
