@@ -57,7 +57,7 @@ export class RayCaster {
     position: Point,
     hits: (RayHit | null)[]
   ): void {
-    ctx.strokeStyle = 'rgba(251, 146, 60, 0.4)';
+    ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)';
     ctx.lineWidth = 1;
 
     for (const hit of hits) {
@@ -68,7 +68,7 @@ export class RayCaster {
         ctx.stroke();
 
         // Draw hit point
-        ctx.fillStyle = '#f97316';
+        ctx.fillStyle = '#10b981';
         ctx.beginPath();
         ctx.arc(hit.point.x, hit.point.y, 2, 0, Math.PI * 2);
         ctx.fill();

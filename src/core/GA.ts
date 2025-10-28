@@ -133,31 +133,9 @@ export class GeneticAlgorithm {
     const bestPct = absValue.toFixed(1).padStart(4, ' ');
     console.log(`Best car: ${sign}${bestPct}%, position: (${sortedCars[0].x.toFixed(1)}, ${sortedCars[0].y.toFixed(1)})`);
 
-    // Take all cars that reached at least 85% of the best car's distance
-    const threshold = bestMaxDistance * 0.85;
-    const topCars = sortedCars.filter(car => car.maxDistanceReached >= threshold);
-    const topCount = Math.max(1, topCars.length); // Ensure at least 1 car (the best)
-    const thresholdPercentage = (threshold / trackLength * 100);
-    const thresholdSign = thresholdPercentage >= 0 ? '+' : '-';
-    const thresholdAbs = Math.abs(thresholdPercentage);
-    const thresholdPct = thresholdAbs.toFixed(1).padStart(4, ' ');
-    console.log(`Averaging ${topCount} cars (≥85% of best: ${thresholdSign}${thresholdPct}%)`);
-
-    // Calculate weights for selected cars - equal weighting for all cars above threshold
-    const weights: number[] = [];
-    let weightSum = 0;
-
-    for (let rank = 0; rank < topCount; rank++) {
-      // Equal weight: all qualifying cars weighted equally
-      const weight = 1.0;
-      weights.push(weight);
-      weightSum += weight;
-    }
-
-    console.log(`Equal weighting: all ${topCount} qualifying cars weighted at 1.0 (simple average)`);
-
-    // Create weighted average brain from top performers
-    this.bestWeights = this.averageBrains(topCars.map(c => c.brain.toJSON()), weights, weightSum);
+    // Use the best car's brain directly (no averaging)
+    console.log(`Using best car's brain directly (no averaging)`);
+    this.bestWeights = sortedCars[0].brain.toJSON();
 
     // Track improvement
     if (bestMaxDistance > this.bestFitness) {
