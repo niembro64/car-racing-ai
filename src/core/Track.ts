@@ -28,10 +28,12 @@ export class Track {
 
     // Create a complex race track centerline with multiple curve types
     this.centerline = this.createComplexTrack();
+    console.log(`Centerline has ${this.centerline.length} points`);
 
     // Offset to create walls
     this.innerWall = offsetPolyline(this.centerline, -halfWidth);
     this.outerWall = offsetPolyline(this.centerline, halfWidth);
+    console.log(`Walls created: inner=${this.innerWall.length}, outer=${this.outerWall.length}`);
 
     // Create wall segments
     this.wallSegments = [];
@@ -52,6 +54,8 @@ export class Track {
       });
     }
 
+    console.log(`Total wall segments: ${this.wallSegments.length}`);
+
     // Compute cumulative lengths for fitness calculation
     this.cumulativeLengths = computeCumulativeLengths(this.centerline);
 
@@ -62,6 +66,10 @@ export class Track {
       next.y - this.startPosition.y,
       next.x - this.startPosition.x
     );
+
+    console.log(`Start position: (${this.startPosition.x.toFixed(1)}, ${this.startPosition.y.toFixed(1)})`);
+    console.log(`Start angle: ${(this.startAngle * 180 / Math.PI).toFixed(1)}°`);
+    console.log(`Track length: ${this.getTotalLength().toFixed(1)}`);
   }
 
   // Catmull-Rom spline interpolation between points
@@ -109,52 +117,65 @@ export class Track {
 
   // Create a complex race track with multiple corner types
   private createComplexTrack(): Point[] {
-    // Define waypoints for a challenging track layout
+    // Define waypoints for a flowing, smooth track layout
     // Canvas: 800x600, leaving ~60px margin (accounting for track width)
+    // More waypoints = smoother curves, especially in direction changes
     const waypoints: Point[] = [
-      // Start/finish straight (left side)
-      { x: 100, y: 280 },
-      { x: 180, y: 280 },
+      // Start/finish straight (left side) - extended for smooth loop closure
+      { x: 100, y: 300 },
+      { x: 150, y: 300 },
+      { x: 210, y: 298 },
 
-      // First curve - gentle right sweeper
-      { x: 280, y: 260 },
-      { x: 360, y: 220 },
+      // Gentle climbing right turn
+      { x: 300, y: 285 },
+      { x: 390, y: 255 },
+      { x: 470, y: 215 },
+      { x: 540, y: 170 },
+      { x: 600, y: 130 },
 
-      // Tight hairpin right (top right area)
-      { x: 450, y: 160 },
-      { x: 520, y: 100 },
-      { x: 600, y: 80 },
-      { x: 680, y: 100 },
-      { x: 720, y: 150 },
+      // Wide sweeping right at top (many points for smoothness)
+      { x: 650, y: 105 },
+      { x: 690, y: 95 },
+      { x: 725, y: 105 },
+      { x: 745, y: 130 },
+      { x: 755, y: 165 },
+      { x: 758, y: 210 },
 
-      // Fast descent with S-curve
-      { x: 720, y: 240 },
-      { x: 680, y: 320 },  // Left
-      { x: 720, y: 400 },  // Right (S-curve)
+      // Long straight down right side
+      { x: 755, y: 280 },
+      { x: 750, y: 360 },
 
-      // Sweeping curve to bottom
-      { x: 680, y: 480 },
-      { x: 580, y: 530 },
-      { x: 460, y: 540 },
+      // Smooth S-curve (wide radius)
+      { x: 735, y: 410 },
+      { x: 710, y: 450 },
+      { x: 695, y: 485 },
+      { x: 695, y: 515 },
 
-      // Chicane section
-      { x: 360, y: 520 },
-      { x: 300, y: 480 },  // Left flick
-      { x: 260, y: 450 },  // Right flick
-      { x: 220, y: 500 },  // Left again
+      // Sweeping turn across bottom (gradual)
+      { x: 670, y: 540 },
+      { x: 620, y: 555 },
+      { x: 550, y: 560 },
+      { x: 470, y: 558 },
+      { x: 390, y: 550 },
+      { x: 320, y: 535 },
 
-      // Hairpin left (bottom left)
-      { x: 160, y: 520 },
-      { x: 100, y: 500 },
-      { x: 80, y: 450 },
-      { x: 80, y: 380 },
+      // Gentle left turn at bottom left (more waypoints for smoothness)
+      { x: 260, y: 515 },
+      { x: 215, y: 490 },
+      { x: 180, y: 460 },
+      { x: 155, y: 425 },
+      { x: 138, y: 385 },
 
-      // Final section back to start
-      { x: 90, y: 320 },
+      // Smooth return up left side to complete loop
+      { x: 128, y: 345 },
+      { x: 120, y: 320 },
+      { x: 108, y: 305 },
     ];
 
-    // Interpolate smooth curve through waypoints
-    return this.interpolateWaypoints(waypoints, 15);
+    // Use more segments for ultra-smooth curves
+    const result = this.interpolateWaypoints(waypoints, 20);
+    console.log(`Track created with ${result.length} centerline points`);
+    return result;
   }
 
   // Create an oval-shaped centerline (legacy, kept for reference)

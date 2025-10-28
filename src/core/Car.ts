@@ -65,11 +65,22 @@ export class Car {
     this.brain = brain;
     this.rayCaster = new RayCaster();
     this.color = color;
+
+    // Debug first car only
+    if (Math.random() < 0.01) {
+      console.log(`Car created at (${x.toFixed(1)}, ${y.toFixed(1)}), angle=${(angle * 180 / Math.PI).toFixed(1)}°, alive=${this.alive}`);
+    }
   }
 
   // Update physics and AI
   update(dt: number, wallSegments: Segment[]): void {
     if (!this.alive) return;
+
+    // Debug occasionally
+    const shouldDebug = Math.random() < 0.0001;
+    if (shouldDebug) {
+      console.log(`Car update: pos=(${this.x.toFixed(1)}, ${this.y.toFixed(1)}), angle=${(this.angle * 180 / Math.PI).toFixed(1)}°, speed=${this.speed.toFixed(1)}, alive=${this.alive}`);
+    }
 
     // Cast rays for sensors using PHYSICS angle
     // Rays should be relative to direction of travel, not visual orientation

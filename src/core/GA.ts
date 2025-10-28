@@ -91,20 +91,22 @@ export class GeneticAlgorithm {
     const population: Car[] = [];
 
     console.log('Starting with random population');
+    console.log(`Spawning ${POPULATION_SIZE} cars at (${track.startPosition.x.toFixed(1)}, ${track.startPosition.y.toFixed(1)}), angle=${(track.startAngle * 180 / Math.PI).toFixed(1)}°`);
+
     // Random initialization with unique seeds for diversity
     for (let i = 0; i < POPULATION_SIZE; i++) {
       const brain = NeuralNetwork.createRandom(this.rng.next() * 1000000 + i * 12345);
-      population.push(
-        new Car(
-          track.startPosition.x,
-          track.startPosition.y,
-          track.startAngle,
-          brain,
-          NORMAL_CAR_COLOR
-        )
+      const car = new Car(
+        track.startPosition.x,
+        track.startPosition.y,
+        track.startAngle,
+        brain,
+        NORMAL_CAR_COLOR
       );
+      population.push(car);
     }
 
+    console.log(`Created ${population.length} cars, all alive: ${population.every(c => c.alive)}`);
     return population;
   }
 

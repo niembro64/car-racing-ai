@@ -183,35 +183,32 @@ export function offsetPolyline(
   const result: Point[] = [];
 
   for (let i = 0; i < polyline.length; i++) {
-    const prev = polyline[(i - 1 + polyline.length) % polyline.length];
     const curr = polyline[i];
     const next = polyline[(i + 1) % polyline.length];
 
-    // Compute normals of adjacent segments
-    const dx1 = curr.x - prev.x;
-    const dy1 = curr.y - prev.y;
-    const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
-    const n1x = len1 > 0 ? -dy1 / len1 : 0;
-    const n1y = len1 > 0 ? dx1 / len1 : 0;
+    // Compute tangent direction from current to next point
+    const dx = next.x - curr.x;
+    const dy = next.y - curr.y;
+    const len = Math.sqrt(dx * dx + dy * dy);
 
-    const dx2 = next.x - curr.x;
-    const dy2 = next.y - curr.y;
-    const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
-    const n2x = len2 > 0 ? -dy2 / len2 : 0;
-    const n2y = len2 > 0 ? dx2 / len2 : 0;
+    if (len > 0.001) {
+      // Normalize tangent
+      const tx = dx / len;
+      const ty = dy / len;
 
-    // Average normal
-    const nx = (n1x + n2x) / 2;
-    const ny = (n1y + n2y) / 2;
-    const nlen = Math.sqrt(nx * nx + ny * ny);
+      // Perpendicular normal (pointing right when going forward)
+      const nx = -ty;
+      const ny = tx;
 
-    const finalNx = nlen > 0 ? nx / nlen : 0;
-    const finalNy = nlen > 0 ? ny / nlen : 0;
-
-    result.push({
-      x: curr.x + finalNx * offset,
-      y: curr.y + finalNy * offset
-    });
+      // Offset the point perpendicular to the tangent
+      result.push({
+        x: curr.x + nx * offset,
+        y: curr.y + ny * offset
+      });
+    } else {
+      // Degenerate segment, just use the point as-is
+      result.push({ x: curr.x, y: curr.y });
+    }
   }
 
   return result;
