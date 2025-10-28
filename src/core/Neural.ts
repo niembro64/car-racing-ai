@@ -104,17 +104,17 @@ export class NeuralNetwork {
 
   // Run the network with sensor inputs
   run(input: NeuralInput): NeuralOutput {
-    if (input.rays.length !== NEURAL_NETWORK_ARCHITECTURE[0]) {
+    // Input array includes rays + previousDirection + centerlineDistance
+    const inputArray = [...input.rays, input.previousDirection, input.centerlineDistance];
+
+    if (inputArray.length !== NEURAL_NETWORK_ARCHITECTURE[0]) {
       throw new Error(
-        'Expected input rays length ' +
+        'Expected input length ' +
           NEURAL_NETWORK_ARCHITECTURE[0] +
           ', got ' +
-          input.rays.length
+          inputArray.length
       );
     }
-
-    // Input array is just the 7 rays
-    const inputArray = input.rays;
 
     // Check for NaN
     if (inputArray.some((v) => isNaN(v) || !isFinite(v))) {

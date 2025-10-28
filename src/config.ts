@@ -16,9 +16,9 @@ export function appendMirroredWaypoints(
 // ----------------------------------------------------------------------------
 // GENETIC ALGORITHM
 // ----------------------------------------------------------------------------
-export const GA_MUTATION_RATE = 0.2;
-export const GA_MUTATION_MIN_MULTIPLIER = 0.1;
-export const GA_MUTATION_MAX_MULTIPLIER = 0.2;
+export const GA_MUTATION_RATE = 0.07;
+export const GA_MUTATION_MIN_MULTIPLIER = 0.15;
+export const GA_MUTATION_MAX_MULTIPLIER = 0.5;
 export const GA_MUTATION_CURVE_POWER = 9.0;
 
 export const SEGMENTS_PER_CURVE = 30;
@@ -38,10 +38,10 @@ export const WAYPOINTS: Point[] = appendMirroredWaypoints(wp, CANVAS_WIDTH);
 
 // ----------------------------------------------------------------------------
 // CAR PHYSICS
-export const GA_POPULATION_SIZE = 100;
+export const GA_POPULATION_SIZE = 200;
 // ----------------------------------------------------------------------------
-export const CAR_FORWARD_SPEED = 100; // Constant forward speed (pixels/second)
-export const CAR_STEERING_SENSITIVITY = 1; // Turning multiplier (speed × direction × this)
+export const CAR_FORWARD_SPEED = 80; // Constant forward speed (pixels/second)
+export const CAR_STEERING_SENSITIVITY = .7; // Turning multiplier (speed × direction × this)
 export const CAR_WIDTH = 10;
 export const CAR_HEIGHT = 20;
 
@@ -50,22 +50,22 @@ export const CAR_HEIGHT = 20;
 // ----------------------------------------------------------------------------
 export const SENSOR_RAY_ANGLES = [
   Math.PI * 0.0,
-  // Math.PI * -0.03,
-  // Math.PI * 0.03,
-  // Math.PI * -0.1,
-  // Math.PI * 0.1,
-  Math.PI * 0.15,
-  Math.PI * -0.15,
-  Math.PI * 0.3,
-  Math.PI * -0.3,
-  // Math.PI * 0.5,
-  // Math.PI * -0.5,
+  // Math.PI * -0.01,
+  // Math.PI * 0.01,
+  Math.PI * -0.1,
+  Math.PI * 0.1,
+  Math.PI * 0.2,
+  Math.PI * -0.2,
+  // Math.PI * 0.4,
+  // Math.PI * -0.4,
+  Math.PI * 0.5,
+  Math.PI * -0.5,
 ];
 
 // ----------------------------------------------------------------------------
 // NEURAL NETWORK
 // ----------------------------------------------------------------------------
-export const NEURAL_NETWORK_ARCHITECTURE = [SENSOR_RAY_ANGLES.length, 1]; // rays → hidden → direction
+export const NEURAL_NETWORK_ARCHITECTURE = [SENSOR_RAY_ANGLES.length + 2, 1]; // rays + previousDirection + centerlineDistance → hidden → direction
 
 // ----------------------------------------------------------------------------
 // TRACK

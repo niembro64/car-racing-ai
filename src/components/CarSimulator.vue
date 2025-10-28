@@ -104,7 +104,7 @@ const evolveToNextGeneration = (reason: string) => {
 const updatePhysics = (dt: number) => {
   for (const car of population.value) {
     if (car.alive) {
-      car.update(dt, track.wallSegments);
+      car.update(dt, track.wallSegments, track);
     }
   }
 

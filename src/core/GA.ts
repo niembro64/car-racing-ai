@@ -39,17 +39,21 @@ export class GeneticAlgorithm {
     const population: Car[] = [];
 
     console.log('Starting with random population');
-    console.log(`Spawning ${GA_POPULATION_SIZE} cars at (${track.startPosition.x.toFixed(1)}, ${track.startPosition.y.toFixed(1)}), angle=${(track.startAngle * 180 / Math.PI).toFixed(1)}°`);
+    console.log(`Spawning ${GA_POPULATION_SIZE} cars at (${track.startPosition.x.toFixed(1)}, ${track.startPosition.y.toFixed(1)}) with random angles`);
 
-    // Truly random initialization - each car gets a unique random seed
+    // Truly random initialization - each car gets a unique random seed and angle
     for (let i = 0; i < GA_POPULATION_SIZE; i++) {
       // Use Math.random() directly for true randomness in initial population
       const brainSeed = Date.now() + Math.random() * 1000000 + i * Math.random() * 1000;
       const brain = NeuralNetwork.createRandom(brainSeed);
+
+      // Random starting angle for diversity
+      const randomAngle = Math.random() * Math.PI * 2;
+
       const car = new Car(
         track.startPosition.x,
         track.startPosition.y,
-        track.startAngle,
+        randomAngle,
         brain,
         NORMAL_CAR_COLOR
       );
@@ -83,9 +87,18 @@ export class GeneticAlgorithm {
     const bestPct = absValue.toFixed(1).padStart(4, ' ');
     console.log(`Best car: ${sign}${bestPct}%, position: (${sortedCars[0].x.toFixed(1)}, ${sortedCars[0].y.toFixed(1)})`);
 
-    // Use the best car's brain directly (no averaging)
-    console.log(`Using best car's brain directly (no averaging)`);
-    this.bestWeights = sortedCars[0].brain.toJSON();
+    // Filter out the elite car (exact copy) and select best from mutated cars
+    const mutatedCars = sortedCars.filter(car => car.color !== ELITE_CAR_COLOR);
+    const bestMutatedCar = mutatedCars[0];
+
+    if (bestMutatedCar) {
+      console.log(`Using best mutated car's brain (excluding elite copy)`);
+      this.bestWeights = bestMutatedCar.brain.toJSON();
+    } else {
+      // Fallback: if no mutated cars (shouldn't happen), use the best overall
+      console.log(`Fallback: using best car's brain (no mutated cars found)`);
+      this.bestWeights = sortedCars[0].brain.toJSON();
+    }
 
     // Track improvement
     if (bestMaxDistance > this.bestFitness) {

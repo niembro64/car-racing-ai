@@ -22,7 +22,8 @@ import {
   NORMAL_CAR_RAY_COLOR,
   NORMAL_CAR_RAY_HIT_COLOR,
   NORMAL_CAR_RAY_WIDTH,
-  NORMAL_CAR_RAY_HIT_RADIUS
+  NORMAL_CAR_RAY_HIT_RADIUS,
+  TRACK_WIDTH_HALF
 } from '@/config';
 
 export class Car {
@@ -46,11 +47,16 @@ export class Car {
 
   // Neural network
   brain: NeuralNetwork;
+  previousDirection: number = 0; // Last direction output from brain
 
   // Sensors
   rayCaster: RayCaster;
   lastRayHits: (RayHit | null)[] = [];
   lastRayDistances: number[] = [];
+
+  // Centerline tracking
+  lastCenterlinePoint: Point | null = null;
+  lastCenterlineDistanceToPoint: number = 0; // Euclidean distance from car to centerline
 
   // Color for rendering
   color: string;
@@ -83,7 +89,7 @@ export class Car {
   }
 
   // Update physics and AI
-  update(dt: number, wallSegments: Segment[]): void {
+  update(dt: number, wallSegments: Segment[], track: any): void {
     if (!this.alive) return;
 
     // Debug occasionally
@@ -103,9 +109,27 @@ export class Car {
     this.lastRayDistances = distances;
     this.lastRayHits = hits;
 
-    // Prepare neural network input (only rays, speed is constant)
+    // Get closest point on centerline
+    const centerlineResult = track.getClosestPointOnCenterline({ x: this.x, y: this.y });
+    this.lastCenterlinePoint = centerlineResult.point;
+
+    // Calculate Euclidean distance from car to centerline point
+    const dx = this.x - centerlineResult.point.x;
+    const dy = this.y - centerlineResult.point.y;
+    this.lastCenterlineDistanceToPoint = Math.sqrt(dx * dx + dy * dy);
+
+    // Normalize previous direction using tanh to map (-inf, inf) to (-1, 1)
+    const normalizedPreviousDirection = Math.tanh(this.previousDirection);
+
+    // Normalize centerline distance (0 = on centerline, 1 = at track edge)
+    // Clamp to [0, 1] range
+    const normalizedCenterlineDistance = Math.min(1.0, this.lastCenterlineDistanceToPoint / TRACK_WIDTH_HALF);
+
+    // Prepare neural network input (rays + previous direction + centerline distance)
     const input: NeuralInput = {
-      rays: distances
+      rays: distances,
+      previousDirection: normalizedPreviousDirection,
+      centerlineDistance: normalizedCenterlineDistance
     };
 
     // Get AI output (only direction)
@@ -114,10 +138,17 @@ export class Car {
     // Debug log for first car only (to avoid spam)
     if ((window as any).__debugCarNN && Math.random() < 0.01) {
       console.log('Neural Net IO:', {
-        input: { rays: input.rays.map(r => r.toFixed(2)) },
+        input: {
+          rays: input.rays.map(r => r.toFixed(2)),
+          previousDirection: input.previousDirection.toFixed(2),
+          centerlineDistance: input.centerlineDistance.toFixed(2)
+        },
         output: { direction: output.direction.toFixed(2) }
       });
     }
+
+    // Store current direction for next frame
+    this.previousDirection = output.direction;
 
     // Apply physics
     this.applyPhysics(output, dt);
@@ -206,22 +237,34 @@ export class Car {
 
   // Render car on canvas
   render(ctx: CanvasRenderingContext2D, showRays: boolean = false, trackLength?: number, centerlinePoint?: { x: number; y: number }): void {
-    // Render line from car to nearest centerline point
-    if (centerlinePoint) {
-      ctx.save();
-      ctx.strokeStyle = this.alive ? 'rgba(59, 130, 246, 0.4)' : 'rgba(156, 163, 175, 0.3)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(this.x, this.y);
-      ctx.lineTo(centerlinePoint.x, centerlinePoint.y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-    }
-
     // Render rays if requested and car is alive
     if (showRays && this.alive) {
+      // Render centerline ray (showing distance from car to track center)
+      if (this.lastCenterlinePoint) {
+        const isLeadCar = this.color === ELITE_CAR_COLOR;
+        const rayColor = isLeadCar ? ELITE_CAR_RAY_COLOR : NORMAL_CAR_RAY_COLOR;
+        const hitColor = '#00ff00'; // Green for centerline
+        const lineWidth = isLeadCar ? ELITE_CAR_RAY_WIDTH : NORMAL_CAR_RAY_WIDTH;
+        const hitRadius = isLeadCar ? ELITE_CAR_RAY_HIT_RADIUS : NORMAL_CAR_RAY_HIT_RADIUS;
+
+        ctx.save();
+        // Draw line to centerline
+        ctx.strokeStyle = rayColor;
+        ctx.lineWidth = lineWidth;
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.lastCenterlinePoint.x, this.lastCenterlinePoint.y);
+        ctx.stroke();
+
+        // Draw hit point on centerline
+        ctx.fillStyle = hitColor;
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.arc(this.lastCenterlinePoint.x, this.lastCenterlinePoint.y, hitRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
       // Use lead/elite styling if this car's color matches the lead car color
       const isLeadCar = this.color === ELITE_CAR_COLOR;
       const rayColor = isLeadCar ? ELITE_CAR_RAY_COLOR : NORMAL_CAR_RAY_COLOR;
