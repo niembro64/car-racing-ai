@@ -31,13 +31,14 @@ export const wp: Point[] = [
   { x: 700, y: 100 },
   { x: 700, y: 500 },
   { x: 500, y: 500 },
-  { x: 500, y: 220 },
+  { x: 600, y: 240 },
+  { x: 500, y: 140 },
 ];
 export const WAYPOINTS: Point[] = appendMirroredWaypoints(wp, CANVAS_WIDTH);
 
 // ----------------------------------------------------------------------------
 // CAR PHYSICS
-export const GA_POPULATION_SIZE = 200;
+export const GA_POPULATION_SIZE = 100;
 // ----------------------------------------------------------------------------
 export const CAR_FORWARD_SPEED = 100; // Constant forward speed (pixels/second)
 export const CAR_STEERING_SENSITIVITY = 1; // Turning multiplier (speed × direction × this)
