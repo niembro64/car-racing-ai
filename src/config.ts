@@ -41,7 +41,7 @@ export const WAYPOINTS: Point[] = appendMirroredWaypoints(wp, CANVAS_WIDTH);
 export const GA_POPULATION_SIZE = 200;
 // ----------------------------------------------------------------------------
 export const CAR_FORWARD_SPEED = 80; // Constant forward speed (pixels/second)
-export const CAR_STEERING_SENSITIVITY = 3; // Turning multiplier (speed × direction × this)
+export const CAR_STEERING_SENSITIVITY = 2; // Turning multiplier (speed × direction × this)
 export const CAR_WIDTH = 10;
 export const CAR_HEIGHT = 20;
 

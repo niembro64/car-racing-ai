@@ -6,10 +6,19 @@ import type { Segment } from '../core/math/geom';
 describe('Car', () => {
   let brain: NeuralNetwork;
   let car: Car;
+  let mockTrack: any;
 
   beforeEach(() => {
     brain = NeuralNetwork.createRandom(12345);
     car = new Car(100, 100, 0, brain, '#0088ff');
+
+    // Create a mock track object
+    mockTrack = {
+      getClosestPointOnCenterline: (position: { x: number; y: number }) => ({
+        point: { x: position.x, y: position.y },
+        distance: 0
+      })
+    };
   });
 
   it('should create a car with initial state', () => {
@@ -27,7 +36,7 @@ describe('Car', () => {
     // Empty wall segments (no collisions)
     const wallSegments: Segment[] = [];
 
-    car.update(1/60, wallSegments);
+    car.update(1/60, wallSegments, mockTrack);
 
     // Position should change after update
     expect(car.x).not.toBe(initialX);
@@ -44,7 +53,7 @@ describe('Car', () => {
 
     // Update multiple times to move car into wall
     for (let i = 0; i < 10; i++) {
-      car.update(1/60, wallSegments);
+      car.update(1/60, wallSegments, mockTrack);
       if (!car.alive) break;
     }
 
@@ -58,7 +67,7 @@ describe('Car', () => {
     const initialY = car.y;
 
     const wallSegments: Segment[] = [];
-    car.update(1/60, wallSegments);
+    car.update(1/60, wallSegments, mockTrack);
 
     // Position should not change
     expect(car.x).toBe(initialX);

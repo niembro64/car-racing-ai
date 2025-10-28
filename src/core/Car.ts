@@ -236,7 +236,7 @@ export class Car {
   }
 
   // Render car on canvas
-  render(ctx: CanvasRenderingContext2D, showRays: boolean = false, trackLength?: number, centerlinePoint?: { x: number; y: number }): void {
+  render(ctx: CanvasRenderingContext2D, showRays: boolean = false, trackLength?: number): void {
     // Render rays if requested and car is alive
     if (showRays && this.alive) {
       // Render centerline ray (showing distance from car to track center)

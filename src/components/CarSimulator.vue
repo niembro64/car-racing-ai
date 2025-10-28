@@ -143,13 +143,11 @@ const render = (ctx: CanvasRenderingContext2D) => {
 
   // Update fitness for all cars before rendering (for percentage display)
   const trackLength = track.getTotalLength();
-  const carCenterlinePoints = new Map<any, { x: number; y: number }>();
 
   for (const car of population.value) {
     const result = track.getClosestPointOnCenterline({ x: car.x, y: car.y });
     car.fitness = result.distance;
     car.updateSignedFitness(result.distance, trackLength);
-    carCenterlinePoints.set(car, result.point);
   }
 
   // Render cars (dead first, then alive, then elite last)
@@ -162,17 +160,17 @@ const render = (ctx: CanvasRenderingContext2D) => {
 
   // Render dead cars first
   for (const car of deadCars) {
-    car.render(ctx, false, trackLength, carCenterlinePoints.get(car));
+    car.render(ctx, false, trackLength);
   }
 
   // Render other alive cars
   for (const car of others) {
-    car.render(ctx, showRays.value, trackLength, carCenterlinePoints.get(car));
+    car.render(ctx, showRays.value, trackLength);
   }
 
   // Render elite last (on top) with rays if enabled
   if (elite) {
-    elite.render(ctx, showRays.value, trackLength, carCenterlinePoints.get(elite));
+    elite.render(ctx, showRays.value, trackLength);
   }
 };
 

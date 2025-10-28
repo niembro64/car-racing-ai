@@ -1,15 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import { NeuralNetwork } from '../core/Neural';
 import type { NeuralInput } from '../types/neural';
-import { NEURAL_NETWORK_ARCHITECTURE } from '../config';
+import { NEURAL_NETWORK_ARCHITECTURE, SENSOR_RAY_ANGLES } from '../config';
 
 // Helper function to create test input with correct number of rays
 const createTestInput = (values?: number[]): NeuralInput => {
-  const rayCount = NEURAL_NETWORK_ARCHITECTURE[0];
+  const rayCount = SENSOR_RAY_ANGLES.length;
   if (values && values.length !== rayCount) {
     throw new Error(`Test input must have ${rayCount} rays, got ${values.length}`);
   }
-  return { rays: values || Array(rayCount).fill(0).map((_, i) => (i + 1) / (rayCount + 1)) };
+  return {
+    rays: values || Array(rayCount).fill(0).map((_, i) => (i + 1) / (rayCount + 1)),
+    previousDirection: 0,
+    centerlineDistance: 0.5
+  };
 };
 
 describe('NeuralNetwork', () => {
@@ -44,7 +48,7 @@ describe('NeuralNetwork', () => {
   it('should handle multiple different inputs', () => {
     const brain = NeuralNetwork.createRandom(12345);
 
-    const rayCount = NEURAL_NETWORK_ARCHITECTURE[0];
+    const rayCount = SENSOR_RAY_ANGLES.length;
     const inputs: NeuralInput[] = [
       createTestInput(Array(rayCount).fill(0).map((_, i) => 0.1 * (i + 1))),
       createTestInput(Array(rayCount).fill(0).map((_, i) => 0.9 - 0.1 * i)),
@@ -88,7 +92,9 @@ describe('NeuralNetwork', () => {
     const brain = NeuralNetwork.createRandom(12345);
 
     const invalidInput: NeuralInput = {
-      rays: [0.5, 0.3] // Wrong size
+      rays: [0.5, 0.3], // Wrong size
+      previousDirection: 0,
+      centerlineDistance: 0.5
     };
 
     expect(() => brain.run(invalidInput)).toThrow();
@@ -97,7 +103,7 @@ describe('NeuralNetwork', () => {
   it('should handle edge case inputs', () => {
     const brain = NeuralNetwork.createRandom(12345);
 
-    const rayCount = NEURAL_NETWORK_ARCHITECTURE[0];
+    const rayCount = SENSOR_RAY_ANGLES.length;
 
     // All zeros
     const output1 = brain.run(createTestInput(Array(rayCount).fill(0)));
