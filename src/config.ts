@@ -5,7 +5,7 @@
 // ----------------------------------------------------------------------------
 // GENETIC ALGORITHM
 // ----------------------------------------------------------------------------
-export const GA_POPULATION_SIZE = 50;
+export const GA_POPULATION_SIZE = 20;
 export const GA_MUTATION_RATE = 0.4;
 export const GA_MUTATION_MIN_MULTIPLIER = 0.001;
 export const GA_MUTATION_MAX_MULTIPLIER = 0.2;
