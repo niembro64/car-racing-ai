@@ -2,7 +2,6 @@ import type { Point, Segment, RayHit } from './math/geom';
 import {
   createCarPolygon,
   polygonIntersectsSegments,
-  clamp,
   normalizeAngle
 } from './math/geom';
 import { NeuralNetwork } from './Neural';

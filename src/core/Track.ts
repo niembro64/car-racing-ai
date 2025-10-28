@@ -5,7 +5,6 @@ import {
   closestPointOnPolyline,
 } from './math/geom';
 import {
-  TRACK_WIDTH_HALF,
   TRACK_SURFACE_COLOR,
   TRACK_BOUNDARY_COLOR,
   TRACK_CENTERLINE_COLOR,
@@ -146,7 +145,7 @@ export class Track {
     // - NO overlapping or crossing paths - simple closed loop
     // - Put start/finish in MIDDLE of long straight with TIGHT even spacing for minimal curvature
     const waypoints: Point[] = [
-      { x: 400, y: 50 },
+      { x: 400, y: 90 },
       // { x: 700, y: 90 },
       // { x: 670, y: 95 },
       { x: 530, y: 290 },
@@ -157,7 +156,7 @@ export class Track {
       // { x: 290, y: 410 },
       // { x: 103, y: 400 },
       { x: 79, y: 300 },
-      { x: 99, y: 100 },
+      { x: 130, y: 200 },
       // { x: 59, y: 92 },
       // { x: 159, y: 122 },
       // { x: 200, y: 200 },
@@ -203,32 +202,6 @@ export class Track {
     }
 
     return result;
-  }
-
-  // Create an oval-shaped centerline (legacy, kept for reference)
-  private createOvalCenterline(
-    cx: number,
-    cy: number,
-    radiusX: number,
-    radiusY: number,
-    segments: number
-  ): Point[] {
-    const points: Point[] = [];
-
-    // Start at 12:00 (top) and go clockwise
-    // Offset angle by -π/2 to start at top
-    for (let i = 0; i < segments; i++) {
-      const angle = (i / segments) * Math.PI * 2 - Math.PI / 2;
-      points.push({
-        x: cx + Math.cos(angle) * radiusX,
-        y: cy + Math.sin(angle) * radiusY,
-      });
-    }
-
-    // Close the loop
-    points.push({ ...points[0] });
-
-    return points;
   }
 
   // Calculate fitness (distance traveled along centerline)

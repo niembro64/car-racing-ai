@@ -15,7 +15,7 @@ export const GA_MUTATION_CURVE_POWER = 0.1;
 // CAR PHYSICS
 // ----------------------------------------------------------------------------
 export const CAR_FORWARD_SPEED = 100; // Constant forward speed (pixels/second)
-export const CAR_STEERING_SENSITIVITY = 0.5; // Turning multiplier (speed × direction × this)
+export const CAR_STEERING_SENSITIVITY = 1; // Turning multiplier (speed × direction × this)
 export const CAR_WIDTH = 18;
 export const CAR_HEIGHT = 28;
 
@@ -24,10 +24,10 @@ export const CAR_HEIGHT = 28;
 // ----------------------------------------------------------------------------
 export const SENSOR_RAY_ANGLES = [
   Math.PI * 0, // Forward (0°)
-  Math.PI * 0.2, // Right 18°
-  Math.PI * -0.2, // Left 18°
-  // Math.PI * 0.5, // Right 18°
-  // Math.PI * -0.5, // Left 18°
+  // Math.PI * 0.1, // Right 18°
+  // Math.PI * -0.1, // Left 18°
+  Math.PI * 0.15, // Right 18°
+  Math.PI * -0.15, // Left 18°
 ];
 
 // ----------------------------------------------------------------------------

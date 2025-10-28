@@ -23,7 +23,7 @@ import { ref, onMounted, onUnmounted, computed, type Ref } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
-import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, CANVAS_BACKGROUND_COLOR, ELITE_CAR_COLOR } from '@/config';
+import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, ELITE_CAR_COLOR } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
@@ -61,30 +61,10 @@ const ga = new GeneticAlgorithm(12345);
 const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(true);
 const speedMultiplier = ref(1);
-const debugNN = ref(false);
 const generationTime = ref(0);
 
 let animationFrameId: number | null = null;
-let lastTime = 0;
 const FIXED_DT = 1 / 60; // 60 Hz physics
-
-const aliveCount = computed(() => {
-  return population.value.filter(car => car.alive).length;
-});
-
-const bestFitnessPercent = computed(() => {
-  const trackLength = track.getTotalLength();
-  const percentage = (ga.bestFitness / trackLength) * 100;
-  const sign = percentage >= 0 ? '+' : '-';
-  const absValue = Math.abs(percentage);
-  const formatted = absValue.toFixed(1).padStart(4, ' '); // "XX.X" format
-  return `${sign}${formatted}%`;
-});
-
-const generationTimeDisplay = computed(() => {
-  const formatted = generationTime.value.toFixed(1).padStart(4, ' '); // "XX.X" format
-  return `${formatted}s`;
-});
 
 const adaptiveMutationRate = computed(() => {
   const minGenerationTime = 1.0;
@@ -165,10 +145,7 @@ const render = (ctx: CanvasRenderingContext2D) => {
 };
 
 // Main animation loop
-const animate = (currentTime: number) => {
-  const deltaTime = lastTime ? (currentTime - lastTime) / 1000 : FIXED_DT;
-  lastTime = currentTime;
-
+const animate = () => {
   const ctx = canvasRef.value?.getContext('2d');
   if (!ctx) return;
 
@@ -185,68 +162,9 @@ const animate = (currentTime: number) => {
   animationFrameId = requestAnimationFrame(animate);
 };
 
-// Toggle speed
-const toggleSpeed = () => {
-  const speeds = [1, 2, 4, 8];
-  const currentIndex = speeds.indexOf(speedMultiplier.value);
-  speedMultiplier.value = speeds[(currentIndex + 1) % speeds.length];
-};
-
-// Toggle rays
-const toggleRays = () => {
-  showRays.value = !showRays.value;
-};
-
-// Toggle neural network debug logging
-const toggleDebug = () => {
-  debugNN.value = !debugNN.value;
-  (window as any).__debugCarNN = debugNN.value;
-  console.log('Neural Network Debug:', debugNN.value ? 'ENABLED' : 'DISABLED');
-};
-
 // Manually trigger next generation
 const nextGeneration = () => {
   evolveToNextGeneration('manual trigger');
-};
-
-// Reset evolution
-const resetEvolution = () => {
-  if (confirm('Are you sure you want to reset the evolution?')) {
-    ga.reset();
-    init();
-  }
-};
-
-// Export weights
-const exportWeights = () => {
-  const json = ga.exportWeights();
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `car-racing-weights-gen${ga.generation}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
-// Import weights
-const importWeights = () => {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'application/json';
-  input.onchange = (e) => {
-    const file = (e.target as HTMLInputElement).files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const json = e.target?.result as string;
-        ga.importWeights(json);
-        init();
-      };
-      reader.readAsText(file);
-    }
-  };
-  input.click();
 };
 
 // Lifecycle

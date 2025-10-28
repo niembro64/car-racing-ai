@@ -23,7 +23,6 @@ describe('Car', () => {
 
   it('should update position when physics is applied', () => {
     const initialX = car.x;
-    const initialY = car.y;
 
     // Empty wall segments (no collisions)
     const wallSegments: Segment[] = [];

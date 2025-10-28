@@ -9,8 +9,7 @@ import {
   GA_MUTATION_MAX_MULTIPLIER,
   GA_MUTATION_CURVE_POWER,
   ELITE_CAR_COLOR,
-  NORMAL_CAR_COLOR,
-  NEURAL_NETWORK_ARCHITECTURE
+  NORMAL_CAR_COLOR
 } from '@/config';
 
 export class GeneticAlgorithm {
@@ -33,57 +32,6 @@ export class GeneticAlgorithm {
     const progress = (index - 1) / (GA_POPULATION_SIZE - 2);
     const range = GA_MUTATION_MAX_MULTIPLIER - GA_MUTATION_MIN_MULTIPLIER;
     return GA_MUTATION_MIN_MULTIPLIER + range * Math.pow(progress, GA_MUTATION_CURVE_POWER);
-  }
-
-  // Calculate weighted average of multiple brains
-  private averageBrains(brains: any[], weights: number[], weightSum: number): any {
-    if (brains.length === 0) {
-      throw new Error('Cannot average zero brains');
-    }
-
-    const template = brains[0];
-    const averaged: any = {
-      layers: []
-    };
-
-    // For each layer
-    for (let layerIdx = 0; layerIdx < template.layers.length; layerIdx++) {
-      const layer = template.layers[layerIdx];
-      const avgWeights: number[][] = [];
-      const avgBiases: number[] = [];
-
-      // For each neuron in this layer
-      for (let neuronIdx = 0; neuronIdx < layer.weights.length; neuronIdx++) {
-        const neuronWeights: number[] = [];
-
-        // For each weight in this neuron
-        for (let weightIdx = 0; weightIdx < layer.weights[neuronIdx].length; weightIdx++) {
-          let weightedSum = 0;
-          for (let brainIdx = 0; brainIdx < brains.length; brainIdx++) {
-            const brainWeight = brains[brainIdx].layers[layerIdx].weights[neuronIdx][weightIdx];
-            weightedSum += brainWeight * weights[brainIdx];
-          }
-          neuronWeights.push(weightedSum / weightSum);
-        }
-
-        avgWeights.push(neuronWeights);
-
-        // Average bias for this neuron
-        let biasSum = 0;
-        for (let brainIdx = 0; brainIdx < brains.length; brainIdx++) {
-          const brainBias = brains[brainIdx].layers[layerIdx].biases[neuronIdx];
-          biasSum += brainBias * weights[brainIdx];
-        }
-        avgBiases.push(biasSum / weightSum);
-      }
-
-      averaged.layers.push({
-        weights: avgWeights,
-        biases: avgBiases
-      });
-    }
-
-    return averaged;
   }
 
   // Initialize first generation
