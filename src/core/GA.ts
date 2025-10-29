@@ -103,7 +103,8 @@ export class GeneticAlgorithm {
 
         const brain = NeuralNetwork.createRandom(
           brainSeed,
-          config.architecture
+          config.architecture,
+          config.activationType
         );
 
         const angleWiggle = (Math.random() - 0.5) * (Math.PI / 2);
@@ -176,7 +177,8 @@ export class GeneticAlgorithm {
     const eliteBrain = NeuralNetwork.fromJSON(
       state.bestWeights,
       this.rng.next() * 1000000,
-      config.architecture
+      config.architecture,
+      config.activationType
     );
 
     // Create cars: 1 elite + (carsPerType - 1) mutations

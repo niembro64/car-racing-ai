@@ -17,14 +17,17 @@ export class NeuralNetwork {
   private structure: NetworkStructure;
   private rng: SeededRandom;
   private layerSizes: number[];
+  private activationType: 'relu' | 'linear' | 'gelu';
 
   constructor(
     weights: NetworkStructure | undefined,
     seed: number,
-    architecture?: number[]
+    architecture?: number[],
+    activationType: 'relu' | 'linear' | 'gelu' = 'relu'
   ) {
     this.rng = new SeededRandom(seed);
     this.layerSizes = architecture || NEURAL_NETWORK_ARCHITECTURE;
+    this.activationType = activationType;
 
     if (weights) {
       this.structure = JSON.parse(JSON.stringify(weights));
@@ -72,12 +75,18 @@ export class NeuralNetwork {
     return Math.max(0, x);
   }
 
+  // GELU activation (Gaussian Error Linear Unit)
+  // Approximation: GELU(x) ≈ 0.5 * x * (1 + tanh(sqrt(2/π) * (x + 0.044715 * x³)))
+  private gelu(x: number): number {
+    const sqrt2OverPi = Math.sqrt(2.0 / Math.PI);
+    const coefficient = 0.044715;
+    const inner = sqrt2OverPi * (x + coefficient * Math.pow(x, 3));
+    return 0.5 * x * (1.0 + Math.tanh(inner));
+  }
+
   // Forward pass through network
   private forward(input: number[]): number[] {
     let current = input;
-    // Check if this is normal car architecture (9 inputs) - use ReLU
-    // Otherwise (5 inputs for diff) - use linear
-    const useReLU = this.layerSizes[0] === 9;
 
     for (let i = 0; i < this.structure.layers.length; i++) {
       const layer = this.structure.layers[i];
@@ -91,13 +100,15 @@ export class NeuralNetwork {
           sum += current[k] * layer.weights[j][k];
         }
 
-        // Use appropriate activation based on layer and architecture
+        // Use appropriate activation based on layer and config
         if (isOutputLayer) {
           next.push(this.tanh(sum)); // Always tanh for output
-        } else if (useReLU) {
-          next.push(this.relu(sum)); // ReLU for normal car hidden layers
+        } else if (this.activationType === 'relu') {
+          next.push(this.relu(sum)); // ReLU for hidden layers
+        } else if (this.activationType === 'gelu') {
+          next.push(this.gelu(sum)); // GELU for hidden layers
         } else {
-          next.push(sum); // Linear for diff car hidden layers
+          next.push(sum); // Linear (identity) for hidden layers
         }
       }
 
@@ -155,7 +166,8 @@ export class NeuralNetwork {
     return new NeuralNetwork(
       mutatedWeights,
       seed,
-      this.layerSizes
+      this.layerSizes,
+      this.activationType
     );
   }
 
@@ -190,17 +202,19 @@ export class NeuralNetwork {
   // Create a random network
   static createRandom(
     seed: number,
-    architecture?: number[]
+    architecture: number[],
+    activationType: 'relu' | 'linear' | 'gelu'
   ): NeuralNetwork {
-    return new NeuralNetwork(undefined, seed, architecture);
+    return new NeuralNetwork(undefined, seed, architecture, activationType);
   }
 
   // Load network from JSON
   static fromJSON(
     weights: NetworkStructure,
     seed: number,
-    architecture?: number[]
+    architecture: number[],
+    activationType: 'relu' | 'linear' | 'gelu'
   ): NeuralNetwork {
-    return new NeuralNetwork(weights, seed, architecture);
+    return new NeuralNetwork(weights, seed, architecture, activationType);
   }
 }

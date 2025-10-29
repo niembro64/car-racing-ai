@@ -22,9 +22,10 @@ describe('GeneticAlgorithm', () => {
   it('should create initial population with correct size', () => {
     const population = ga.initializePopulation(track);
     // Population is split evenly among all configured car types
-    // With 3 types and population of 100: floor(100/3) * 3 = 99
-    const carsPerType = Math.floor(GA_POPULATION_SIZE / 3); // 33 per type
-    const expectedTotal = carsPerType * 3; // 99 total
+    // With 4 types and population of 100: floor(100/4) * 4 = 100
+    const numTypes = 4; // Current number of car types in CAR_BRAIN_CONFIGS
+    const carsPerType = Math.floor(GA_POPULATION_SIZE / numTypes); // 25 per type
+    const expectedTotal = carsPerType * numTypes; // 100 total
     expect(population).toHaveLength(expectedTotal);
   });
 
@@ -64,8 +65,9 @@ describe('GeneticAlgorithm', () => {
     expect(ga.generationNormReLU).toBe(initialGenerationNormReLU + 1);
     expect(ga.generationDiffLinear).toBe(initialGenerationDiffLinear + 1);
 
-    // With 3 types, each gets 33 cars (floor(100/3) = 33)
-    const carsPerType = Math.floor(GA_POPULATION_SIZE / 3);
+    // With 4 types, each gets 25 cars (floor(100/4) = 25)
+    const numTypes = 4; // Current number of car types in CAR_BRAIN_CONFIGS
+    const carsPerType = Math.floor(GA_POPULATION_SIZE / numTypes);
     expect(nextNormReLU).toHaveLength(carsPerType);
     expect(nextDiffLinear).toHaveLength(carsPerType);
   });
