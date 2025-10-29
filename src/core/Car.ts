@@ -25,6 +25,7 @@ import {
   NORMAL_CAR_RAY_HIT_RADIUS,
   CENTERLINE_RAY_HIT_COLOR,
   SENSOR_RAY_PAIRS,
+  SHOW_CAR_PERCENTAGES,
 } from '@/config';
 
 export class Car {
@@ -332,17 +333,19 @@ export class Car {
 
     // Render percentage label above car (shows current progress including negative)
     // Progress ratio: 0.0 at start, 0.5 at halfway through first lap, 1.0 at first lap complete, etc.
-    const percentage = this.currentProgressRatio * 100;
-    const sign = percentage >= 0 ? '+' : '-';
-    const absValue = Math.abs(percentage);
-    const formatted = absValue.toFixed(1).padStart(4, ' '); // "XX.X" format
-    ctx.save();
-    ctx.fillStyle = this.alive ? CAR_LABEL_COLOR_ALIVE : CAR_LABEL_COLOR_DEAD;
-    ctx.font = 'bold 16px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText(`${sign}${formatted}%`, this.x, this.y - this.height / 2 - 6);
-    ctx.restore();
+    if (SHOW_CAR_PERCENTAGES) {
+      const percentage = this.currentProgressRatio * 100;
+      const sign = percentage >= 0 ? '+' : '-';
+      const absValue = Math.abs(percentage);
+      const formatted = absValue.toFixed(1).padStart(4, ' '); // "XX.X" format
+      ctx.save();
+      ctx.fillStyle = this.alive ? CAR_LABEL_COLOR_ALIVE : CAR_LABEL_COLOR_DEAD;
+      ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(`${sign}${formatted}%`, this.x, this.y - this.height / 2 - 6);
+      ctx.restore();
+    }
 
     // Render car body
     ctx.save();

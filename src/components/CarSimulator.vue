@@ -34,7 +34,7 @@ import { ref, onMounted, onUnmounted, computed, type Ref } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
-import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, ELITE_CAR_COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, GENERATION_MARKER_COLOR, GENERATION_MARKER_RADIUS } from '@/config';
+import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, ELITE_CAR_COLOR, NORMAL_CAR_COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, GENERATION_MARKER_COLOR, GENERATION_MARKER_RADIUS } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
@@ -99,17 +99,17 @@ const init = () => {
 };
 
 // Evolve to next generation (can be called manually or automatically)
-const evolveToNextGeneration = (reason: string) => {
+const evolveToNextGeneration = (reason: string, winnerCar?: Car) => {
   const aliveCarCount = population.value.filter(car => car.alive).length;
   console.log(`Generation ended: ${reason}. ${aliveCarCount}/${population.value.length} cars alive. Time: ${generationTime.value.toFixed(2)}s`);
 
   // Find the best car (by maxDistanceReached) and save its position
   const sortedCars = [...population.value].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
-  const bestCar = sortedCars[0];
+  const bestCar = winnerCar || sortedCars[0];
   generationMarkers.value.push({ x: bestCar.x, y: bestCar.y, generation: ga.value.generation });
 
   // Evolve to next generation (pass generation time for adaptive mutation rate)
-  population.value = ga.value.evolvePopulation(population.value, track, generationTime.value);
+  population.value = ga.value.evolvePopulation(population.value, track, generationTime.value, winnerCar);
   generationTime.value = 0;
 };
 
@@ -125,6 +125,32 @@ const updatePhysics = (dt: number) => {
       const result = track.getClosestPointOnCenterline({ x: car.x, y: car.y });
       car.fitness = result.distance;
       car.updateSignedFitness(result.distance, trackLength);
+
+      // Check if car completed a lap (reached 100% progress)
+      if (car.currentProgressRatio >= 1.0) {
+        const isElite = car.color === ELITE_CAR_COLOR;
+        console.log(`🏁 ${isElite ? 'ELITE' : 'NORMAL'} CAR FINISHED LAP! Progress: ${(car.currentProgressRatio * 100).toFixed(1)}%`);
+
+        // Log all cars' progress for debugging
+        console.log('All cars progress at finish:', population.value.map((c, i) => ({
+          index: i,
+          elite: c.color === ELITE_CAR_COLOR,
+          alive: c.alive,
+          progress: (c.currentProgressRatio * 100).toFixed(1) + '%'
+        })));
+
+        // Kill all other cars immediately
+        population.value.forEach(c => {
+          if (c !== car) {
+            c.alive = false;
+            c.speed = 0;
+          }
+        });
+
+        // Evolve to next generation immediately using winner's brain
+        evolveToNextGeneration('car completed lap', car);
+        return; // Stop processing this frame
+      }
 
       // Kill car if it has gone backwards (when dieOnBackwards is enabled)
       if (dieOnBackwards.value && car.alive && car.hasGoneBackwards()) {

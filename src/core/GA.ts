@@ -98,9 +98,11 @@ export class GeneticAlgorithm {
   evolvePopulation(
     population: Car[],
     track: Track,
-    generationTime: number
+    generationTime: number,
+    winnerCar?: Car
   ): Car[] {
-    // Sort cars by maxDistanceReached (farthest position ever reached)
+    // If a winner car is provided (completed lap), use it as the elite
+    // Otherwise sort by maxDistanceReached
     const sortedCars = [...population].sort(
       (a, b) => b.maxDistanceReached - a.maxDistanceReached
     );
@@ -130,27 +132,42 @@ export class GeneticAlgorithm {
       )}, ${sortedCars[0].y.toFixed(1)})`
     );
 
-    // Filter out the elite car (exact copy) and select best from mutated cars
-    const mutatedCars = sortedCars.filter(
-      (car) => car.color !== ELITE_CAR_COLOR
-    );
-    const bestMutatedCar = mutatedCars[0];
+    // Determine which car's brain to use for next generation
+    let bestCarForBreeding: Car;
 
-    if (bestMutatedCar) {
-      console.log(`Using best mutated car's brain (excluding elite copy)`);
-      this.bestWeights = bestMutatedCar.brain.toJSON();
+    if (winnerCar) {
+      // Use the winner car that completed the lap
+      console.log(`🏆 Using WINNER car's brain (completed lap at ${(winnerCar.currentProgressRatio * 100).toFixed(1)}%)`);
+      bestCarForBreeding = winnerCar;
     } else {
-      // Fallback: if no mutated cars (shouldn't happen), use the best overall
-      console.log(`Fallback: using best car's brain (no mutated cars found)`);
-      this.bestWeights = sortedCars[0].brain.toJSON();
+      // Filter out the elite car (exact copy) and select best from mutated cars
+      const mutatedCars = sortedCars.filter(
+        (car) => car.color !== ELITE_CAR_COLOR
+      );
+      const bestMutatedCar = mutatedCars[0];
+
+      if (bestMutatedCar) {
+        console.log(`Using best mutated car's brain (excluding elite copy)`);
+        bestCarForBreeding = bestMutatedCar;
+      } else {
+        // Fallback: if no mutated cars (shouldn't happen), use the best overall
+        console.log(`Fallback: using best car's brain (no mutated cars found)`);
+        bestCarForBreeding = sortedCars[0];
+      }
     }
 
-    // Track improvement
-    if (bestMaxDistance > this.bestFitness) {
-      this.bestFitness = bestMaxDistance;
-      console.log(`Gen ${this.generation}: New best fitness = ${bestPct}%`);
+    this.bestWeights = bestCarForBreeding.brain.toJSON();
+
+    // Track improvement (use winner's max distance if provided)
+    const currentBestDistance = winnerCar ? winnerCar.maxDistanceReached : bestMaxDistance;
+    const currentBestPct = ((currentBestDistance / trackLength) * 100);
+    const currentBestPctFormatted = currentBestPct.toFixed(1).padStart(4, ' ');
+
+    if (currentBestDistance > this.bestFitness) {
+      this.bestFitness = currentBestDistance;
+      console.log(`Gen ${this.generation}: New best fitness = ${currentBestPctFormatted}%`);
     } else {
-      console.log(`Gen ${this.generation}: Best fitness = ${bestPct}%`);
+      console.log(`Gen ${this.generation}: Best fitness = ${currentBestPctFormatted}%`);
     }
 
     // Create next generation

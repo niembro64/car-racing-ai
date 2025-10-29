@@ -168,6 +168,9 @@ export const NEURAL_NETWORK_ARCHITECTURE =
 // RENDERING CONFIGURATION
 // ============================================================================
 
+// Display options
+export const SHOW_CAR_PERCENTAGES = false; // Show progress percentages above cars
+
 // Canvas
 export const CANVAS_BACKGROUND_COLOR = '#4a7c4e'; // Grass green
 
@@ -181,26 +184,26 @@ export const TRACK_CENTERLINE_WIDTH = 2;
 export const START_FINISH_LINE_WIDTH = 10;
 
 // Cars
-export const ELITE_CAR_COLOR = '#900901'; // Red (best from previous gen)
-export const NORMAL_CAR_COLOR = '#0088ff'; // Blue (mutated variants)
 export const CAR_LABEL_COLOR_ALIVE = '#ffffff'; // White progress label
 export const CAR_LABEL_COLOR_DEAD = '#9ca3af'; // Gray progress label
 
 // Ray visualization (elite car)
-export const ELITE_CAR_RAY_COLOR = '#ffffff'; // White sensor rays
+export const ELITE_CAR_COLOR = '#ff0000';
+export const ELITE_CAR_RAY_COLOR = ELITE_CAR_COLOR;
 export const ELITE_CAR_RAY_HIT_COLOR = ELITE_CAR_COLOR;
 export const ELITE_CAR_RAY_WIDTH = 1;
-export const ELITE_CAR_RAY_HIT_RADIUS = 4;
+export const ELITE_CAR_RAY_HIT_RADIUS = 3;
 
 // Ray visualization (normal cars)
-export const NORMAL_CAR_RAY_COLOR = '#ffffff'; // White sensor rays
-export const NORMAL_CAR_RAY_HIT_COLOR = '#0088ff';
-export const NORMAL_CAR_RAY_WIDTH = 1;
-export const NORMAL_CAR_RAY_HIT_RADIUS = 4;
+export const NORMAL_CAR_COLOR = '#0088ff'; // Blue (mutated variants)
+export const NORMAL_CAR_RAY_COLOR = NORMAL_CAR_COLOR;
+export const NORMAL_CAR_RAY_HIT_COLOR = NORMAL_CAR_COLOR;
+export const NORMAL_CAR_RAY_WIDTH = 0.5;
+export const NORMAL_CAR_RAY_HIT_RADIUS = 3;
 
 // Centerline ray (debug visualization)
 export const CENTERLINE_RAY_HIT_COLOR = '#00ff00'; // Green centerline dot
 
 // Generation markers
-export const GENERATION_MARKER_COLOR = '#ff8888'; // Red position markers
+export const GENERATION_MARKER_COLOR = '#ff0000'; // Red position markers
 export const GENERATION_MARKER_RADIUS = 3;
