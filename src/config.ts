@@ -16,10 +16,10 @@ export function appendMirroredWaypoints(
 // ----------------------------------------------------------------------------
 // GENETIC ALGORITHM
 // ----------------------------------------------------------------------------
-export const GA_MUTATION_RATE = 0.07;
-export const GA_MUTATION_MIN_MULTIPLIER = 0.15;
-export const GA_MUTATION_MAX_MULTIPLIER = 0.5;
-export const GA_MUTATION_CURVE_POWER = 9.0;
+export const GA_MUTATION_RATE = 0.1;
+export const GA_MUTATION_MIN_MULTIPLIER = 0.1;
+export const GA_MUTATION_MAX_MULTIPLIER = 2;
+export const GA_MUTATION_CURVE_POWER = 0.2;
 
 export const SEGMENTS_PER_CURVE = 30;
 export const TRACK_WIDTH_HALF = 30;
@@ -38,10 +38,10 @@ export const WAYPOINTS: Point[] = appendMirroredWaypoints(wp, CANVAS_WIDTH);
 
 // ----------------------------------------------------------------------------
 // CAR PHYSICS
-export const GA_POPULATION_SIZE = 200;
+export const GA_POPULATION_SIZE = 100;
 // ----------------------------------------------------------------------------
 export const CAR_FORWARD_SPEED = 200; // Constant forward speed (pixels/second)
-export const CAR_STEERING_SENSITIVITY = 3; // Turning multiplier (speed × direction × this)
+export const CAR_STEERING_SENSITIVITY = 1; // Turning multiplier (speed × direction × this)
 export const CAR_WIDTH = 10;
 export const CAR_HEIGHT = 20;
 
@@ -52,12 +52,12 @@ export const SENSOR_RAY_ANGLES = [
   Math.PI * 0.0,
   // Math.PI * -0.01,
   // Math.PI * 0.01,
-  // Math.PI * -0.1,
-  // Math.PI * 0.1,
+  Math.PI * -0.1,
+  Math.PI * 0.1,
   Math.PI * 0.25,
   Math.PI * -0.25,
-  // Math.PI * 0.49,
-  // Math.PI * -0.49,
+  Math.PI * 0.49,
+  Math.PI * -0.49,
   Math.PI * 0.5,
   Math.PI * -0.5,
 ];
@@ -65,7 +65,7 @@ export const SENSOR_RAY_ANGLES = [
 // ----------------------------------------------------------------------------
 // NEURAL NETWORK
 // ----------------------------------------------------------------------------
-export const NEURAL_NETWORK_ARCHITECTURE = [SENSOR_RAY_ANGLES.length, 1]; // rays → direction
+export const NEURAL_NETWORK_ARCHITECTURE = [SENSOR_RAY_ANGLES.length, 3, 1]; // rays → direction
 
 // ----------------------------------------------------------------------------
 // TRACK
@@ -114,6 +114,11 @@ export const NORMAL_CAR_RAY_COLOR = '#ffffff'; // White transparent
 export const NORMAL_CAR_RAY_HIT_COLOR = '#0088ff';
 export const NORMAL_CAR_RAY_WIDTH = 1;
 export const NORMAL_CAR_RAY_HIT_RADIUS = 4;
+
+// ----------------------------------------------------------------------------
+// RENDERING - CENTERLINE RAY (CAR TO TRACK CENTER)
+// ----------------------------------------------------------------------------
+export const CENTERLINE_RAY_HIT_COLOR = '#00ff00'; // Green dot showing closest point on track centerline
 
 // ----------------------------------------------------------------------------
 // RENDERING - GENERATION MARKERS

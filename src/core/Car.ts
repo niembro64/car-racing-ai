@@ -2,7 +2,7 @@ import type { Point, Segment, RayHit } from './math/geom';
 import {
   createCarPolygon,
   polygonIntersectsSegments,
-  normalizeAngle
+  normalizeAngle,
 } from './math/geom';
 import { NeuralNetwork } from './Neural';
 import { RayCaster } from './Ray';
@@ -22,7 +22,8 @@ import {
   NORMAL_CAR_RAY_COLOR,
   NORMAL_CAR_RAY_HIT_COLOR,
   NORMAL_CAR_RAY_WIDTH,
-  NORMAL_CAR_RAY_HIT_RADIUS
+  NORMAL_CAR_RAY_HIT_RADIUS,
+  CENTERLINE_RAY_HIT_COLOR,
 } from '@/config';
 
 export class Car {
@@ -39,6 +40,9 @@ export class Car {
   lastCenterlineDistance: number; // Previous frame's centerline distance for delta calculation
   maxDistanceReached: number; // Farthest position ever reached on track (used for scoring)
   startingDistance: number; // Initial centerline distance (for measuring relative progress)
+  currentProgressRatio: number; // Current course percentage done as a ratio (same as displayed percentage / 100)
+  previousProgressRatio: number; // Previous course percentage done as a ratio
+  frameCount: number; // Number of frames this car has been alive
 
   // Dimensions
   width: number = CAR_WIDTH;
@@ -75,24 +79,30 @@ export class Car {
     this.lastCenterlineDistance = 0;
     this.maxDistanceReached = 0;
     this.startingDistance = 0;
+    this.currentProgressRatio = 0;
+    this.previousProgressRatio = -1;
+    this.frameCount = 0;
     this.brain = brain;
     this.rayCaster = new RayCaster();
     this.color = color;
-
-    // Debug first car only
-    if (Math.random() < 0.01) {
-      console.log(`Car created at (${x.toFixed(1)}, ${y.toFixed(1)}), angle=${(angle * 180 / Math.PI).toFixed(1)}°, alive=${this.alive}`);
-    }
   }
 
   // Update physics and AI
   update(dt: number, wallSegments: Segment[], track: any): void {
     if (!this.alive) return;
 
+    // Increment frame counter
+    this.frameCount++;
+
     // Debug occasionally
     const shouldDebug = Math.random() < 0.0001;
     if (shouldDebug) {
-      console.log(`Car update: pos=(${this.x.toFixed(1)}, ${this.y.toFixed(1)}), angle=${(this.angle * 180 / Math.PI).toFixed(1)}°, speed=${this.speed.toFixed(1)}, alive=${this.alive}`);
+      console.log(
+        `Car update: pos=(${this.x.toFixed(1)}, ${this.y.toFixed(1)}), angle=${(
+          (this.angle * 180) /
+          Math.PI
+        ).toFixed(1)}°, speed=${this.speed.toFixed(1)}, alive=${this.alive}`
+      );
     }
 
     // Cast rays for sensors using PHYSICS angle
@@ -107,12 +117,15 @@ export class Car {
     this.lastRayHits = hits;
 
     // Get closest point on centerline (for visualization only)
-    const centerlineResult = track.getClosestPointOnCenterline({ x: this.x, y: this.y });
+    const centerlineResult = track.getClosestPointOnCenterline({
+      x: this.x,
+      y: this.y,
+    });
     this.lastCenterlinePoint = centerlineResult.point;
 
     // Prepare neural network input (only rays)
     const input: NeuralInput = {
-      rays: distances
+      rays: distances,
     };
 
     // Get AI output (only direction)
@@ -121,8 +134,8 @@ export class Car {
     // Debug log for first car only (to avoid spam)
     if ((window as any).__debugCarNN && Math.random() < 0.01) {
       console.log('Neural Net IO:', {
-        input: { rays: input.rays.map(r => r.toFixed(2)) },
-        output: { direction: output.direction.toFixed(2) }
+        input: { rays: input.rays.map((r) => r.toFixed(2)) },
+        output: { direction: output.direction.toFixed(2) },
       });
     }
 
@@ -157,15 +170,23 @@ export class Car {
   }
 
   // Update signed fitness based on centerline distance with wrap-around detection
-  updateSignedFitness(currentCenterlineDistance: number, trackLength: number): void {
+  updateSignedFitness(
+    currentCenterlineDistance: number,
+    trackLength: number
+  ): void {
     // Initialize on first call
     if (this.startingDistance === 0 && this.lastCenterlineDistance === 0) {
       this.startingDistance = currentCenterlineDistance;
       this.lastCenterlineDistance = currentCenterlineDistance;
       this.signedFitness = 0;
       this.maxDistanceReached = 0; // Progress starts at 0
+      this.currentProgressRatio = 0;
+      // Keep previousProgressRatio at -1 (set in constructor) to detect backwards movement on first update
       return;
     }
+
+    // Store previous ratio before updating
+    this.previousProgressRatio = this.currentProgressRatio;
 
     // Calculate delta from last position
     let delta = currentCenterlineDistance - this.lastCenterlineDistance;
@@ -182,6 +203,10 @@ export class Car {
     // Accumulate signed distance (can be negative, can be > trackLength)
     this.signedFitness += delta;
 
+    // Update current progress ratio (0.0 at start, 0.5 halfway through 1st lap,
+    // 1.0 at 1st lap complete, 2.0 at 2nd lap complete, 10.0 at 10th lap complete)
+    this.currentProgressRatio = this.signedFitness / trackLength;
+
     // Track maximum cumulative distance reached (for scoring)
     // maxDistanceReached is used for selection - only tracks forward progress
     // For display, we use signedFitness which can be negative
@@ -191,6 +216,16 @@ export class Car {
 
     // Update last position for next frame
     this.lastCenterlineDistance = currentCenterlineDistance;
+  }
+
+  // Check if car has gone backwards or failed to move forward
+  hasGoneBackwards(): boolean {
+    return this.currentProgressRatio <= this.previousProgressRatio;
+  }
+
+  // Check if car has failed to make minimum progress after 1 second (60 frames)
+  hasFailedMinimumProgress(): boolean {
+    return this.frameCount >= 60 && this.currentProgressRatio < 0.01; // 1% progress
   }
 
   // Check collision with walls
@@ -212,16 +247,20 @@ export class Car {
   }
 
   // Render car on canvas
-  render(ctx: CanvasRenderingContext2D, showRays: boolean = false, trackLength?: number): void {
+  render(ctx: CanvasRenderingContext2D, showRays: boolean = false): void {
     // Render rays if requested and car is alive
     if (showRays && this.alive) {
       // Render centerline ray (showing distance from car to track center)
       if (this.lastCenterlinePoint) {
         const isLeadCar = this.color === ELITE_CAR_COLOR;
         const rayColor = isLeadCar ? ELITE_CAR_RAY_COLOR : NORMAL_CAR_RAY_COLOR;
-        const hitColor = '#00ff00'; // Green for centerline
-        const lineWidth = isLeadCar ? ELITE_CAR_RAY_WIDTH : NORMAL_CAR_RAY_WIDTH;
-        const hitRadius = isLeadCar ? ELITE_CAR_RAY_HIT_RADIUS : NORMAL_CAR_RAY_HIT_RADIUS;
+        const hitColor = CENTERLINE_RAY_HIT_COLOR;
+        const lineWidth = isLeadCar
+          ? ELITE_CAR_RAY_WIDTH
+          : NORMAL_CAR_RAY_WIDTH;
+        const hitRadius = isLeadCar
+          ? ELITE_CAR_RAY_HIT_RADIUS
+          : NORMAL_CAR_RAY_HIT_RADIUS;
 
         ctx.save();
         // Draw line to centerline
@@ -237,16 +276,26 @@ export class Car {
         ctx.fillStyle = hitColor;
         ctx.globalAlpha = 0.8;
         ctx.beginPath();
-        ctx.arc(this.lastCenterlinePoint.x, this.lastCenterlinePoint.y, hitRadius, 0, Math.PI * 2);
+        ctx.arc(
+          this.lastCenterlinePoint.x,
+          this.lastCenterlinePoint.y,
+          hitRadius,
+          0,
+          Math.PI * 2
+        );
         ctx.fill();
         ctx.restore();
       }
       // Use lead/elite styling if this car's color matches the lead car color
       const isLeadCar = this.color === ELITE_CAR_COLOR;
       const rayColor = isLeadCar ? ELITE_CAR_RAY_COLOR : NORMAL_CAR_RAY_COLOR;
-      const hitColor = isLeadCar ? ELITE_CAR_RAY_HIT_COLOR : NORMAL_CAR_RAY_HIT_COLOR;
+      const hitColor = isLeadCar
+        ? ELITE_CAR_RAY_HIT_COLOR
+        : NORMAL_CAR_RAY_HIT_COLOR;
       const lineWidth = isLeadCar ? ELITE_CAR_RAY_WIDTH : NORMAL_CAR_RAY_WIDTH;
-      const hitRadius = isLeadCar ? ELITE_CAR_RAY_HIT_RADIUS : NORMAL_CAR_RAY_HIT_RADIUS;
+      const hitRadius = isLeadCar
+        ? ELITE_CAR_RAY_HIT_RADIUS
+        : NORMAL_CAR_RAY_HIT_RADIUS;
 
       this.rayCaster.renderRays(
         ctx,
@@ -260,19 +309,18 @@ export class Car {
     }
 
     // Render percentage label above car (shows current progress including negative)
-    if (trackLength) {
-      const percentage = (this.signedFitness / trackLength) * 100;
-      const sign = percentage >= 0 ? '+' : '-';
-      const absValue = Math.abs(percentage);
-      const formatted = absValue.toFixed(1).padStart(4, ' '); // "XX.X" format
-      ctx.save();
-      ctx.fillStyle = this.alive ? CAR_LABEL_COLOR_ALIVE : CAR_LABEL_COLOR_DEAD;
-      ctx.font = 'bold 16px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(`${sign}${formatted}%`, this.x, this.y - this.height / 2 - 6);
-      ctx.restore();
-    }
+    // Progress ratio: 0.0 at start, 0.5 at halfway through first lap, 1.0 at first lap complete, etc.
+    const percentage = this.currentProgressRatio * 100;
+    const sign = percentage >= 0 ? '+' : '-';
+    const absValue = Math.abs(percentage);
+    const formatted = absValue.toFixed(1).padStart(4, ' '); // "XX.X" format
+    ctx.save();
+    ctx.fillStyle = this.alive ? CAR_LABEL_COLOR_ALIVE : CAR_LABEL_COLOR_DEAD;
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`${sign}${formatted}%`, this.x, this.y - this.height / 2 - 6);
+    ctx.restore();
 
     // Render car body
     ctx.save();

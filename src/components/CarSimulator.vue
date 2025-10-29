@@ -13,8 +13,14 @@
     </div>
 
     <div class="controls">
-      <button @click="nextGeneration" class="next-gen-btn">Next Generation</button>
-      <button @click="reset" class="reset-btn">Reset</button>
+      <button @click="nextGeneration">Next Generation</button>
+      <button @click="reset">Reset</button>
+      <button @click="toggleDieOnBackwards" :class="{ active: dieOnBackwards }">
+        Die On Backwards: {{ dieOnBackwards ? ' ON' : 'OFF' }}
+      </button>
+      <button @click="toggleKillSlowCars" :class="{ active: killSlowCars }">
+        Kill Slow Cars: {{ killSlowCars ? ' ON' : 'OFF' }}
+      </button>
     </div>
   </div>
 </template>
@@ -66,6 +72,8 @@ const showRays = ref(true);
 const speedMultiplier = ref(1);
 const generationTime = ref(0);
 const generationMarkers = ref<{ x: number; y: number; generation: number }[]>([]);
+const dieOnBackwards = ref(true);
+const killSlowCars = ref(true);
 
 let animationFrameId: number | null = null;
 const FIXED_DT = 1 / 60; // 60 Hz physics
@@ -102,9 +110,28 @@ const evolveToNextGeneration = (reason: string) => {
 
 // Update physics
 const updatePhysics = (dt: number) => {
+  const trackLength = track.getTotalLength();
+
   for (const car of population.value) {
     if (car.alive) {
       car.update(dt, track.wallSegments, track);
+
+      // Update fitness and check for backwards movement
+      const result = track.getClosestPointOnCenterline({ x: car.x, y: car.y });
+      car.fitness = result.distance;
+      car.updateSignedFitness(result.distance, trackLength);
+
+      // Kill car if it has gone backwards (when dieOnBackwards is enabled)
+      if (dieOnBackwards.value && car.alive && car.hasGoneBackwards()) {
+        car.alive = false;
+        car.speed = 0;
+      }
+
+      // Kill car if it hasn't made minimum progress after 1 second (when killSlowCars is enabled)
+      if (killSlowCars.value && car.alive && car.hasFailedMinimumProgress()) {
+        car.alive = false;
+        car.speed = 0;
+      }
     }
   }
 
@@ -141,15 +168,6 @@ const render = (ctx: CanvasRenderingContext2D) => {
     ctx.fillText(marker.generation.toString(), marker.x, marker.y - GENERATION_MARKER_RADIUS - 2);
   }
 
-  // Update fitness for all cars before rendering (for percentage display)
-  const trackLength = track.getTotalLength();
-
-  for (const car of population.value) {
-    const result = track.getClosestPointOnCenterline({ x: car.x, y: car.y });
-    car.fitness = result.distance;
-    car.updateSignedFitness(result.distance, trackLength);
-  }
-
   // Render cars (dead first, then alive, then elite last)
   const deadCars = population.value.filter(car => !car.alive);
   const aliveCars = population.value.filter(car => car.alive);
@@ -160,17 +178,17 @@ const render = (ctx: CanvasRenderingContext2D) => {
 
   // Render dead cars first
   for (const car of deadCars) {
-    car.render(ctx, false, trackLength);
+    car.render(ctx, false);
   }
 
   // Render other alive cars
   for (const car of others) {
-    car.render(ctx, showRays.value, trackLength);
+    car.render(ctx, showRays.value);
   }
 
   // Render elite last (on top) with rays if enabled
   if (elite) {
-    elite.render(ctx, showRays.value, trackLength);
+    elite.render(ctx, showRays.value);
   }
 };
 
@@ -200,6 +218,16 @@ const nextGeneration = () => {
 // Reset the simulation by reloading the page
 const reset = () => {
   window.location.reload();
+};
+
+// Toggle die on backwards mode
+const toggleDieOnBackwards = () => {
+  dieOnBackwards.value = !dieOnBackwards.value;
+};
+
+// Toggle kill slow cars mode
+const toggleKillSlowCars = () => {
+  killSlowCars.value = !killSlowCars.value;
 };
 
 // Lifecycle
@@ -296,48 +324,37 @@ button {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   margin: 0;
+  background: #d1d5db;
+  color: #000000;
+  border: 2px solid #9ca3af;
 }
 
 button:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  background: #e5e7eb;
+  border-color: #6b7280;
 }
 
 button:active {
   transform: translateY(0);
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-
-.next-gen-btn {
-  background: #d1d5db;
-  color: #000000;
-  border: 2px solid #9ca3af;
-}
-
-.next-gen-btn:hover {
-  background: #e5e7eb;
-  color: #000000;
-  border-color: #6b7280;
-}
-
-.next-gen-btn:active {
   background: #c0c4c9;
 }
 
-.reset-btn {
-  background: #d1d5db;
-  color: #000000;
-  border: 2px solid #9ca3af;
+button.active {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #059669;
 }
 
-.reset-btn:hover {
-  background: #e5e7eb;
-  color: #000000;
-  border-color: #6b7280;
+button.active:hover {
+  background: #059669;
+  border-color: #047857;
 }
 
-.reset-btn:active {
-  background: #c0c4c9;
+button.active:active {
+  background: #047857;
 }
 
 @media (max-width: 640px) {
