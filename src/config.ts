@@ -168,9 +168,9 @@ export const NEURAL_NETWORK_ARCHITECTURE =
 // SIMULATION DEFAULTS
 // ============================================================================
 
+export const DEFAULT_DIFFERENTIAL_INPUTS = true;   // Default input mode for Car constructor
 export const DEFAULT_DIE_ON_BACKWARDS = true;      // Kill cars that go backwards
 export const DEFAULT_KILL_SLOW_CARS = true;        // Kill cars that don't reach 1% in 1 second
-export const DEFAULT_DIFFERENTIAL_INPUTS = false;   // Use differential input mode (5 inputs vs 9)
 
 // ============================================================================
 // RENDERING CONFIGURATION
@@ -195,23 +195,26 @@ export const START_FINISH_LINE_WIDTH = 20;
 export const CAR_LABEL_COLOR_ALIVE = '#ffffff'; // White progress label
 export const CAR_LABEL_COLOR_DEAD = '#9ca3af'; // Gray progress label
 
-// Ray visualization (elite car)
-export const ELITE_CAR_COLOR = '#ff0000';
-export const ELITE_CAR_RAY_COLOR = ELITE_CAR_COLOR;
-export const ELITE_CAR_RAY_HIT_COLOR = ELITE_CAR_COLOR;
-export const ELITE_CAR_RAY_WIDTH = 1;
-export const ELITE_CAR_RAY_HIT_RADIUS = 3;
-
-// Ray visualization (normal cars)
-export const NORMAL_CAR_COLOR = '#0088ff'; // Blue (mutated variants)
+// Normal input cars (blue)
+export const NORMAL_CAR_COLOR = '#226699'; // Dark muted blue (mutated variants)
+export const NORMAL_ELITE_CAR_COLOR = '#33aaff'; // Bright blue (elite)
 export const NORMAL_CAR_RAY_COLOR = NORMAL_CAR_COLOR;
 export const NORMAL_CAR_RAY_HIT_COLOR = NORMAL_CAR_COLOR;
 export const NORMAL_CAR_RAY_WIDTH = 0.5;
 export const NORMAL_CAR_RAY_HIT_RADIUS = 3;
 
+// Differential input cars (red)
+export const DIFF_CAR_COLOR = '#880000'; // Dark muted red (mutated variants)
+export const DIFF_ELITE_CAR_COLOR = '#ff5555'; // Bright red (elite)
+export const DIFF_CAR_RAY_COLOR = DIFF_CAR_COLOR;
+export const DIFF_CAR_RAY_HIT_COLOR = DIFF_CAR_COLOR;
+export const DIFF_CAR_RAY_WIDTH = 0.5;
+export const DIFF_CAR_RAY_HIT_RADIUS = 3;
+
 // Centerline ray (debug visualization)
 export const CENTERLINE_RAY_HIT_COLOR = '#00ff00'; // Green centerline dot
 
 // Generation markers
-export const GENERATION_MARKER_COLOR = '#ff0000'; // Red position markers
+export const NORMAL_MARKER_COLOR = NORMAL_CAR_COLOR; // Blue markers for normal cars
+export const DIFF_MARKER_COLOR = DIFF_CAR_COLOR; // Red markers for diff cars
 export const GENERATION_MARKER_RADIUS = 6;

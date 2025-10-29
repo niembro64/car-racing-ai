@@ -40,8 +40,10 @@ describe('Configuration', () => {
     expect(config.TRACK_BOUNDARY_COLOR).toBeDefined();
     expect(config.TRACK_CENTERLINE_COLOR).toBeDefined();
     expect(config.START_FINISH_LINE_COLOR).toBeDefined();
-    expect(config.ELITE_CAR_COLOR).toBeDefined();
     expect(config.NORMAL_CAR_COLOR).toBeDefined();
+    expect(config.NORMAL_ELITE_CAR_COLOR).toBeDefined();
+    expect(config.DIFF_CAR_COLOR).toBeDefined();
+    expect(config.DIFF_ELITE_CAR_COLOR).toBeDefined();
     expect(config.CAR_LABEL_COLOR_ALIVE).toBeDefined();
     expect(config.CAR_LABEL_COLOR_DEAD).toBeDefined();
   });
@@ -52,11 +54,11 @@ describe('Configuration', () => {
     expect(config.START_FINISH_LINE_WIDTH).toBeDefined();
   });
 
-  it('should have elite car ray visualization settings', () => {
-    expect(config.ELITE_CAR_RAY_COLOR).toBeDefined();
-    expect(config.ELITE_CAR_RAY_HIT_COLOR).toBeDefined();
-    expect(config.ELITE_CAR_RAY_WIDTH).toBeDefined();
-    expect(config.ELITE_CAR_RAY_HIT_RADIUS).toBeDefined();
+  it('should have differential car ray visualization settings', () => {
+    expect(config.DIFF_CAR_RAY_COLOR).toBeDefined();
+    expect(config.DIFF_CAR_RAY_HIT_COLOR).toBeDefined();
+    expect(config.DIFF_CAR_RAY_WIDTH).toBeDefined();
+    expect(config.DIFF_CAR_RAY_HIT_RADIUS).toBeDefined();
   });
 
   it('should have normal car ray visualization settings', () => {
@@ -97,12 +99,14 @@ describe('Configuration', () => {
       config.TRACK_BOUNDARY_COLOR,
       config.TRACK_CENTERLINE_COLOR,
       config.START_FINISH_LINE_COLOR,
-      config.ELITE_CAR_COLOR,
       config.NORMAL_CAR_COLOR,
+      config.NORMAL_ELITE_CAR_COLOR,
+      config.DIFF_CAR_COLOR,
+      config.DIFF_ELITE_CAR_COLOR,
       config.CAR_LABEL_COLOR_ALIVE,
       config.CAR_LABEL_COLOR_DEAD,
-      config.ELITE_CAR_RAY_HIT_COLOR,
-      config.NORMAL_CAR_RAY_HIT_COLOR
+      config.NORMAL_CAR_RAY_HIT_COLOR,
+      config.DIFF_CAR_RAY_HIT_COLOR
     ];
 
     colors.forEach(color => {

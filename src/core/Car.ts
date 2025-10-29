@@ -12,17 +12,18 @@ import {
   CAR_STEERING_SENSITIVITY,
   CAR_WIDTH,
   CAR_HEIGHT,
-  ELITE_CAR_COLOR,
+  NORMAL_ELITE_CAR_COLOR,
+  DIFF_ELITE_CAR_COLOR,
   CAR_LABEL_COLOR_ALIVE,
   CAR_LABEL_COLOR_DEAD,
-  ELITE_CAR_RAY_COLOR,
-  ELITE_CAR_RAY_HIT_COLOR,
-  ELITE_CAR_RAY_WIDTH,
-  ELITE_CAR_RAY_HIT_RADIUS,
   NORMAL_CAR_RAY_COLOR,
   NORMAL_CAR_RAY_HIT_COLOR,
   NORMAL_CAR_RAY_WIDTH,
   NORMAL_CAR_RAY_HIT_RADIUS,
+  DIFF_CAR_RAY_COLOR,
+  DIFF_CAR_RAY_HIT_COLOR,
+  DIFF_CAR_RAY_WIDTH,
+  DIFF_CAR_RAY_HIT_RADIUS,
   CENTERLINE_RAY_HIT_COLOR,
   SENSOR_RAY_PAIRS,
   SHOW_CAR_PERCENTAGES,
@@ -256,15 +257,13 @@ export class Car {
     if (showRays && this.alive) {
       // Render centerline ray (showing distance from car to track center)
       if (this.lastCenterlinePoint) {
-        const isLeadCar = this.color === ELITE_CAR_COLOR;
-        const rayColor = isLeadCar ? ELITE_CAR_RAY_COLOR : NORMAL_CAR_RAY_COLOR;
+        const isElite = this.color === NORMAL_ELITE_CAR_COLOR || this.color === DIFF_ELITE_CAR_COLOR;
+
+        // Use colors based on input type
+        const rayColor = this.useDifferentialInputs ? DIFF_CAR_RAY_COLOR : NORMAL_CAR_RAY_COLOR;
         const hitColor = CENTERLINE_RAY_HIT_COLOR;
-        const lineWidth = isLeadCar
-          ? ELITE_CAR_RAY_WIDTH
-          : NORMAL_CAR_RAY_WIDTH;
-        const hitRadius = isLeadCar
-          ? ELITE_CAR_RAY_HIT_RADIUS
-          : NORMAL_CAR_RAY_HIT_RADIUS;
+        const lineWidth = this.useDifferentialInputs ? DIFF_CAR_RAY_WIDTH : NORMAL_CAR_RAY_WIDTH;
+        const hitRadius = this.useDifferentialInputs ? DIFF_CAR_RAY_HIT_RADIUS : NORMAL_CAR_RAY_HIT_RADIUS;
 
         ctx.save();
         // Draw line to centerline
@@ -290,16 +289,11 @@ export class Car {
         ctx.fill();
         ctx.restore();
       }
-      // Use lead/elite styling if this car's color matches the lead car color
-      const isLeadCar = this.color === ELITE_CAR_COLOR;
-      const rayColor = isLeadCar ? ELITE_CAR_RAY_COLOR : NORMAL_CAR_RAY_COLOR;
-      const hitColor = isLeadCar
-        ? ELITE_CAR_RAY_HIT_COLOR
-        : NORMAL_CAR_RAY_HIT_COLOR;
-      const lineWidth = isLeadCar ? ELITE_CAR_RAY_WIDTH : NORMAL_CAR_RAY_WIDTH;
-      const hitRadius = isLeadCar
-        ? ELITE_CAR_RAY_HIT_RADIUS
-        : NORMAL_CAR_RAY_HIT_RADIUS;
+      // Use colors based on input type (differential vs normal)
+      const rayColor = this.useDifferentialInputs ? DIFF_CAR_RAY_COLOR : NORMAL_CAR_RAY_COLOR;
+      const hitColor = this.useDifferentialInputs ? DIFF_CAR_RAY_HIT_COLOR : NORMAL_CAR_RAY_HIT_COLOR;
+      const lineWidth = this.useDifferentialInputs ? DIFF_CAR_RAY_WIDTH : NORMAL_CAR_RAY_WIDTH;
+      const hitRadius = this.useDifferentialInputs ? DIFF_CAR_RAY_HIT_RADIUS : NORMAL_CAR_RAY_HIT_RADIUS;
 
       this.rayCaster.renderRays(
         ctx,

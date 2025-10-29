@@ -10,7 +10,8 @@
     <div class="hud">
       <div class="stat">GEN: {{ ga.generation }}</div>
       <div class="stat">{{ adaptiveMutationRate }}</div>
-      <div class="stat">INPUTS: {{ useDifferentialInputs ? 'DIFF (5)' : 'STD (9)' }}</div>
+      <div class="stat" :style="{ color: NORMAL_ELITE_CAR_COLOR }">NORMAL: {{ normalBestPercent }}%</div>
+      <div class="stat" :style="{ color: DIFF_ELITE_CAR_COLOR }">DIFF: {{ diffBestPercent }}%</div>
     </div>
 
     <div class="controls">
@@ -22,9 +23,6 @@
       <button @click="toggleKillSlowCars" :class="{ active: killSlowCars }">
         KILL SLOW: {{ killSlowCars ? 'ON' : 'OFF' }}
       </button>
-      <button @click="toggleDifferentialInputs" :class="{ active: useDifferentialInputs }">
-        DIFF INPUTS: {{ useDifferentialInputs ? 'ON' : 'OFF' }}
-      </button>
     </div>
   </div>
 </template>
@@ -34,7 +32,7 @@ import { ref, onMounted, onUnmounted, computed, type Ref } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
-import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, ELITE_CAR_COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, GENERATION_MARKER_COLOR, GENERATION_MARKER_RADIUS, DEFAULT_DIE_ON_BACKWARDS, DEFAULT_KILL_SLOW_CARS, DEFAULT_DIFFERENTIAL_INPUTS } from '@/config';
+import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, NORMAL_ELITE_CAR_COLOR, DIFF_ELITE_CAR_COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, NORMAL_MARKER_COLOR, DIFF_MARKER_COLOR, GENERATION_MARKER_RADIUS, DEFAULT_DIE_ON_BACKWARDS, DEFAULT_KILL_SLOW_CARS } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
@@ -68,15 +66,15 @@ const updateCanvasDimensions = () => {
 
 const track = new Track(TRACK_WIDTH_HALF);
 // Use truly random seed based on current time and Math.random()
-const useDifferentialInputs = ref(DEFAULT_DIFFERENTIAL_INPUTS);
 let randomSeed = Date.now() + Math.random() * 1000000;
-const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed, useDifferentialInputs.value));
+const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed));
 
 const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(true);
 const speedMultiplier = ref(1);
 const generationTime = ref(0);
-const generationMarkers = ref<{ x: number; y: number; generation: number }[]>([]);
+const generationMarkersNormal = ref<{ x: number; y: number; generation: number }[]>([]);
+const generationMarkersDiff = ref<{ x: number; y: number; generation: number }[]>([]);
 const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
 const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
 
@@ -91,19 +89,43 @@ const adaptiveMutationRate = computed(() => {
   return `σ=${formatted}`;
 });
 
+const normalBestPercent = computed(() => {
+  const trackLength = track.getTotalLength();
+  return ((ga.value.bestFitnessNormal / trackLength) * 100).toFixed(1);
+});
+
+const diffBestPercent = computed(() => {
+  const trackLength = track.getTotalLength();
+  return ((ga.value.bestFitnessDiff / trackLength) * 100).toFixed(1);
+});
+
 // Initialize simulation
 const init = () => {
   population.value = ga.value.initializePopulation(track);
   generationTime.value = 0;
-  generationMarkers.value = [];
+  generationMarkersNormal.value = [];
+  generationMarkersDiff.value = [];
 };
 
 // Evolve to next generation (can be called manually or automatically)
 const evolveToNextGeneration = (reason: string, winnerCar?: Car) => {
-  // Find the best car (by maxDistanceReached) and save its position
-  const sortedCars = [...population.value].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
-  const bestCar = winnerCar || sortedCars[0];
-  generationMarkers.value.push({ x: bestCar.x, y: bestCar.y, generation: ga.value.generation });
+  // Separate cars by type and find best of each
+  const normalCars = population.value.filter(car => !car.useDifferentialInputs);
+  const diffCars = population.value.filter(car => car.useDifferentialInputs);
+
+  const sortedNormal = [...normalCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
+  const sortedDiff = [...diffCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
+
+  const bestNormal = sortedNormal[0];
+  const bestDiff = sortedDiff[0];
+
+  // Save best positions as markers
+  if (bestNormal) {
+    generationMarkersNormal.value.push({ x: bestNormal.x, y: bestNormal.y, generation: ga.value.generation });
+  }
+  if (bestDiff) {
+    generationMarkersDiff.value.push({ x: bestDiff.x, y: bestDiff.y, generation: ga.value.generation });
+  }
 
   // Evolve to next generation (pass generation time for adaptive mutation rate)
   population.value = ga.value.evolvePopulation(population.value, track, generationTime.value, winnerCar);
@@ -169,29 +191,36 @@ const render = (ctx: CanvasRenderingContext2D) => {
   // Render track
   track.render(ctx);
 
-  // Render generation markers (red dots showing best car position from each generation)
-  ctx.fillStyle = GENERATION_MARKER_COLOR;
+  // Render generation markers (blue for normal, red for diff)
   ctx.font = 'bold 16px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
 
-  for (const marker of generationMarkers.value) {
-    // Draw the dot
+  // Render normal car markers (blue)
+  ctx.fillStyle = NORMAL_MARKER_COLOR;
+  for (const marker of generationMarkersNormal.value) {
     ctx.beginPath();
     ctx.arc(marker.x, marker.y, GENERATION_MARKER_RADIUS, 0, Math.PI * 2);
     ctx.fill();
-
-    // Draw the generation number above the dot
     ctx.fillText(marker.generation.toString(), marker.x, marker.y - GENERATION_MARKER_RADIUS - 2);
   }
 
-  // Render cars (dead first, then alive, then elite last)
+  // Render diff car markers (red)
+  ctx.fillStyle = DIFF_MARKER_COLOR;
+  for (const marker of generationMarkersDiff.value) {
+    ctx.beginPath();
+    ctx.arc(marker.x, marker.y, GENERATION_MARKER_RADIUS, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillText(marker.generation.toString(), marker.x, marker.y - GENERATION_MARKER_RADIUS - 2);
+  }
+
+  // Render cars (dead first, then alive, then elites last)
   const deadCars = population.value.filter(car => !car.alive);
   const aliveCars = population.value.filter(car => car.alive);
 
-  // Separate elite (lead car)
-  const elite = aliveCars.find(car => car.color === ELITE_CAR_COLOR);
-  const others = aliveCars.filter(car => car.color !== ELITE_CAR_COLOR);
+  // Separate elites (both normal and diff)
+  const elites = aliveCars.filter(car => car.color === NORMAL_ELITE_CAR_COLOR || car.color === DIFF_ELITE_CAR_COLOR);
+  const others = aliveCars.filter(car => car.color !== NORMAL_ELITE_CAR_COLOR && car.color !== DIFF_ELITE_CAR_COLOR);
 
   // Render dead cars first
   for (const car of deadCars) {
@@ -203,9 +232,9 @@ const render = (ctx: CanvasRenderingContext2D) => {
     car.render(ctx, showRays.value);
   }
 
-  // Render elite last (on top) with rays if enabled
-  if (elite) {
-    elite.render(ctx, showRays.value);
+  // Render elites last (on top) with rays if enabled
+  for (const car of elites) {
+    car.render(ctx, showRays.value);
   }
 };
 
@@ -245,22 +274,6 @@ const toggleDieOnBackwards = () => {
 // Toggle Kill Slow mode
 const toggleKillSlowCars = () => {
   killSlowCars.value = !killSlowCars.value;
-};
-
-// Toggle differential inputs mode (completely resets simulation)
-const toggleDifferentialInputs = () => {
-  useDifferentialInputs.value = !useDifferentialInputs.value;
-
-  // Complete reset: new GA instance with new architecture
-  randomSeed = Date.now() + Math.random() * 1000000;
-  ga.value = new GeneticAlgorithm(randomSeed, useDifferentialInputs.value);
-
-  // Reset all state
-  generationMarkers.value = [];
-  generationTime.value = 0;
-
-  // Initialize new population
-  init();
 };
 
 // Lifecycle
