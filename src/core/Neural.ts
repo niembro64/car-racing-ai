@@ -113,14 +113,12 @@ export class NeuralNetwork {
 
     // Check for NaN
     if (inputArray.some((v) => isNaN(v) || !isFinite(v))) {
-      console.warn('NaN detected in input, returning safe defaults');
       return { direction: 0 };
     }
 
     const output = this.forward(inputArray);
 
     if (!output || output.length !== 1) {
-      console.warn('Invalid network output, returning safe defaults');
       return { direction: 0 };
     }
 
@@ -129,18 +127,7 @@ export class NeuralNetwork {
 
     // Final NaN check
     if (isNaN(direction)) {
-      console.warn('NaN in output after clipping, returning safe defaults');
       return { direction: 0 };
-    }
-
-    // Debug: log raw outputs occasionally
-    if ((window as any).__debugCarNN && Math.random() < 0.001) {
-      console.log(
-        'NN raw output:',
-        output[0].toFixed(3),
-        '-> direction:',
-        direction.toFixed(2)
-      );
     }
 
     return { direction };

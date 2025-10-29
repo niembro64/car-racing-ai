@@ -31,14 +31,10 @@ export class Track {
 
     // Create a complex race track centerline with multiple curve types
     this.centerline = this.createComplexTrack();
-    console.log(`Centerline has ${this.centerline.length} points`);
 
     // Offset to create walls
     this.innerWall = offsetPolyline(this.centerline, -halfWidth);
     this.outerWall = offsetPolyline(this.centerline, halfWidth);
-    console.log(
-      `Walls created: inner=${this.innerWall.length}, outer=${this.outerWall.length}`
-    );
 
     // Create wall segments
     this.wallSegments = [];
@@ -59,8 +55,6 @@ export class Track {
       });
     }
 
-    console.log(`Total wall segments: ${this.wallSegments.length}`);
-
     // Compute cumulative lengths for fitness calculation
     this.cumulativeLengths = computeCumulativeLengths(this.centerline);
 
@@ -71,16 +65,6 @@ export class Track {
       next.y - this.startPosition.y,
       next.x - this.startPosition.x
     );
-
-    console.log(
-      `Start position: (${this.startPosition.x.toFixed(
-        1
-      )}, ${this.startPosition.y.toFixed(1)})`
-    );
-    console.log(
-      `Start angle: ${((this.startAngle * 180) / Math.PI).toFixed(1)}°`
-    );
-    console.log(`Track length: ${this.getTotalLength().toFixed(1)}`);
   }
 
   // Catmull-Rom spline interpolation between points
@@ -139,40 +123,6 @@ export class Track {
   private createComplexTrack(): Point[] {
     // High interpolation for ultra-smooth curves
     const result = this.interpolateWaypoints(WAYPOINTS, SEGMENTS_PER_CURVE);
-    console.log(`Track created with ${result.length} centerline points`);
-
-    // Verify smooth closure (C¹ tangent and C² curvature continuity)
-    if (result.length >= 4) {
-      const pMinus2 = result[result.length - 2];
-      const pMinus1 = result[result.length - 1];
-      const p0 = result[0];
-      const p1 = result[1];
-      const p2 = result[2];
-
-      // Check tangent matching (first derivative)
-      const tangentEnd = Math.atan2(p0.y - pMinus1.y, p0.x - pMinus1.x);
-      const tangentStart = Math.atan2(p1.y - p0.y, p1.x - p0.x);
-      const tangentDiff = (Math.abs(tangentEnd - tangentStart) * 180) / Math.PI;
-
-      // Check curvature matching (second derivative)
-      const tangentBefore = Math.atan2(
-        pMinus1.y - pMinus2.y,
-        pMinus1.x - pMinus2.x
-      );
-      const tangentAfter = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-      const curvEnd = tangentEnd - tangentBefore;
-      const curvStart = tangentAfter - tangentStart;
-      const curvDiff = (Math.abs(curvEnd - curvStart) * 180) / Math.PI;
-
-      console.log(`=== Loop Closure Quality ===`);
-      console.log(
-        `Tangent difference: ${tangentDiff.toFixed(2)}° (should be ~0°)`
-      );
-      console.log(
-        `Curvature difference: ${curvDiff.toFixed(2)}° (should be ~0°)`
-      );
-    }
-
     return result;
   }
 

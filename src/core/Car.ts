@@ -102,17 +102,6 @@ export class Car {
     // Increment frame counter
     this.frameCount++;
 
-    // Debug occasionally
-    const shouldDebug = Math.random() < 0.0001;
-    if (shouldDebug) {
-      console.log(
-        `Car update: pos=(${this.x.toFixed(1)}, ${this.y.toFixed(1)}), angle=${(
-          (this.angle * 180) /
-          Math.PI
-        ).toFixed(1)}°, speed=${this.speed.toFixed(1)}, alive=${this.alive}`
-      );
-    }
-
     // Cast rays for sensors using PHYSICS angle
     // Rays should be relative to direction of travel, not visual orientation
     const { distances, hits } = this.rayCaster.castRays(
@@ -155,14 +144,6 @@ export class Car {
     // Get AI output (only direction)
     const output: NeuralOutput = this.brain.run(input);
 
-    // Debug log for first car only (to avoid spam)
-    if ((window as any).__debugCarNN && Math.random() < 0.01) {
-      console.log('Neural Net IO:', {
-        input: { rays: input.rays.map((r) => r.toFixed(2)) },
-        output: { direction: output.direction.toFixed(2) },
-      });
-    }
-
     // Apply physics
     this.applyPhysics(output, dt);
 
@@ -187,7 +168,6 @@ export class Car {
 
     // Prevent NaN propagation
     if (isNaN(this.x) || isNaN(this.y) || isNaN(this.angle)) {
-      console.warn('NaN detected in car physics, marking as crashed');
       this.alive = false;
       this.speed = 0;
     }

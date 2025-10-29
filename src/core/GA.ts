@@ -50,15 +50,6 @@ export class GeneticAlgorithm {
       ? NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL
       : NEURAL_NETWORK_ARCHITECTURE_STANDARD;
 
-    const inputMode = this.useDifferentialInputs ? 'differential' : 'standard';
-    console.log(`Starting with random population (${inputMode} inputs)`);
-    console.log(`Neural network architecture: ${architecture.join(' → ')}`);
-    console.log(
-      `Spawning ${GA_POPULATION_SIZE} cars at (${track.startPosition.x.toFixed(
-        1
-      )}, ${track.startPosition.y.toFixed(1)}) pointing forward with ±45° wiggle`
-    );
-
     // Truly random initialization - each car gets a unique random seed and angle
     for (let i = 0; i < GA_POPULATION_SIZE; i++) {
       // Use Math.random() directly for true randomness in initial population
@@ -85,11 +76,6 @@ export class GeneticAlgorithm {
       population.push(car);
     }
 
-    console.log(
-      `Created ${population.length} cars, all alive: ${population.every(
-        (c) => c.alive
-      )}`
-    );
     return population;
   }
 
@@ -106,37 +92,14 @@ export class GeneticAlgorithm {
       (a, b) => b.maxDistanceReached - a.maxDistanceReached
     );
 
-    // Log top performers with percentage
     const trackLength = track.getTotalLength();
-    const topFitness = sortedCars
-      .slice(0, 5)
-      .map((c, i) => {
-        const percentage = (c.maxDistanceReached / trackLength) * 100;
-        const sign = percentage >= 0 ? '+' : '-';
-        const absValue = Math.abs(percentage);
-        const formatted = absValue.toFixed(1).padStart(4, ' ');
-        return `#${i + 1}=${sign}${formatted}%`;
-      })
-      .join(', ');
-    console.log(`Top 5 fitness: ${topFitness}`);
-
     const bestMaxDistance = sortedCars[0].maxDistanceReached;
-    const percentage = (bestMaxDistance / trackLength) * 100;
-    const sign = percentage >= 0 ? '+' : '-';
-    const absValue = Math.abs(percentage);
-    const bestPct = absValue.toFixed(1).padStart(4, ' ');
-    console.log(
-      `Best car: ${sign}${bestPct}%, position: (${sortedCars[0].x.toFixed(
-        1
-      )}, ${sortedCars[0].y.toFixed(1)})`
-    );
 
     // Determine which car's brain to use for next generation
     let bestCarForBreeding: Car;
 
     if (winnerCar) {
       // Use the winner car that completed the lap
-      console.log(`🏆 Using WINNER car's brain (completed lap at ${(winnerCar.currentProgressRatio * 100).toFixed(1)}%)`);
       bestCarForBreeding = winnerCar;
     } else {
       // Filter out the elite car (exact copy) and select best from mutated cars
@@ -146,11 +109,9 @@ export class GeneticAlgorithm {
       const bestMutatedCar = mutatedCars[0];
 
       if (bestMutatedCar) {
-        console.log(`Using best mutated car's brain (excluding elite copy)`);
         bestCarForBreeding = bestMutatedCar;
       } else {
         // Fallback: if no mutated cars (shouldn't happen), use the best overall
-        console.log(`Fallback: using best car's brain (no mutated cars found)`);
         bestCarForBreeding = sortedCars[0];
       }
     }
@@ -159,14 +120,9 @@ export class GeneticAlgorithm {
 
     // Track improvement (use winner's max distance if provided)
     const currentBestDistance = winnerCar ? winnerCar.maxDistanceReached : bestMaxDistance;
-    const currentBestPct = ((currentBestDistance / trackLength) * 100);
-    const currentBestPctFormatted = currentBestPct.toFixed(1).padStart(4, ' ');
 
     if (currentBestDistance > this.bestFitness) {
       this.bestFitness = currentBestDistance;
-      console.log(`Gen ${this.generation}: New best fitness = ${currentBestPctFormatted}%`);
-    } else {
-      console.log(`Gen ${this.generation}: Best fitness = ${currentBestPctFormatted}%`);
     }
 
     // Create next generation
@@ -183,55 +139,11 @@ export class GeneticAlgorithm {
       architecture
     );
 
-    // Print saved weights at start of generation
-    if (
-      this.bestWeights &&
-      this.bestWeights.layers &&
-      this.bestWeights.layers[0]
-    ) {
-      const savedSampleWeights = this.bestWeights.layers[0].weights[0].slice(
-        0,
-        5
-      );
-      const savedSampleBiases = this.bestWeights.layers[0].biases.slice(0, 5);
-      console.log(
-        `[Gen ${this.generation}] Saved weights:`,
-        savedSampleWeights.map((w: number) => w.toFixed(4))
-      );
-      console.log(
-        `[Gen ${this.generation}] Saved biases:`,
-        savedSampleBiases.map((b: number) => b.toFixed(4))
-      );
-    }
-
     // Calculate adaptive mutation rate (inverse of generation time)
     // Use minimum threshold to prevent extreme mutation rates for very short generations
     const minGenerationTime = 1.0; // seconds
     const effectiveTime = Math.max(generationTime, minGenerationTime);
     const adaptiveMutationRate = GA_MUTATION_RATE / effectiveTime;
-
-    console.log(
-      `Generation time: ${generationTime.toFixed(
-        2
-      )}s, Adaptive σ: ${adaptiveMutationRate.toFixed(
-        4
-      )} (base: ${GA_MUTATION_RATE.toFixed(3)})`
-    );
-
-    // Calculate mutation range for logging
-    const minMult = this.getMutationMultiplier(1);
-    const midMult = this.getMutationMultiplier(
-      Math.floor(GA_POPULATION_SIZE / 2)
-    );
-    const maxMult = this.getMutationMultiplier(GA_POPULATION_SIZE - 1);
-    console.log(`Starting Gen ${this.generation}:`);
-    console.log(
-      `  Brain 1: ${minMult.toFixed(2)}×, Brain ${Math.floor(
-        GA_POPULATION_SIZE / 2
-      )}: ${midMult.toFixed(2)}×, Brain ${
-        GA_POPULATION_SIZE - 1
-      }: ${maxMult.toFixed(2)}×`
-    );
 
     // Elite car points forward with random wiggle
     const eliteWiggle = (this.rng.next() - 0.5) * (Math.PI / 2); // ±45° = ±π/4, range is π/2
@@ -274,33 +186,6 @@ export class GeneticAlgorithm {
       );
     }
 
-    // Verify mutation diversity by checking a few cars
-    if (nextGeneration.length >= 4) {
-      const samples = [
-        1,
-        Math.floor(GA_POPULATION_SIZE * 0.33),
-        Math.floor(GA_POPULATION_SIZE * 0.66),
-        GA_POPULATION_SIZE - 1,
-      ];
-      console.log('Mutation diversity check:');
-      samples.forEach((idx) => {
-        if (idx < nextGeneration.length && idx > 0) {
-          const carWeights = nextGeneration[idx].brain.toJSON();
-          const w0 = carWeights.layers[0].weights[0][0];
-          const savedW0 = this.bestWeights.layers[0].weights[0][0];
-          const diff = Math.abs(w0 - savedW0);
-          const mult = this.getMutationMultiplier(idx);
-          console.log(
-            `  Car ${idx}: multiplier=${mult.toFixed(
-              2
-            )}×, weight[0][0]=${w0.toFixed(4)}, diff from saved=${diff.toFixed(
-              4
-            )}`
-          );
-        }
-      });
-    }
-
     return nextGeneration;
   }
 
@@ -324,9 +209,8 @@ export class GeneticAlgorithm {
       this.generation = data.generation || 0;
       this.bestFitness = data.bestFitness || 0;
       this.bestWeights = data.bestWeights;
-      console.log('Imported weights successfully');
     } catch (error) {
-      console.error('Failed to import weights:', error);
+      // Silently fail
     }
   }
 
@@ -335,6 +219,5 @@ export class GeneticAlgorithm {
     this.generation = 0;
     this.bestFitness = 0;
     this.bestWeights = null;
-    console.log('Reset evolution');
   }
 }

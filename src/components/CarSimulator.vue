@@ -8,22 +8,22 @@
     ></canvas>
 
     <div class="hud">
-      <div class="stat">Generation: {{ ga.generation }}</div>
+      <div class="stat">GEN: {{ ga.generation }}</div>
       <div class="stat">{{ adaptiveMutationRate }}</div>
-      <div class="stat">Inputs: {{ useDifferentialInputs ? 'Differential (5)' : 'Standard (9)' }}</div>
+      <div class="stat">INPUTS: {{ useDifferentialInputs ? 'DIFF (5)' : 'STD (9)' }}</div>
     </div>
 
     <div class="controls">
-      <button @click="nextGeneration">Next Generation</button>
-      <button @click="reset">Reset</button>
+      <button @click="nextGeneration">NEXT GEN</button>
+      <button @click="reset">RESET</button>
       <button @click="toggleDieOnBackwards" :class="{ active: dieOnBackwards }">
-        Kill Backwards: {{ dieOnBackwards ? ' ON' : 'OFF' }}
+        KILL BACK: {{ dieOnBackwards ? 'ON' : 'OFF' }}
       </button>
       <button @click="toggleKillSlowCars" :class="{ active: killSlowCars }">
-        Kill Slow: {{ killSlowCars ? ' ON' : 'OFF' }}
+        KILL SLOW: {{ killSlowCars ? 'ON' : 'OFF' }}
       </button>
       <button @click="toggleDifferentialInputs" :class="{ active: useDifferentialInputs }">
-        Differential Inputs: {{ useDifferentialInputs ? ' ON' : 'OFF' }}
+        DIFF INPUTS: {{ useDifferentialInputs ? 'ON' : 'OFF' }}
       </button>
     </div>
   </div>
@@ -100,9 +100,6 @@ const init = () => {
 
 // Evolve to next generation (can be called manually or automatically)
 const evolveToNextGeneration = (reason: string, winnerCar?: Car) => {
-  const aliveCarCount = population.value.filter(car => car.alive).length;
-  console.log(`Generation ended: ${reason}. ${aliveCarCount}/${population.value.length} cars alive. Time: ${generationTime.value.toFixed(2)}s`);
-
   // Find the best car (by maxDistanceReached) and save its position
   const sortedCars = [...population.value].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
   const bestCar = winnerCar || sortedCars[0];
@@ -128,17 +125,6 @@ const updatePhysics = (dt: number) => {
 
       // Check if car completed a lap (reached 100% progress)
       if (car.currentProgressRatio >= 1.0) {
-        const isElite = car.color === ELITE_CAR_COLOR;
-        console.log(`🏁 ${isElite ? 'ELITE' : 'NORMAL'} CAR FINISHED LAP! Progress: ${(car.currentProgressRatio * 100).toFixed(1)}%`);
-
-        // Log all cars' progress for debugging
-        console.log('All cars progress at finish:', population.value.map((c, i) => ({
-          index: i,
-          elite: c.color === ELITE_CAR_COLOR,
-          alive: c.alive,
-          progress: (c.currentProgressRatio * 100).toFixed(1) + '%'
-        })));
-
         // Kill all other cars immediately
         population.value.forEach(c => {
           if (c !== car) {
@@ -275,8 +261,6 @@ const toggleDifferentialInputs = () => {
 
   // Initialize new population
   init();
-
-  console.log(`Switched to ${useDifferentialInputs.value ? 'differential' : 'standard'} input mode`);
 };
 
 // Lifecycle
