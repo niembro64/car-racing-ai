@@ -67,9 +67,17 @@ export class NeuralNetwork {
     return Math.tanh(clamp(x, -10, 10));
   }
 
+  // ReLU activation (max(0, x))
+  private relu(x: number): number {
+    return Math.max(0, x);
+  }
+
   // Forward pass through network
   private forward(input: number[]): number[] {
     let current = input;
+    // Check if this is normal car architecture (9 inputs) - use ReLU
+    // Otherwise (5 inputs for diff) - use linear
+    const useReLU = this.layerSizes[0] === 9;
 
     for (let i = 0; i < this.structure.layers.length; i++) {
       const layer = this.structure.layers[i];
@@ -83,11 +91,13 @@ export class NeuralNetwork {
           sum += current[k] * layer.weights[j][k];
         }
 
-        // Linear activation for hidden layers, tanh for output layer
+        // Use appropriate activation based on layer and architecture
         if (isOutputLayer) {
-          next.push(this.tanh(sum));
+          next.push(this.tanh(sum)); // Always tanh for output
+        } else if (useReLU) {
+          next.push(this.relu(sum)); // ReLU for normal car hidden layers
         } else {
-          next.push(sum); // Linear activation (identity)
+          next.push(sum); // Linear for diff car hidden layers
         }
       }
 

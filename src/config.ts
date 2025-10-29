@@ -212,7 +212,7 @@ export const DIFF_CAR_RAY_WIDTH = 0.5;
 export const DIFF_CAR_RAY_HIT_RADIUS = 3;
 
 // Centerline ray (debug visualization)
-export const CENTERLINE_RAY_HIT_COLOR = '#00ff00'; // Green centerline dot
+export const CENTERLINE_RAY_HIT_COLOR = '#ffffff'; // Green centerline dot
 
 // Generation markers
 export const NORMAL_MARKER_COLOR = NORMAL_CAR_COLOR; // Blue markers for normal cars
