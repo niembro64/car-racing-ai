@@ -165,6 +165,14 @@ export const NEURAL_NETWORK_ARCHITECTURE =
 // - [9, 8, 4, 1] - Two hidden layers for hierarchical feature learning
 
 // ============================================================================
+// SIMULATION DEFAULTS
+// ============================================================================
+
+export const DEFAULT_DIE_ON_BACKWARDS = true;      // Kill cars that go backwards
+export const DEFAULT_KILL_SLOW_CARS = true;        // Kill cars that don't reach 1% in 1 second
+export const DEFAULT_DIFFERENTIAL_INPUTS = true;   // Use differential input mode (5 inputs vs 9)
+
+// ============================================================================
 // RENDERING CONFIGURATION
 // ============================================================================
 

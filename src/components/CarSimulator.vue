@@ -34,7 +34,7 @@ import { ref, onMounted, onUnmounted, computed, type Ref } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
-import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, ELITE_CAR_COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, GENERATION_MARKER_COLOR, GENERATION_MARKER_RADIUS } from '@/config';
+import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, ELITE_CAR_COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, GENERATION_MARKER_COLOR, GENERATION_MARKER_RADIUS, DEFAULT_DIE_ON_BACKWARDS, DEFAULT_KILL_SLOW_CARS, DEFAULT_DIFFERENTIAL_INPUTS } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
@@ -68,7 +68,7 @@ const updateCanvasDimensions = () => {
 
 const track = new Track(TRACK_WIDTH_HALF);
 // Use truly random seed based on current time and Math.random()
-const useDifferentialInputs = ref(true); // Start with differential inputs ON
+const useDifferentialInputs = ref(DEFAULT_DIFFERENTIAL_INPUTS);
 let randomSeed = Date.now() + Math.random() * 1000000;
 const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed, useDifferentialInputs.value));
 
@@ -77,8 +77,8 @@ const showRays = ref(true);
 const speedMultiplier = ref(1);
 const generationTime = ref(0);
 const generationMarkers = ref<{ x: number; y: number; generation: number }[]>([]);
-const dieOnBackwards = ref(true);
-const killSlowCars = ref(true);
+const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
+const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
 
 let animationFrameId: number | null = null;
 const FIXED_DT = 1 / 60; // 60 Hz physics
