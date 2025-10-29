@@ -116,9 +116,9 @@ export class NeuralNetwork {
         } else {
           // Standard mode: GELU for hidden layers, sigmoid for output
           if (i < this.structure.layers.length - 1) {
-            next.push(this.gelu(sum));
+            next.push(this.linear(sum));
           } else {
-            next.push(this.sigmoid(sum));
+            next.push(this.tanh(sum));
           }
         }
       }
