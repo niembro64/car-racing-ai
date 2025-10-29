@@ -12,22 +12,13 @@ import {
   CAR_STEERING_SENSITIVITY,
   CAR_WIDTH,
   CAR_HEIGHT,
-  NORM_RELU_ELITE_CAR_COLOR,
-  DIFF_LINEAR_ELITE_CAR_COLOR,
   CAR_LABEL_COLOR_ALIVE,
   CAR_LABEL_COLOR_DEAD,
-  NORM_RELU_CAR_RAY_COLOR,
-  NORM_RELU_CAR_RAY_HIT_COLOR,
-  NORM_RELU_CAR_RAY_WIDTH,
-  NORM_RELU_CAR_RAY_HIT_RADIUS,
-  DIFF_LINEAR_CAR_RAY_COLOR,
-  DIFF_LINEAR_CAR_RAY_HIT_COLOR,
-  DIFF_LINEAR_CAR_RAY_WIDTH,
-  DIFF_LINEAR_CAR_RAY_HIT_RADIUS,
   CENTERLINE_RAY_HIT_COLOR,
   SENSOR_RAY_PAIRS,
   SHOW_CAR_PERCENTAGES,
   DEFAULT_DIFFERENTIAL_INPUTS,
+  CAR_BRAIN_CONFIGS,
 } from '@/config';
 
 export class Car {
@@ -253,17 +244,24 @@ export class Car {
 
   // Render car on canvas
   render(ctx: CanvasRenderingContext2D, showRays: boolean = false): void {
+    // Find the config for this car type based on useDifferentialInputs
+    const config = CAR_BRAIN_CONFIGS.find(
+      c => c.useDifferentialInputs === this.useDifferentialInputs
+    );
+
+    if (!config) {
+      console.error('No config found for car with useDifferentialInputs =', this.useDifferentialInputs);
+      return;
+    }
+
     // Render rays if requested and car is alive
     if (showRays && this.alive) {
       // Render centerline ray (showing distance from car to track center)
       if (this.lastCenterlinePoint) {
-        const isElite = this.color === NORM_RELU_ELITE_CAR_COLOR || this.color === DIFF_LINEAR_ELITE_CAR_COLOR;
-
-        // Use colors based on input type
-        const rayColor = this.useDifferentialInputs ? DIFF_LINEAR_CAR_RAY_COLOR : NORM_RELU_CAR_RAY_COLOR;
+        const rayColor = config.colors.ray;
         const hitColor = CENTERLINE_RAY_HIT_COLOR;
-        const lineWidth = this.useDifferentialInputs ? DIFF_LINEAR_CAR_RAY_WIDTH : NORM_RELU_CAR_RAY_WIDTH;
-        const hitRadius = this.useDifferentialInputs ? DIFF_LINEAR_CAR_RAY_HIT_RADIUS : NORM_RELU_CAR_RAY_HIT_RADIUS;
+        const lineWidth = config.rayVisualization.width;
+        const hitRadius = config.rayVisualization.hitRadius;
 
         ctx.save();
         // Draw line to centerline
@@ -289,11 +287,12 @@ export class Car {
         ctx.fill();
         ctx.restore();
       }
-      // Use colors based on input type (DiffLinear vs NormReLU)
-      const rayColor = this.useDifferentialInputs ? DIFF_LINEAR_CAR_RAY_COLOR : NORM_RELU_CAR_RAY_COLOR;
-      const hitColor = this.useDifferentialInputs ? DIFF_LINEAR_CAR_RAY_HIT_COLOR : NORM_RELU_CAR_RAY_HIT_COLOR;
-      const lineWidth = this.useDifferentialInputs ? DIFF_LINEAR_CAR_RAY_WIDTH : NORM_RELU_CAR_RAY_WIDTH;
-      const hitRadius = this.useDifferentialInputs ? DIFF_LINEAR_CAR_RAY_HIT_RADIUS : NORM_RELU_CAR_RAY_HIT_RADIUS;
+
+      // Use colors and settings from config
+      const rayColor = config.colors.ray;
+      const hitColor = config.colors.rayHit;
+      const lineWidth = config.rayVisualization.width;
+      const hitRadius = config.rayVisualization.hitRadius;
 
       this.rayCaster.renderRays(
         ctx,

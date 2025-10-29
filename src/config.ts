@@ -31,6 +31,40 @@
 
 import { Point } from './core/math/geom';
 
+// ============================================================================
+// CAR BRAIN CONFIGURATION SYSTEM
+// ============================================================================
+// Defines all car types with their neural network architectures, colors,
+// and visualization settings in a centralized, extensible structure.
+
+export interface CarBrainConfig {
+  // Identification
+  id: string; // Unique identifier (e.g., 'normrelu', 'difflinear')
+  displayName: string; // Full name for display (e.g., 'NormReLU', 'DiffLinear')
+  shortName: string; // Abbreviated name for HUD (e.g., 'NR', 'DL')
+  description: string; // Human-readable description of the approach
+
+  // Neural network configuration
+  architecture: number[]; // Layer sizes [input, hidden..., output]
+  useDifferentialInputs: boolean; // true = differential pairs, false = raw sensors
+  activationType: 'relu' | 'linear'; // Hidden layer activation function
+
+  // Visual appearance
+  colors: {
+    normal: string; // Color for standard (mutated) cars
+    elite: string; // Color for elite (best) car
+    ray: string; // Color for sensor rays
+    rayHit: string; // Color for ray hit points
+    marker: string; // Color for generation markers on track
+  };
+
+  // Ray visualization settings
+  rayVisualization: {
+    width: number; // Line width for sensor rays
+    hitRadius: number; // Radius of hit point circles
+  };
+}
+
 export function appendMirroredWaypoints(
   waypoints: Point[],
   canvasWidth: number
@@ -165,12 +199,114 @@ export const NEURAL_NETWORK_ARCHITECTURE =
 // - [9, 8, 4, 1] - Two hidden layers for hierarchical feature learning
 
 // ============================================================================
+// CAR BRAIN TYPE DEFINITIONS
+// ============================================================================
+// Array of all car brain configurations to be evolved in parallel.
+// Each config represents a distinct approach to the racing problem.
+//
+// ┌────────────────────────────────────────────────────────────────────────────────────────────────────┐
+// │                            CAR BRAIN CONFIGURATION TABLE                                           │
+// ├─────────────┬──────────────┬──────┬────────────┬────────────┬────────────┬────────────────────────┤
+// │ ID          │ Display Name │ Code │ Inputs     │ Activation │ Arch       │ Colors                 │
+// ├─────────────┼──────────────┼──────┼────────────┼────────────┼────────────┼────────────────────────┤
+// │ difflinear  │ DIFF_LINEAR  │  DL  │ 5 (diff)   │ Linear     │ [5, 4, 1]  │ Red    (#880000/ff5555)│
+// │ normlinear  │ NORM_LINEAR  │  NL  │ 9 (raw)    │ Linear     │ [9, 6, 1]  │ Blue   (#226699/33aaff)│
+// │ normrelu    │ NORM_RELU    │  NR  │ 9 (raw)    │ ReLU       │ [9, 6, 1]  │ Yellow (#fbbf24/fcd34d)│
+// └─────────────┴──────────────┴──────┴────────────┴────────────┴────────────┴────────────────────────┘
+//
+// Input Types:
+//   • 5 (diff) = 1 forward sensor + 4 differential pairs (left - right)
+//   • 9 (raw)  = 9 individual sensor rays covering 180° field of view
+//
+// Activation Types:
+//   • Linear = Identity function in hidden layers (f(x) = x)
+//   • ReLU   = Rectified Linear Unit in hidden layers (f(x) = max(0, x))
+//
+// Colors: normal/elite (normal = mutated cars, elite = best car)
+//
+// Population Split:
+//   • Total population = 100 cars
+//   • Cars per type = 100 / 3 ≈ 33 cars each
+//   • Each type evolves independently
+//
+
+export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
+  {
+    id: 'difflinear',
+    displayName: 'DIFF_LINEAR',
+    shortName: 'DL',
+    description:
+      '5 differential sensor inputs (1 forward + 4 L-R pairs) with Linear activation in hidden layers',
+    architecture: NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL,
+    useDifferentialInputs: true,
+    activationType: 'linear',
+    colors: {
+      normal: '#880000', // Dark muted red
+      elite: '#ff5555', // Bright red
+      ray: '#880000',
+      rayHit: '#880000',
+      marker: '#880000',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    id: 'normlinear',
+    displayName: 'NORM_LINEAR',
+    shortName: 'NL',
+    description: '9 raw sensor inputs with Linear activation in hidden layers',
+    architecture: NEURAL_NETWORK_ARCHITECTURE_STANDARD,
+    useDifferentialInputs: false,
+    activationType: 'linear',
+    colors: {
+      normal: '#226699', // Dark muted blue
+      elite: '#33aaff', // Bright blue
+      ray: '#226699',
+      rayHit: '#226699',
+      marker: '#226699',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    id: 'normrelu',
+    displayName: 'NORM_RELU',
+    shortName: 'NR',
+    description: '9 raw sensor inputs with ReLU activation in hidden layers',
+    architecture: NEURAL_NETWORK_ARCHITECTURE_STANDARD,
+    useDifferentialInputs: false,
+    activationType: 'relu',
+
+    colors: {
+      normal: '#fbbf24',
+      elite: '#fcd34d',
+      ray: '#fbbf24',
+      rayHit: '#fbbf24',
+      marker: '#fbbf24',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+];
+
+// Helper function to get config by ID
+export function getCarBrainConfig(id: string): CarBrainConfig | undefined {
+  return CAR_BRAIN_CONFIGS.find((config) => config.id === id);
+}
+
+// ============================================================================
 // SIMULATION DEFAULTS
 // ============================================================================
 
-export const DEFAULT_DIFFERENTIAL_INPUTS = true;   // Default input mode for Car constructor
-export const DEFAULT_DIE_ON_BACKWARDS = true;      // Kill cars that go backwards
-export const DEFAULT_KILL_SLOW_CARS = true;        // Kill cars that don't reach 1% in 1 second
+export const DEFAULT_DIFFERENTIAL_INPUTS = true; // Default input mode for Car constructor
+export const DEFAULT_DIE_ON_BACKWARDS = true; // Kill cars that go backwards
+export const DEFAULT_KILL_SLOW_CARS = true; // Kill cars that don't reach 1% in 1 second
 
 // ============================================================================
 // RENDERING CONFIGURATION

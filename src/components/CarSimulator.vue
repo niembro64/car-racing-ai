@@ -8,12 +8,32 @@
     ></canvas>
 
     <div class="hud">
-      <div class="stat" :style="{ color: NORM_RELU_ELITE_CAR_COLOR }">NR-GEN: {{ ga.generationNormReLU }}</div>
-      <div class="stat" :style="{ color: DIFF_LINEAR_ELITE_CAR_COLOR }">DL-GEN: {{ ga.generationDiffLinear }}</div>
-      <div class="stat">{{ adaptiveMutationRateNormReLU }}</div>
-      <div class="stat">{{ adaptiveMutationRateDiffLinear }}</div>
-      <div class="stat" :style="{ color: NORM_RELU_ELITE_CAR_COLOR }">NORMRELU: {{ normReLUBestPercent }}%</div>
-      <div class="stat" :style="{ color: DIFF_LINEAR_ELITE_CAR_COLOR }">DIFFLINEAR: {{ diffLinearBestPercent }}%</div>
+      <table class="stats-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Generation</th>
+            <th>Mutation Rate</th>
+            <th>Best Fitness</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="config in CAR_BRAIN_CONFIGS" :key="config.id">
+            <td :style="{ color: config.colors.elite, fontWeight: 'bold' }">
+              {{ config.displayName }}
+            </td>
+            <td :style="{ color: config.colors.elite }">
+              {{ ga.getGeneration(config.id) }}
+            </td>
+            <td>
+              {{ getAdaptiveMutationRate(config.id) }}
+            </td>
+            <td :style="{ color: config.colors.elite }">
+              {{ getBestFitnessPercent(config.id) }}%
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <div class="controls">
@@ -30,11 +50,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, type Ref } from 'vue';
+import { ref, onMounted, onUnmounted, type Ref } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
-import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, NORM_RELU_ELITE_CAR_COLOR, DIFF_LINEAR_ELITE_CAR_COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, NORM_RELU_MARKER_COLOR, DIFF_LINEAR_MARKER_COLOR, GENERATION_MARKER_RADIUS, DEFAULT_DIE_ON_BACKWARDS, DEFAULT_KILL_SLOW_CARS } from '@/config';
+import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, CAR_BRAIN_CONFIGS, CANVAS_WIDTH, CANVAS_HEIGHT, GENERATION_MARKER_RADIUS, DEFAULT_DIE_ON_BACKWARDS, DEFAULT_KILL_SLOW_CARS, type CarBrainConfig } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
@@ -74,93 +94,76 @@ const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed));
 const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(true);
 const speedMultiplier = ref(1);
-const generationTimeNormReLU = ref(0);
-const generationTimeDiffLinear = ref(0);
-const generationMarkersNormReLU = ref<{ x: number; y: number; generation: number }[]>([]);
-const generationMarkersDiffLinear = ref<{ x: number; y: number; generation: number }[]>([]);
 const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
 const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
+
+// Dynamic generation tracking for all config types
+const generationTimeByConfigId = ref<Map<string, number>>(new Map());
+const generationMarkersByConfigId = ref<Map<string, { x: number; y: number; generation: number }[]>>(new Map());
+
+// Initialize tracking maps for all configs
+for (const config of CAR_BRAIN_CONFIGS) {
+  generationTimeByConfigId.value.set(config.id, 0);
+  generationMarkersByConfigId.value.set(config.id, []);
+}
+
 
 let animationFrameId: number | null = null;
 const FIXED_DT = 1 / 60; // 60 Hz physics
 
-const adaptiveMutationRateNormReLU = computed(() => {
+// Generic helper to compute adaptive mutation rate for a config
+const getAdaptiveMutationRate = (configId: string): string => {
+  const config = CAR_BRAIN_CONFIGS.find(c => c.id === configId);
+  if (!config) return 'N/A';
+
   const minGenerationTime = 1.0;
-  const effectiveTime = Math.max(generationTimeNormReLU.value, minGenerationTime);
+  const effectiveTime = Math.max(generationTimeByConfigId.value.get(configId) ?? 0, minGenerationTime);
   const rate = GA_MUTATION_RATE / effectiveTime;
-  const formatted = rate.toFixed(4).padStart(6, ' '); // "X.XXXX" format
-  return `σNR=${formatted}`;
-});
+  return rate.toFixed(4); // Just the number for table display
+};
 
-const adaptiveMutationRateDiffLinear = computed(() => {
-  const minGenerationTime = 1.0;
-  const effectiveTime = Math.max(generationTimeDiffLinear.value, minGenerationTime);
-  const rate = GA_MUTATION_RATE / effectiveTime;
-  const formatted = rate.toFixed(4).padStart(6, ' '); // "X.XXXX" format
-  return `σDL=${formatted}`;
-});
-
-const normReLUBestPercent = computed(() => {
+// Generic helper to compute best fitness percentage for a config
+const getBestFitnessPercent = (configId: string): string => {
   const trackLength = track.getTotalLength();
-  return ((ga.value.bestFitnessNormReLU / trackLength) * 100).toFixed(1);
-});
-
-const diffLinearBestPercent = computed(() => {
-  const trackLength = track.getTotalLength();
-  return ((ga.value.bestFitnessDiffLinear / trackLength) * 100).toFixed(1);
-});
+  const bestFitness = ga.value.getBestFitness(configId);
+  return ((bestFitness / trackLength) * 100).toFixed(1);
+};
 
 // Initialize simulation
 const init = () => {
   population.value = ga.value.initializePopulation(track);
-  generationTimeNormReLU.value = 0;
-  generationTimeDiffLinear.value = 0;
-  generationMarkersNormReLU.value = [];
-  generationMarkersDiffLinear.value = [];
+
+  // Reset generation times and markers for all configs
+  for (const config of CAR_BRAIN_CONFIGS) {
+    generationTimeByConfigId.value.set(config.id, 0);
+    generationMarkersByConfigId.value.set(config.id, []);
+  }
 };
 
-// Evolve NormReLU population independently
-const evolveNormReLUPopulation = (reason: string, winnerCar?: Car) => {
-  const normReLUCars = population.value.filter(car => !car.useDifferentialInputs);
-  const diffLinearCars = population.value.filter(car => car.useDifferentialInputs);
+// Generic evolution function that works with any car brain config
+const evolvePopulationByConfig = (config: CarBrainConfig, _reason: string, winnerCar?: Car) => {
+  // Separate cars by type
+  const configCars = population.value.filter(car => car.useDifferentialInputs === config.useDifferentialInputs);
+  const otherCars = population.value.filter(car => car.useDifferentialInputs !== config.useDifferentialInputs);
 
-  // Find best NormReLU car for marker
-  const sortedNormReLU = [...normReLUCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
-  const bestNormReLU = sortedNormReLU[0];
-
-  // Save best position as marker
-  if (bestNormReLU) {
-    generationMarkersNormReLU.value.push({ x: bestNormReLU.x, y: bestNormReLU.y, generation: ga.value.generationNormReLU });
-  }
-
-  // Evolve NormReLU population
-  const newNormReLUCars = ga.value.evolveNormReLUPopulation(normReLUCars, track, generationTimeNormReLU.value, winnerCar);
-  generationTimeNormReLU.value = 0;
-
-  // Combine with existing DiffLinear cars
-  population.value = [...newNormReLUCars, ...diffLinearCars];
-};
-
-// Evolve DiffLinear population independently
-const evolveDiffLinearPopulation = (reason: string, winnerCar?: Car) => {
-  const normReLUCars = population.value.filter(car => !car.useDifferentialInputs);
-  const diffLinearCars = population.value.filter(car => car.useDifferentialInputs);
-
-  // Find best DiffLinear car for marker
-  const sortedDiffLinear = [...diffLinearCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
-  const bestDiffLinear = sortedDiffLinear[0];
+  // Find best car for marker
+  const sortedCars = [...configCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
+  const bestCar = sortedCars[0];
 
   // Save best position as marker
-  if (bestDiffLinear) {
-    generationMarkersDiffLinear.value.push({ x: bestDiffLinear.x, y: bestDiffLinear.y, generation: ga.value.generationDiffLinear });
+  if (bestCar) {
+    const markers = generationMarkersByConfigId.value.get(config.id) ?? [];
+    markers.push({ x: bestCar.x, y: bestCar.y, generation: ga.value.getGeneration(config.id) });
+    generationMarkersByConfigId.value.set(config.id, markers);
   }
 
-  // Evolve DiffLinear population
-  const newDiffLinearCars = ga.value.evolveDiffLinearPopulation(diffLinearCars, track, generationTimeDiffLinear.value, winnerCar);
-  generationTimeDiffLinear.value = 0;
+  // Evolve this population
+  const generationTime = generationTimeByConfigId.value.get(config.id) ?? 0;
+  const newCars = ga.value.evolvePopulation(configCars, config, track, generationTime, winnerCar);
+  generationTimeByConfigId.value.set(config.id, 0);
 
-  // Combine with existing NormReLU cars
-  population.value = [...normReLUCars, ...newDiffLinearCars];
+  // Combine with other car types
+  population.value = [...newCars, ...otherCars];
 };
 
 // Update physics
@@ -178,21 +181,20 @@ const updatePhysics = (dt: number) => {
 
       // Check if car completed a lap (reached 100% progress)
       if (car.currentProgressRatio >= 1.0) {
-        const sameType = car.useDifferentialInputs;
+        // Find the config for this car type
+        const config = CAR_BRAIN_CONFIGS.find(c => c.useDifferentialInputs === car.useDifferentialInputs);
 
-        // Kill all cars of same type immediately
-        population.value.forEach(c => {
-          if (c.useDifferentialInputs === sameType && c !== car) {
-            c.alive = false;
-            c.speed = 0;
-          }
-        });
+        if (config) {
+          // Kill all cars of same type immediately
+          population.value.forEach(c => {
+            if (c.useDifferentialInputs === config.useDifferentialInputs && c !== car) {
+              c.alive = false;
+              c.speed = 0;
+            }
+          });
 
-        // Evolve only that car's population type
-        if (sameType) {
-          evolveDiffLinearPopulation('car completed lap', car);
-        } else {
-          evolveNormReLUPopulation('car completed lap', car);
+          // Evolve only that car's population type
+          evolvePopulationByConfig(config, 'car completed lap', car);
         }
         return; // Stop processing this frame
       }
@@ -211,23 +213,20 @@ const updatePhysics = (dt: number) => {
     }
   }
 
-  // Update generation times for both populations
-  generationTimeNormReLU.value += dt;
-  generationTimeDiffLinear.value += dt;
-
-  // Check each population independently for all-dead condition
-  const normReLUCars = population.value.filter(c => !c.useDifferentialInputs);
-  const diffLinearCars = population.value.filter(c => c.useDifferentialInputs);
-
-  const allNormReLUDead = normReLUCars.every(c => !c.alive);
-  const allDiffLinearDead = diffLinearCars.every(c => !c.alive);
-
-  if (allNormReLUDead && normReLUCars.length > 0) {
-    evolveNormReLUPopulation('all NormReLU cars crashed');
+  // Update generation times for all config types
+  for (const config of CAR_BRAIN_CONFIGS) {
+    const currentTime = generationTimeByConfigId.value.get(config.id) ?? 0;
+    generationTimeByConfigId.value.set(config.id, currentTime + dt);
   }
 
-  if (allDiffLinearDead && diffLinearCars.length > 0) {
-    evolveDiffLinearPopulation('all DiffLinear cars crashed');
+  // Check each config population independently for all-dead condition
+  for (const config of CAR_BRAIN_CONFIGS) {
+    const configCars = population.value.filter(c => c.useDifferentialInputs === config.useDifferentialInputs);
+    const allDead = configCars.every(c => !c.alive);
+
+    if (allDead && configCars.length > 0) {
+      evolvePopulationByConfig(config, `all ${config.displayName} cars crashed`);
+    }
   }
 };
 
@@ -239,36 +238,31 @@ const render = (ctx: CanvasRenderingContext2D) => {
   // Render track
   track.render(ctx);
 
-  // Render generation markers (blue for NormReLU, red for DiffLinear)
+  // Render generation markers dynamically for all configs
   ctx.font = 'bold 16px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
 
-  // Render NormReLU car markers (blue)
-  ctx.fillStyle = NORM_RELU_MARKER_COLOR;
-  for (const marker of generationMarkersNormReLU.value) {
-    ctx.beginPath();
-    ctx.arc(marker.x, marker.y, GENERATION_MARKER_RADIUS, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillText(marker.generation.toString(), marker.x, marker.y - GENERATION_MARKER_RADIUS - 2);
-  }
+  for (const config of CAR_BRAIN_CONFIGS) {
+    const markers = generationMarkersByConfigId.value.get(config.id) ?? [];
+    ctx.fillStyle = config.colors.marker;
 
-  // Render DiffLinear car markers (red)
-  ctx.fillStyle = DIFF_LINEAR_MARKER_COLOR;
-  for (const marker of generationMarkersDiffLinear.value) {
-    ctx.beginPath();
-    ctx.arc(marker.x, marker.y, GENERATION_MARKER_RADIUS, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillText(marker.generation.toString(), marker.x, marker.y - GENERATION_MARKER_RADIUS - 2);
+    for (const marker of markers) {
+      ctx.beginPath();
+      ctx.arc(marker.x, marker.y, GENERATION_MARKER_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillText(marker.generation.toString(), marker.x, marker.y - GENERATION_MARKER_RADIUS - 2);
+    }
   }
 
   // Render cars (dead first, then alive, then elites last)
   const deadCars = population.value.filter(car => !car.alive);
   const aliveCars = population.value.filter(car => car.alive);
 
-  // Separate elites (both NormReLU and DiffLinear)
-  const elites = aliveCars.filter(car => car.color === NORM_RELU_ELITE_CAR_COLOR || car.color === DIFF_LINEAR_ELITE_CAR_COLOR);
-  const others = aliveCars.filter(car => car.color !== NORM_RELU_ELITE_CAR_COLOR && car.color !== DIFF_LINEAR_ELITE_CAR_COLOR);
+  // Separate elites (check against all config elite colors)
+  const eliteColors = CAR_BRAIN_CONFIGS.map(c => c.colors.elite);
+  const elites = aliveCars.filter(car => eliteColors.includes(car.color));
+  const others = aliveCars.filter(car => !eliteColors.includes(car.color));
 
   // Render dead cars first
   for (const car of deadCars) {
@@ -304,10 +298,11 @@ const animate = () => {
   animationFrameId = requestAnimationFrame(animate);
 };
 
-// Manually trigger next generation for both populations
+// Manually trigger next generation for all populations
 const nextGeneration = () => {
-  evolveNormReLUPopulation('manual trigger');
-  evolveDiffLinearPopulation('manual trigger');
+  for (const config of CAR_BRAIN_CONFIGS) {
+    evolvePopulationByConfig(config, 'manual trigger');
+  }
 };
 
 // Reset the simulation by reloading the page
@@ -368,21 +363,46 @@ canvas {
 
 .hud {
   display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
   justify-content: center;
-  color: #ffffff;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
   padding: 8px 16px;
   margin: 0;
 }
 
-.stat {
-  font-weight: 600;
+.stats-table {
+  border-collapse: collapse;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.stats-table th {
+  background: rgba(0, 0, 0, 0.8);
   color: #ffffff;
-  white-space: nowrap;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  padding: 10px 20px;
+  text-align: left;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.stats-table td {
+  padding: 10px 20px;
+  color: #ffffff;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stats-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.stats-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 @media (max-width: 640px) {
@@ -391,9 +411,20 @@ canvas {
   }
 
   .hud {
-    font-size: 12px;
-    gap: 12px;
     padding: 6px 12px;
+  }
+
+  .stats-table {
+    font-size: 12px;
+  }
+
+  .stats-table th,
+  .stats-table td {
+    padding: 8px 12px;
+  }
+
+  .stats-table th {
+    font-size: 10px;
   }
 }
 

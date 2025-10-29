@@ -21,7 +21,11 @@ describe('GeneticAlgorithm', () => {
 
   it('should create initial population with correct size', () => {
     const population = ga.initializePopulation(track);
-    expect(population).toHaveLength(GA_POPULATION_SIZE);
+    // Population is split evenly among all configured car types
+    // With 3 types and population of 100: floor(100/3) * 3 = 99
+    const carsPerType = Math.floor(GA_POPULATION_SIZE / 3); // 33 per type
+    const expectedTotal = carsPerType * 3; // 99 total
+    expect(population).toHaveLength(expectedTotal);
   });
 
   it('should create all cars alive initially', () => {
@@ -59,20 +63,24 @@ describe('GeneticAlgorithm', () => {
 
     expect(ga.generationNormReLU).toBe(initialGenerationNormReLU + 1);
     expect(ga.generationDiffLinear).toBe(initialGenerationDiffLinear + 1);
-    expect(nextNormReLU).toHaveLength(GA_POPULATION_SIZE / 2);
-    expect(nextDiffLinear).toHaveLength(GA_POPULATION_SIZE / 2);
+
+    // With 3 types, each gets 33 cars (floor(100/3) = 33)
+    const carsPerType = Math.floor(GA_POPULATION_SIZE / 3);
+    expect(nextNormReLU).toHaveLength(carsPerType);
+    expect(nextDiffLinear).toHaveLength(carsPerType);
   });
 
   it('should preserve best fitness across generations', () => {
     const population = ga.initializePopulation(track);
 
-    // Set fitness for first generation (50 NormReLU cars + 50 DiffLinear cars)
-    // population[0-49] are NormReLU cars, population[50-99] are DiffLinear cars
-    population[0].maxDistanceReached = 100; // Best NormReLU car
-    population[50].maxDistanceReached = 80; // Best DiffLinear car
+    // With 3 types in config order: difflinear [0-32], normlinear [33-65], normrelu [66-98]
+    // Find specific car types by filtering
+    const normReLUCars = population.filter(car => !car.useDifferentialInputs && car.color.includes('fbbf24')); // Yellow
+    const diffLinearCars = population.filter(car => car.useDifferentialInputs); // Red
 
-    const normReLUCars = population.filter(car => !car.useDifferentialInputs);
-    const diffLinearCars = population.filter(car => car.useDifferentialInputs);
+    // Set fitness for first generation
+    if (normReLUCars.length > 0) normReLUCars[0].maxDistanceReached = 100;
+    if (diffLinearCars.length > 0) diffLinearCars[0].maxDistanceReached = 80;
 
     ga.evolveNormReLUPopulation(normReLUCars, track, 5.0);
     ga.evolveDiffLinearPopulation(diffLinearCars, track, 5.0);
@@ -81,12 +89,11 @@ describe('GeneticAlgorithm', () => {
 
     // Second generation with worse fitness for both types
     const population2 = ga.initializePopulation(track);
-    population2.forEach(car => {
-      car.maxDistanceReached = 30;
-    });
-
-    const normReLUCars2 = population2.filter(car => !car.useDifferentialInputs);
+    const normReLUCars2 = population2.filter(car => !car.useDifferentialInputs && car.color.includes('fbbf24'));
     const diffLinearCars2 = population2.filter(car => car.useDifferentialInputs);
+
+    normReLUCars2.forEach(car => { car.maxDistanceReached = 30; });
+    diffLinearCars2.forEach(car => { car.maxDistanceReached = 30; });
 
     ga.evolveNormReLUPopulation(normReLUCars2, track, 5.0);
     ga.evolveDiffLinearPopulation(diffLinearCars2, track, 5.0);
@@ -114,11 +121,13 @@ describe('GeneticAlgorithm', () => {
 
   it('should export and import weights', () => {
     const population = ga.initializePopulation(track);
-    population[0].maxDistanceReached = 100; // NormReLU car
-    population[50].maxDistanceReached = 80; // DiffLinear car
 
-    const normReLUCars = population.filter(car => !car.useDifferentialInputs);
+    // Find specific car types
+    const normReLUCars = population.filter(car => !car.useDifferentialInputs && car.color.includes('fbbf24'));
     const diffLinearCars = population.filter(car => car.useDifferentialInputs);
+
+    if (normReLUCars.length > 0) normReLUCars[0].maxDistanceReached = 100;
+    if (diffLinearCars.length > 0) diffLinearCars[0].maxDistanceReached = 80;
 
     ga.evolveNormReLUPopulation(normReLUCars, track, 5.0);
     ga.evolveDiffLinearPopulation(diffLinearCars, track, 5.0);
@@ -138,11 +147,13 @@ describe('GeneticAlgorithm', () => {
 
   it('should reset correctly', () => {
     const population = ga.initializePopulation(track);
-    population[0].maxDistanceReached = 100; // NormReLU car
-    population[50].maxDistanceReached = 80; // DiffLinear car
 
-    const normReLUCars = population.filter(car => !car.useDifferentialInputs);
+    // Find specific car types
+    const normReLUCars = population.filter(car => !car.useDifferentialInputs && car.color.includes('fbbf24'));
     const diffLinearCars = population.filter(car => car.useDifferentialInputs);
+
+    if (normReLUCars.length > 0) normReLUCars[0].maxDistanceReached = 100;
+    if (diffLinearCars.length > 0) diffLinearCars[0].maxDistanceReached = 80;
 
     ga.evolveNormReLUPopulation(normReLUCars, track, 5.0);
     ga.evolveDiffLinearPopulation(diffLinearCars, track, 5.0);
