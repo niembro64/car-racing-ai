@@ -13,7 +13,8 @@ describe('GeneticAlgorithm', () => {
   });
 
   it('should initialize with generation 0', () => {
-    expect(ga.generation).toBe(0);
+    expect(ga.generationNormal).toBe(0);
+    expect(ga.generationDiff).toBe(0);
     expect(ga.bestFitnessNormal).toBe(0);
     expect(ga.bestFitnessDiff).toBe(0);
   });
@@ -41,17 +42,25 @@ describe('GeneticAlgorithm', () => {
 
   it('should evolve population and increment generation', () => {
     const population = ga.initializePopulation(track);
-    const initialGeneration = ga.generation;
+    const initialGenerationNormal = ga.generationNormal;
+    const initialGenerationDiff = ga.generationDiff;
 
     // Simulate some fitness by setting maxDistanceReached
     population.forEach((car, i) => {
       car.maxDistanceReached = i * 10;
     });
 
-    const nextGeneration = ga.evolvePopulation(population, track, 5.0);
+    // Separate and evolve each population
+    const normalCars = population.filter(car => !car.useDifferentialInputs);
+    const diffCars = population.filter(car => car.useDifferentialInputs);
 
-    expect(ga.generation).toBe(initialGeneration + 1);
-    expect(nextGeneration).toHaveLength(GA_POPULATION_SIZE);
+    const nextNormal = ga.evolveNormalPopulation(normalCars, track, 5.0);
+    const nextDiff = ga.evolveDiffPopulation(diffCars, track, 5.0);
+
+    expect(ga.generationNormal).toBe(initialGenerationNormal + 1);
+    expect(ga.generationDiff).toBe(initialGenerationDiff + 1);
+    expect(nextNormal).toHaveLength(GA_POPULATION_SIZE / 2);
+    expect(nextDiff).toHaveLength(GA_POPULATION_SIZE / 2);
   });
 
   it('should preserve best fitness across generations', () => {
@@ -62,7 +71,11 @@ describe('GeneticAlgorithm', () => {
     population[0].maxDistanceReached = 100; // Best normal car
     population[50].maxDistanceReached = 80; // Best diff car
 
-    ga.evolvePopulation(population, track, 5.0);
+    const normalCars = population.filter(car => !car.useDifferentialInputs);
+    const diffCars = population.filter(car => car.useDifferentialInputs);
+
+    ga.evolveNormalPopulation(normalCars, track, 5.0);
+    ga.evolveDiffPopulation(diffCars, track, 5.0);
     expect(ga.bestFitnessNormal).toBe(100);
     expect(ga.bestFitnessDiff).toBe(80);
 
@@ -72,7 +85,11 @@ describe('GeneticAlgorithm', () => {
       car.maxDistanceReached = 30;
     });
 
-    ga.evolvePopulation(population2, track, 5.0);
+    const normalCars2 = population2.filter(car => !car.useDifferentialInputs);
+    const diffCars2 = population2.filter(car => car.useDifferentialInputs);
+
+    ga.evolveNormalPopulation(normalCars2, track, 5.0);
+    ga.evolveDiffPopulation(diffCars2, track, 5.0);
     expect(ga.bestFitnessNormal).toBe(100); // Should still be 100
     expect(ga.bestFitnessDiff).toBe(80); // Should still be 80
   });
@@ -84,17 +101,27 @@ describe('GeneticAlgorithm', () => {
       car.maxDistanceReached = i * 10;
     });
 
-    const nextGeneration = ga.evolvePopulation(population, track, 5.0);
+    const normalCars = population.filter(car => !car.useDifferentialInputs);
+    const diffCars = population.filter(car => car.useDifferentialInputs);
 
-    // First car should be elite (has different color in actual implementation)
-    expect(nextGeneration[0]).toBeDefined();
+    const nextNormal = ga.evolveNormalPopulation(normalCars, track, 5.0);
+    const nextDiff = ga.evolveDiffPopulation(diffCars, track, 5.0);
+
+    // First car of each type should be elite
+    expect(nextNormal[0]).toBeDefined();
+    expect(nextDiff[0]).toBeDefined();
   });
 
   it('should export and import weights', () => {
     const population = ga.initializePopulation(track);
     population[0].maxDistanceReached = 100; // Normal car
     population[50].maxDistanceReached = 80; // Diff car
-    ga.evolvePopulation(population, track, 5.0);
+
+    const normalCars = population.filter(car => !car.useDifferentialInputs);
+    const diffCars = population.filter(car => car.useDifferentialInputs);
+
+    ga.evolveNormalPopulation(normalCars, track, 5.0);
+    ga.evolveDiffPopulation(diffCars, track, 5.0);
 
     const exported = ga.exportWeights();
     expect(exported).toBeDefined();
@@ -103,7 +130,8 @@ describe('GeneticAlgorithm', () => {
     const ga2 = new GeneticAlgorithm(54321);
     ga2.importWeights(exported);
 
-    expect(ga2.generation).toBe(ga.generation);
+    expect(ga2.generationNormal).toBe(ga.generationNormal);
+    expect(ga2.generationDiff).toBe(ga.generationDiff);
     expect(ga2.bestFitnessNormal).toBe(ga.bestFitnessNormal);
     expect(ga2.bestFitnessDiff).toBe(ga.bestFitnessDiff);
   });
@@ -112,15 +140,22 @@ describe('GeneticAlgorithm', () => {
     const population = ga.initializePopulation(track);
     population[0].maxDistanceReached = 100; // Normal car
     population[50].maxDistanceReached = 80; // Diff car
-    ga.evolvePopulation(population, track, 5.0);
 
-    expect(ga.generation).toBeGreaterThan(0);
+    const normalCars = population.filter(car => !car.useDifferentialInputs);
+    const diffCars = population.filter(car => car.useDifferentialInputs);
+
+    ga.evolveNormalPopulation(normalCars, track, 5.0);
+    ga.evolveDiffPopulation(diffCars, track, 5.0);
+
+    expect(ga.generationNormal).toBeGreaterThan(0);
+    expect(ga.generationDiff).toBeGreaterThan(0);
     expect(ga.bestFitnessNormal).toBeGreaterThan(0);
     expect(ga.bestFitnessDiff).toBeGreaterThan(0);
 
     ga.reset();
 
-    expect(ga.generation).toBe(0);
+    expect(ga.generationNormal).toBe(0);
+    expect(ga.generationDiff).toBe(0);
     expect(ga.bestFitnessNormal).toBe(0);
     expect(ga.bestFitnessDiff).toBe(0);
     expect(ga.bestWeightsNormal).toBeNull();

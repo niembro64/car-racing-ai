@@ -8,8 +8,10 @@
     ></canvas>
 
     <div class="hud">
-      <div class="stat">GEN: {{ ga.generation }}</div>
-      <div class="stat">{{ adaptiveMutationRate }}</div>
+      <div class="stat" :style="{ color: NORMAL_ELITE_CAR_COLOR }">N-GEN: {{ ga.generationNormal }}</div>
+      <div class="stat" :style="{ color: DIFF_ELITE_CAR_COLOR }">D-GEN: {{ ga.generationDiff }}</div>
+      <div class="stat">{{ adaptiveMutationRateNormal }}</div>
+      <div class="stat">{{ adaptiveMutationRateDiff }}</div>
       <div class="stat" :style="{ color: NORMAL_ELITE_CAR_COLOR }">NORMAL: {{ normalBestPercent }}%</div>
       <div class="stat" :style="{ color: DIFF_ELITE_CAR_COLOR }">DIFF: {{ diffBestPercent }}%</div>
     </div>
@@ -72,7 +74,8 @@ const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed));
 const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(true);
 const speedMultiplier = ref(1);
-const generationTime = ref(0);
+const generationTimeNormal = ref(0);
+const generationTimeDiff = ref(0);
 const generationMarkersNormal = ref<{ x: number; y: number; generation: number }[]>([]);
 const generationMarkersDiff = ref<{ x: number; y: number; generation: number }[]>([]);
 const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
@@ -81,12 +84,20 @@ const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
 let animationFrameId: number | null = null;
 const FIXED_DT = 1 / 60; // 60 Hz physics
 
-const adaptiveMutationRate = computed(() => {
+const adaptiveMutationRateNormal = computed(() => {
   const minGenerationTime = 1.0;
-  const effectiveTime = Math.max(generationTime.value, minGenerationTime);
+  const effectiveTime = Math.max(generationTimeNormal.value, minGenerationTime);
   const rate = GA_MUTATION_RATE / effectiveTime;
   const formatted = rate.toFixed(4).padStart(6, ' '); // "X.XXXX" format
-  return `σ=${formatted}`;
+  return `σN=${formatted}`;
+});
+
+const adaptiveMutationRateDiff = computed(() => {
+  const minGenerationTime = 1.0;
+  const effectiveTime = Math.max(generationTimeDiff.value, minGenerationTime);
+  const rate = GA_MUTATION_RATE / effectiveTime;
+  const formatted = rate.toFixed(4).padStart(6, ' '); // "X.XXXX" format
+  return `σD=${formatted}`;
 });
 
 const normalBestPercent = computed(() => {
@@ -102,34 +113,54 @@ const diffBestPercent = computed(() => {
 // Initialize simulation
 const init = () => {
   population.value = ga.value.initializePopulation(track);
-  generationTime.value = 0;
+  generationTimeNormal.value = 0;
+  generationTimeDiff.value = 0;
   generationMarkersNormal.value = [];
   generationMarkersDiff.value = [];
 };
 
-// Evolve to next generation (can be called manually or automatically)
-const evolveToNextGeneration = (reason: string, winnerCar?: Car) => {
-  // Separate cars by type and find best of each
+// Evolve normal population independently
+const evolveNormalPopulation = (reason: string, winnerCar?: Car) => {
   const normalCars = population.value.filter(car => !car.useDifferentialInputs);
   const diffCars = population.value.filter(car => car.useDifferentialInputs);
 
+  // Find best normal car for marker
   const sortedNormal = [...normalCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
-  const sortedDiff = [...diffCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
-
   const bestNormal = sortedNormal[0];
+
+  // Save best position as marker
+  if (bestNormal) {
+    generationMarkersNormal.value.push({ x: bestNormal.x, y: bestNormal.y, generation: ga.value.generationNormal });
+  }
+
+  // Evolve normal population
+  const newNormalCars = ga.value.evolveNormalPopulation(normalCars, track, generationTimeNormal.value, winnerCar);
+  generationTimeNormal.value = 0;
+
+  // Combine with existing diff cars
+  population.value = [...newNormalCars, ...diffCars];
+};
+
+// Evolve diff population independently
+const evolveDiffPopulation = (reason: string, winnerCar?: Car) => {
+  const normalCars = population.value.filter(car => !car.useDifferentialInputs);
+  const diffCars = population.value.filter(car => car.useDifferentialInputs);
+
+  // Find best diff car for marker
+  const sortedDiff = [...diffCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
   const bestDiff = sortedDiff[0];
 
-  // Save best positions as markers
-  if (bestNormal) {
-    generationMarkersNormal.value.push({ x: bestNormal.x, y: bestNormal.y, generation: ga.value.generation });
-  }
+  // Save best position as marker
   if (bestDiff) {
-    generationMarkersDiff.value.push({ x: bestDiff.x, y: bestDiff.y, generation: ga.value.generation });
+    generationMarkersDiff.value.push({ x: bestDiff.x, y: bestDiff.y, generation: ga.value.generationDiff });
   }
 
-  // Evolve to next generation (pass generation time for adaptive mutation rate)
-  population.value = ga.value.evolvePopulation(population.value, track, generationTime.value, winnerCar);
-  generationTime.value = 0;
+  // Evolve diff population
+  const newDiffCars = ga.value.evolveDiffPopulation(diffCars, track, generationTimeDiff.value, winnerCar);
+  generationTimeDiff.value = 0;
+
+  // Combine with existing normal cars
+  population.value = [...normalCars, ...newDiffCars];
 };
 
 // Update physics
@@ -147,16 +178,22 @@ const updatePhysics = (dt: number) => {
 
       // Check if car completed a lap (reached 100% progress)
       if (car.currentProgressRatio >= 1.0) {
-        // Kill all other cars immediately
+        const sameType = car.useDifferentialInputs;
+
+        // Kill all cars of same type immediately
         population.value.forEach(c => {
-          if (c !== car) {
+          if (c.useDifferentialInputs === sameType && c !== car) {
             c.alive = false;
             c.speed = 0;
           }
         });
 
-        // Evolve to next generation immediately using winner's brain
-        evolveToNextGeneration('car completed lap', car);
+        // Evolve only that car's population type
+        if (sameType) {
+          evolveDiffPopulation('car completed lap', car);
+        } else {
+          evolveNormalPopulation('car completed lap', car);
+        }
         return; // Stop processing this frame
       }
 
@@ -174,12 +211,23 @@ const updatePhysics = (dt: number) => {
     }
   }
 
-  generationTime.value += dt;
+  // Update generation times for both populations
+  generationTimeNormal.value += dt;
+  generationTimeDiff.value += dt;
 
-  // Check if all cars have crashed - if so, automatically evolve to next generation
-  const allDead = population.value.every(car => !car.alive);
-  if (allDead) {
-    evolveToNextGeneration('all cars crashed');
+  // Check each population independently for all-dead condition
+  const normalCars = population.value.filter(c => !c.useDifferentialInputs);
+  const diffCars = population.value.filter(c => c.useDifferentialInputs);
+
+  const allNormalDead = normalCars.every(c => !c.alive);
+  const allDiffDead = diffCars.every(c => !c.alive);
+
+  if (allNormalDead && normalCars.length > 0) {
+    evolveNormalPopulation('all normal cars crashed');
+  }
+
+  if (allDiffDead && diffCars.length > 0) {
+    evolveDiffPopulation('all diff cars crashed');
   }
 };
 
@@ -256,9 +304,10 @@ const animate = () => {
   animationFrameId = requestAnimationFrame(animate);
 };
 
-// Manually trigger next generation
+// Manually trigger next generation for both populations
 const nextGeneration = () => {
-  evolveToNextGeneration('manual trigger');
+  evolveNormalPopulation('manual trigger');
+  evolveDiffPopulation('manual trigger');
 };
 
 // Reset the simulation by reloading the page

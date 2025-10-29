@@ -17,7 +17,8 @@ import {
 } from '@/config';
 
 export class GeneticAlgorithm {
-  generation: number = 0;
+  generationNormal: number = 0;
+  generationDiff: number = 0;
   bestFitnessNormal: number = 0;
   bestFitnessDiff: number = 0;
   bestWeightsNormal: any = null;
@@ -99,62 +100,37 @@ export class GeneticAlgorithm {
     return population;
   }
 
-  // Evolve to next generation with dual populations
-  evolvePopulation(
-    population: Car[],
+  // Evolve normal population independently
+  evolveNormalPopulation(
+    normalCars: Car[],
     track: Track,
     generationTime: number,
     winnerCar?: Car
   ): Car[] {
     const halfPop = GA_POPULATION_SIZE / 2;
 
-    // Separate cars by input type
-    const normalCars = population.filter(car => !car.useDifferentialInputs);
-    const diffCars = population.filter(car => car.useDifferentialInputs);
+    // Sort by performance
+    const sorted = [...normalCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
 
-    // Sort each group by performance
-    const sortedNormal = [...normalCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
-    const sortedDiff = [...diffCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
-
-    // Determine best car for each type (accounting for winner)
-    let bestNormalCar: Car;
-    let bestDiffCar: Car;
-
+    // Determine best car (accounting for winner)
+    let bestCar: Car;
     if (winnerCar) {
-      // Winner completed lap - use as best for its type
-      if (winnerCar.useDifferentialInputs) {
-        bestDiffCar = winnerCar;
-        // For normal, use best from its group (excluding elite)
-        const nonEliteNormal = sortedNormal.filter(car => car.color !== NORMAL_ELITE_CAR_COLOR);
-        bestNormalCar = nonEliteNormal[0] || sortedNormal[0];
-      } else {
-        bestNormalCar = winnerCar;
-        // For diff, use best from its group (excluding elite)
-        const nonEliteDiff = sortedDiff.filter(car => car.color !== DIFF_ELITE_CAR_COLOR);
-        bestDiffCar = nonEliteDiff[0] || sortedDiff[0];
-      }
+      bestCar = winnerCar;
     } else {
-      // No winner - use best from each group (excluding elites)
-      const nonEliteNormal = sortedNormal.filter(car => car.color !== NORMAL_ELITE_CAR_COLOR);
-      const nonEliteDiff = sortedDiff.filter(car => car.color !== DIFF_ELITE_CAR_COLOR);
-      bestNormalCar = nonEliteNormal[0] || sortedNormal[0];
-      bestDiffCar = nonEliteDiff[0] || sortedDiff[0];
+      const nonElite = sorted.filter(car => car.color !== NORMAL_ELITE_CAR_COLOR);
+      bestCar = nonElite[0] || sorted[0];
     }
 
-    // Save best weights for each type
-    this.bestWeightsNormal = bestNormalCar.brain.toJSON();
-    this.bestWeightsDiff = bestDiffCar.brain.toJSON();
+    // Save best weights
+    this.bestWeightsNormal = bestCar.brain.toJSON();
 
     // Track fitness improvements
-    if (bestNormalCar.maxDistanceReached > this.bestFitnessNormal) {
-      this.bestFitnessNormal = bestNormalCar.maxDistanceReached;
-    }
-    if (bestDiffCar.maxDistanceReached > this.bestFitnessDiff) {
-      this.bestFitnessDiff = bestDiffCar.maxDistanceReached;
+    if (bestCar.maxDistanceReached > this.bestFitnessNormal) {
+      this.bestFitnessNormal = bestCar.maxDistanceReached;
     }
 
     // Increment generation
-    this.generation++;
+    this.generationNormal++;
 
     // Calculate adaptive mutation rate
     const minGenerationTime = 1.0;
@@ -164,18 +140,11 @@ export class GeneticAlgorithm {
     // Create next generation
     const nextGeneration: Car[] = [];
 
-    // Create elite normal brain
-    const eliteNormalBrain = NeuralNetwork.fromJSON(
+    // Create elite brain
+    const eliteBrain = NeuralNetwork.fromJSON(
       this.bestWeightsNormal,
       this.rng.next() * 1000000,
       NEURAL_NETWORK_ARCHITECTURE_STANDARD
-    );
-
-    // Create elite diff brain
-    const eliteDiffBrain = NeuralNetwork.fromJSON(
-      this.bestWeightsDiff,
-      this.rng.next() * 1000000,
-      NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL
     );
 
     // NORMAL CARS (50): 1 elite + 49 mutations
@@ -190,17 +159,17 @@ export class GeneticAlgorithm {
             track.startPosition.x,
             track.startPosition.y,
             startAngle,
-            eliteNormalBrain,
+            eliteBrain,
             NORMAL_ELITE_CAR_COLOR,
             false
           )
         );
       } else {
         // Mutated normal car
-        const mutationSeed = this.rng.next() * 1000000 + i + this.generation * 10000;
+        const mutationSeed = this.rng.next() * 1000000 + i + this.generationNormal * 10000;
         const multiplier = this.getMutationMultiplier(i, halfPop);
         const sigma = adaptiveMutationRate * multiplier;
-        const mutatedBrain = eliteNormalBrain.mutate(sigma, mutationSeed);
+        const mutatedBrain = eliteBrain.mutate(sigma, mutationSeed);
 
         nextGeneration.push(
           new Car(
@@ -215,6 +184,56 @@ export class GeneticAlgorithm {
       }
     }
 
+    return nextGeneration;
+  }
+
+  // Evolve differential population independently
+  evolveDiffPopulation(
+    diffCars: Car[],
+    track: Track,
+    generationTime: number,
+    winnerCar?: Car
+  ): Car[] {
+    const halfPop = GA_POPULATION_SIZE / 2;
+
+    // Sort by performance
+    const sorted = [...diffCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
+
+    // Determine best car (accounting for winner)
+    let bestCar: Car;
+    if (winnerCar) {
+      bestCar = winnerCar;
+    } else {
+      const nonElite = sorted.filter(car => car.color !== DIFF_ELITE_CAR_COLOR);
+      bestCar = nonElite[0] || sorted[0];
+    }
+
+    // Save best weights
+    this.bestWeightsDiff = bestCar.brain.toJSON();
+
+    // Track fitness improvements
+    if (bestCar.maxDistanceReached > this.bestFitnessDiff) {
+      this.bestFitnessDiff = bestCar.maxDistanceReached;
+    }
+
+    // Increment generation
+    this.generationDiff++;
+
+    // Calculate adaptive mutation rate
+    const minGenerationTime = 1.0;
+    const effectiveTime = Math.max(generationTime, minGenerationTime);
+    const adaptiveMutationRate = GA_MUTATION_RATE / effectiveTime;
+
+    // Create next generation
+    const nextGeneration: Car[] = [];
+
+    // Create elite brain
+    const eliteBrain = NeuralNetwork.fromJSON(
+      this.bestWeightsDiff,
+      this.rng.next() * 1000000,
+      NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL
+    );
+
     // DIFFERENTIAL CARS (50): 1 elite + 49 mutations
     for (let i = 0; i < halfPop; i++) {
       const angleWiggle = (this.rng.next() - 0.5) * (Math.PI / 2);
@@ -227,17 +246,17 @@ export class GeneticAlgorithm {
             track.startPosition.x,
             track.startPosition.y,
             startAngle,
-            eliteDiffBrain,
+            eliteBrain,
             DIFF_ELITE_CAR_COLOR,
             true
           )
         );
       } else {
         // Mutated diff car
-        const mutationSeed = this.rng.next() * 1000000 + (i + halfPop) + this.generation * 10000;
+        const mutationSeed = this.rng.next() * 1000000 + i + this.generationDiff * 10000;
         const multiplier = this.getMutationMultiplier(i, halfPop);
         const sigma = adaptiveMutationRate * multiplier;
-        const mutatedBrain = eliteDiffBrain.mutate(sigma, mutationSeed);
+        const mutatedBrain = eliteBrain.mutate(sigma, mutationSeed);
 
         nextGeneration.push(
           new Car(
@@ -259,7 +278,8 @@ export class GeneticAlgorithm {
   exportWeights(): string {
     return JSON.stringify(
       {
-        generation: this.generation,
+        generationNormal: this.generationNormal,
+        generationDiff: this.generationDiff,
         bestFitnessNormal: this.bestFitnessNormal,
         bestFitnessDiff: this.bestFitnessDiff,
         bestWeightsNormal: this.bestWeightsNormal,
@@ -274,7 +294,8 @@ export class GeneticAlgorithm {
   importWeights(json: string): void {
     try {
       const data = JSON.parse(json);
-      this.generation = data.generation || 0;
+      this.generationNormal = data.generationNormal || 0;
+      this.generationDiff = data.generationDiff || 0;
       this.bestFitnessNormal = data.bestFitnessNormal || 0;
       this.bestFitnessDiff = data.bestFitnessDiff || 0;
       this.bestWeightsNormal = data.bestWeightsNormal;
@@ -286,7 +307,8 @@ export class GeneticAlgorithm {
 
   // Reset evolution
   reset(): void {
-    this.generation = 0;
+    this.generationNormal = 0;
+    this.generationDiff = 0;
     this.bestFitnessNormal = 0;
     this.bestFitnessDiff = 0;
     this.bestWeightsNormal = null;
