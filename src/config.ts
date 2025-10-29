@@ -217,42 +217,6 @@ export const NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL = [
 export const NEURAL_NETWORK_ARCHITECTURE =
   NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL;
 
-// Note: Can experiment with deeper networks for complex tracks:
-// - [9, 8, 1] - More capacity in single hidden layer
-// - [9, 8, 4, 1] - Two hidden layers for hierarchical feature learning
-
-// ============================================================================
-// CAR BRAIN TYPE DEFINITIONS
-// ============================================================================
-// Array of all car brain configurations to be evolved in parallel.
-// Each config represents a distinct approach to the racing problem.
-//
-// ┌────────────────────────────────────────────────────────────────────────────────────────────────────┐
-// │                            CAR BRAIN CONFIGURATION TABLE                                           │
-// ├─────────────┬──────────────┬──────┬────────────┬────────────┬────────────┬────────────────────────┤
-// │ ID          │ Display Name │ Code │ Inputs     │ Activation │ Arch       │ Colors                 │
-// ├─────────────┼──────────────┼──────┼────────────┼────────────┼────────────┼────────────────────────┤
-// │ difflinear  │ DIFF_LINEAR  │  DL  │ 5 (diff)   │ Linear     │ [5, 4, 1]  │ Red    (#880000/ff5555)│
-// │ normlinear  │ NORM_LINEAR  │  NL  │ 9 (raw)    │ Linear     │ [9, 6, 1]  │ Blue   (#226699/33aaff)│
-// │ normrelu    │ NORM_RELU    │  NR  │ 9 (raw)    │ ReLU       │ [9, 6, 1]  │ Yellow (#fbbf24/fcd34d)│
-// └─────────────┴──────────────┴──────┴────────────┴────────────┴────────────┴────────────────────────┘
-//
-// Input Types:
-//   • 5 (diff) = 1 forward sensor + 4 differential pairs (left - right)
-//   • 9 (raw)  = 9 individual sensor rays covering 180° field of view
-//
-// Activation Types:
-//   • Linear = Identity function in hidden layers (f(x) = x)
-//   • ReLU   = Rectified Linear Unit in hidden layers (f(x) = max(0, x))
-//
-// Colors: normal/elite (normal = mutated cars, elite = best car)
-//
-// Population Split:
-//   • Total population = 100 cars
-//   • Cars per type = 100 / 3 ≈ 33 cars each
-//   • Each type evolves independently
-//
-
 export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
   {
     id: 'difflinear',
