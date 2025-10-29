@@ -40,10 +40,10 @@ describe('Configuration', () => {
     expect(config.TRACK_BOUNDARY_COLOR).toBeDefined();
     expect(config.TRACK_CENTERLINE_COLOR).toBeDefined();
     expect(config.START_FINISH_LINE_COLOR).toBeDefined();
-    expect(config.NORMAL_CAR_COLOR).toBeDefined();
-    expect(config.NORMAL_ELITE_CAR_COLOR).toBeDefined();
-    expect(config.DIFF_CAR_COLOR).toBeDefined();
-    expect(config.DIFF_ELITE_CAR_COLOR).toBeDefined();
+    expect(config.NORM_RELU_CAR_COLOR).toBeDefined();
+    expect(config.NORM_RELU_ELITE_CAR_COLOR).toBeDefined();
+    expect(config.DIFF_LINEAR_CAR_COLOR).toBeDefined();
+    expect(config.DIFF_LINEAR_ELITE_CAR_COLOR).toBeDefined();
     expect(config.CAR_LABEL_COLOR_ALIVE).toBeDefined();
     expect(config.CAR_LABEL_COLOR_DEAD).toBeDefined();
   });
@@ -54,18 +54,18 @@ describe('Configuration', () => {
     expect(config.START_FINISH_LINE_WIDTH).toBeDefined();
   });
 
-  it('should have differential car ray visualization settings', () => {
-    expect(config.DIFF_CAR_RAY_COLOR).toBeDefined();
-    expect(config.DIFF_CAR_RAY_HIT_COLOR).toBeDefined();
-    expect(config.DIFF_CAR_RAY_WIDTH).toBeDefined();
-    expect(config.DIFF_CAR_RAY_HIT_RADIUS).toBeDefined();
+  it('should have DiffLinear car ray visualization settings', () => {
+    expect(config.DIFF_LINEAR_CAR_RAY_COLOR).toBeDefined();
+    expect(config.DIFF_LINEAR_CAR_RAY_HIT_COLOR).toBeDefined();
+    expect(config.DIFF_LINEAR_CAR_RAY_WIDTH).toBeDefined();
+    expect(config.DIFF_LINEAR_CAR_RAY_HIT_RADIUS).toBeDefined();
   });
 
-  it('should have normal car ray visualization settings', () => {
-    expect(config.NORMAL_CAR_RAY_COLOR).toBeDefined();
-    expect(config.NORMAL_CAR_RAY_HIT_COLOR).toBeDefined();
-    expect(config.NORMAL_CAR_RAY_WIDTH).toBeDefined();
-    expect(config.NORMAL_CAR_RAY_HIT_RADIUS).toBeDefined();
+  it('should have NormReLU car ray visualization settings', () => {
+    expect(config.NORM_RELU_CAR_RAY_COLOR).toBeDefined();
+    expect(config.NORM_RELU_CAR_RAY_HIT_COLOR).toBeDefined();
+    expect(config.NORM_RELU_CAR_RAY_WIDTH).toBeDefined();
+    expect(config.NORM_RELU_CAR_RAY_HIT_RADIUS).toBeDefined();
   });
 
   it('should have valid numeric values', () => {
@@ -99,14 +99,14 @@ describe('Configuration', () => {
       config.TRACK_BOUNDARY_COLOR,
       config.TRACK_CENTERLINE_COLOR,
       config.START_FINISH_LINE_COLOR,
-      config.NORMAL_CAR_COLOR,
-      config.NORMAL_ELITE_CAR_COLOR,
-      config.DIFF_CAR_COLOR,
-      config.DIFF_ELITE_CAR_COLOR,
+      config.NORM_RELU_CAR_COLOR,
+      config.NORM_RELU_ELITE_CAR_COLOR,
+      config.DIFF_LINEAR_CAR_COLOR,
+      config.DIFF_LINEAR_ELITE_CAR_COLOR,
       config.CAR_LABEL_COLOR_ALIVE,
       config.CAR_LABEL_COLOR_DEAD,
-      config.NORMAL_CAR_RAY_HIT_COLOR,
-      config.DIFF_CAR_RAY_HIT_COLOR
+      config.NORM_RELU_CAR_RAY_HIT_COLOR,
+      config.DIFF_LINEAR_CAR_RAY_HIT_COLOR
     ];
 
     colors.forEach(color => {

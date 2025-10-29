@@ -13,10 +13,10 @@ describe('GeneticAlgorithm', () => {
   });
 
   it('should initialize with generation 0', () => {
-    expect(ga.generationNormal).toBe(0);
-    expect(ga.generationDiff).toBe(0);
-    expect(ga.bestFitnessNormal).toBe(0);
-    expect(ga.bestFitnessDiff).toBe(0);
+    expect(ga.generationNormReLU).toBe(0);
+    expect(ga.generationDiffLinear).toBe(0);
+    expect(ga.bestFitnessNormReLU).toBe(0);
+    expect(ga.bestFitnessDiffLinear).toBe(0);
   });
 
   it('should create initial population with correct size', () => {
@@ -42,8 +42,8 @@ describe('GeneticAlgorithm', () => {
 
   it('should evolve population and increment generation', () => {
     const population = ga.initializePopulation(track);
-    const initialGenerationNormal = ga.generationNormal;
-    const initialGenerationDiff = ga.generationDiff;
+    const initialGenerationNormReLU = ga.generationNormReLU;
+    const initialGenerationDiffLinear = ga.generationDiffLinear;
 
     // Simulate some fitness by setting maxDistanceReached
     population.forEach((car, i) => {
@@ -51,33 +51,33 @@ describe('GeneticAlgorithm', () => {
     });
 
     // Separate and evolve each population
-    const normalCars = population.filter(car => !car.useDifferentialInputs);
-    const diffCars = population.filter(car => car.useDifferentialInputs);
+    const normReLUCars = population.filter(car => !car.useDifferentialInputs);
+    const diffLinearCars = population.filter(car => car.useDifferentialInputs);
 
-    const nextNormal = ga.evolveNormalPopulation(normalCars, track, 5.0);
-    const nextDiff = ga.evolveDiffPopulation(diffCars, track, 5.0);
+    const nextNormReLU = ga.evolveNormReLUPopulation(normReLUCars, track, 5.0);
+    const nextDiffLinear = ga.evolveDiffLinearPopulation(diffLinearCars, track, 5.0);
 
-    expect(ga.generationNormal).toBe(initialGenerationNormal + 1);
-    expect(ga.generationDiff).toBe(initialGenerationDiff + 1);
-    expect(nextNormal).toHaveLength(GA_POPULATION_SIZE / 2);
-    expect(nextDiff).toHaveLength(GA_POPULATION_SIZE / 2);
+    expect(ga.generationNormReLU).toBe(initialGenerationNormReLU + 1);
+    expect(ga.generationDiffLinear).toBe(initialGenerationDiffLinear + 1);
+    expect(nextNormReLU).toHaveLength(GA_POPULATION_SIZE / 2);
+    expect(nextDiffLinear).toHaveLength(GA_POPULATION_SIZE / 2);
   });
 
   it('should preserve best fitness across generations', () => {
     const population = ga.initializePopulation(track);
 
-    // Set fitness for first generation (50 normal cars + 50 diff cars)
-    // population[0-49] are normal cars, population[50-99] are diff cars
-    population[0].maxDistanceReached = 100; // Best normal car
-    population[50].maxDistanceReached = 80; // Best diff car
+    // Set fitness for first generation (50 NormReLU cars + 50 DiffLinear cars)
+    // population[0-49] are NormReLU cars, population[50-99] are DiffLinear cars
+    population[0].maxDistanceReached = 100; // Best NormReLU car
+    population[50].maxDistanceReached = 80; // Best DiffLinear car
 
-    const normalCars = population.filter(car => !car.useDifferentialInputs);
-    const diffCars = population.filter(car => car.useDifferentialInputs);
+    const normReLUCars = population.filter(car => !car.useDifferentialInputs);
+    const diffLinearCars = population.filter(car => car.useDifferentialInputs);
 
-    ga.evolveNormalPopulation(normalCars, track, 5.0);
-    ga.evolveDiffPopulation(diffCars, track, 5.0);
-    expect(ga.bestFitnessNormal).toBe(100);
-    expect(ga.bestFitnessDiff).toBe(80);
+    ga.evolveNormReLUPopulation(normReLUCars, track, 5.0);
+    ga.evolveDiffLinearPopulation(diffLinearCars, track, 5.0);
+    expect(ga.bestFitnessNormReLU).toBe(100);
+    expect(ga.bestFitnessDiffLinear).toBe(80);
 
     // Second generation with worse fitness for both types
     const population2 = ga.initializePopulation(track);
@@ -85,13 +85,13 @@ describe('GeneticAlgorithm', () => {
       car.maxDistanceReached = 30;
     });
 
-    const normalCars2 = population2.filter(car => !car.useDifferentialInputs);
-    const diffCars2 = population2.filter(car => car.useDifferentialInputs);
+    const normReLUCars2 = population2.filter(car => !car.useDifferentialInputs);
+    const diffLinearCars2 = population2.filter(car => car.useDifferentialInputs);
 
-    ga.evolveNormalPopulation(normalCars2, track, 5.0);
-    ga.evolveDiffPopulation(diffCars2, track, 5.0);
-    expect(ga.bestFitnessNormal).toBe(100); // Should still be 100
-    expect(ga.bestFitnessDiff).toBe(80); // Should still be 80
+    ga.evolveNormReLUPopulation(normReLUCars2, track, 5.0);
+    ga.evolveDiffLinearPopulation(diffLinearCars2, track, 5.0);
+    expect(ga.bestFitnessNormReLU).toBe(100); // Should still be 100
+    expect(ga.bestFitnessDiffLinear).toBe(80); // Should still be 80
   });
 
   it('should have elite car (first car) with best brain', () => {
@@ -101,27 +101,27 @@ describe('GeneticAlgorithm', () => {
       car.maxDistanceReached = i * 10;
     });
 
-    const normalCars = population.filter(car => !car.useDifferentialInputs);
-    const diffCars = population.filter(car => car.useDifferentialInputs);
+    const normReLUCars = population.filter(car => !car.useDifferentialInputs);
+    const diffLinearCars = population.filter(car => car.useDifferentialInputs);
 
-    const nextNormal = ga.evolveNormalPopulation(normalCars, track, 5.0);
-    const nextDiff = ga.evolveDiffPopulation(diffCars, track, 5.0);
+    const nextNormReLU = ga.evolveNormReLUPopulation(normReLUCars, track, 5.0);
+    const nextDiffLinear = ga.evolveDiffLinearPopulation(diffLinearCars, track, 5.0);
 
     // First car of each type should be elite
-    expect(nextNormal[0]).toBeDefined();
-    expect(nextDiff[0]).toBeDefined();
+    expect(nextNormReLU[0]).toBeDefined();
+    expect(nextDiffLinear[0]).toBeDefined();
   });
 
   it('should export and import weights', () => {
     const population = ga.initializePopulation(track);
-    population[0].maxDistanceReached = 100; // Normal car
-    population[50].maxDistanceReached = 80; // Diff car
+    population[0].maxDistanceReached = 100; // NormReLU car
+    population[50].maxDistanceReached = 80; // DiffLinear car
 
-    const normalCars = population.filter(car => !car.useDifferentialInputs);
-    const diffCars = population.filter(car => car.useDifferentialInputs);
+    const normReLUCars = population.filter(car => !car.useDifferentialInputs);
+    const diffLinearCars = population.filter(car => car.useDifferentialInputs);
 
-    ga.evolveNormalPopulation(normalCars, track, 5.0);
-    ga.evolveDiffPopulation(diffCars, track, 5.0);
+    ga.evolveNormReLUPopulation(normReLUCars, track, 5.0);
+    ga.evolveDiffLinearPopulation(diffLinearCars, track, 5.0);
 
     const exported = ga.exportWeights();
     expect(exported).toBeDefined();
@@ -130,35 +130,35 @@ describe('GeneticAlgorithm', () => {
     const ga2 = new GeneticAlgorithm(54321);
     ga2.importWeights(exported);
 
-    expect(ga2.generationNormal).toBe(ga.generationNormal);
-    expect(ga2.generationDiff).toBe(ga.generationDiff);
-    expect(ga2.bestFitnessNormal).toBe(ga.bestFitnessNormal);
-    expect(ga2.bestFitnessDiff).toBe(ga.bestFitnessDiff);
+    expect(ga2.generationNormReLU).toBe(ga.generationNormReLU);
+    expect(ga2.generationDiffLinear).toBe(ga.generationDiffLinear);
+    expect(ga2.bestFitnessNormReLU).toBe(ga.bestFitnessNormReLU);
+    expect(ga2.bestFitnessDiffLinear).toBe(ga.bestFitnessDiffLinear);
   });
 
   it('should reset correctly', () => {
     const population = ga.initializePopulation(track);
-    population[0].maxDistanceReached = 100; // Normal car
-    population[50].maxDistanceReached = 80; // Diff car
+    population[0].maxDistanceReached = 100; // NormReLU car
+    population[50].maxDistanceReached = 80; // DiffLinear car
 
-    const normalCars = population.filter(car => !car.useDifferentialInputs);
-    const diffCars = population.filter(car => car.useDifferentialInputs);
+    const normReLUCars = population.filter(car => !car.useDifferentialInputs);
+    const diffLinearCars = population.filter(car => car.useDifferentialInputs);
 
-    ga.evolveNormalPopulation(normalCars, track, 5.0);
-    ga.evolveDiffPopulation(diffCars, track, 5.0);
+    ga.evolveNormReLUPopulation(normReLUCars, track, 5.0);
+    ga.evolveDiffLinearPopulation(diffLinearCars, track, 5.0);
 
-    expect(ga.generationNormal).toBeGreaterThan(0);
-    expect(ga.generationDiff).toBeGreaterThan(0);
-    expect(ga.bestFitnessNormal).toBeGreaterThan(0);
-    expect(ga.bestFitnessDiff).toBeGreaterThan(0);
+    expect(ga.generationNormReLU).toBeGreaterThan(0);
+    expect(ga.generationDiffLinear).toBeGreaterThan(0);
+    expect(ga.bestFitnessNormReLU).toBeGreaterThan(0);
+    expect(ga.bestFitnessDiffLinear).toBeGreaterThan(0);
 
     ga.reset();
 
-    expect(ga.generationNormal).toBe(0);
-    expect(ga.generationDiff).toBe(0);
-    expect(ga.bestFitnessNormal).toBe(0);
-    expect(ga.bestFitnessDiff).toBe(0);
-    expect(ga.bestWeightsNormal).toBeNull();
-    expect(ga.bestWeightsDiff).toBeNull();
+    expect(ga.generationNormReLU).toBe(0);
+    expect(ga.generationDiffLinear).toBe(0);
+    expect(ga.bestFitnessNormReLU).toBe(0);
+    expect(ga.bestFitnessDiffLinear).toBe(0);
+    expect(ga.bestWeightsNormReLU).toBeNull();
+    expect(ga.bestWeightsDiffLinear).toBeNull();
   });
 });

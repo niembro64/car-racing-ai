@@ -195,26 +195,26 @@ export const START_FINISH_LINE_WIDTH = 20;
 export const CAR_LABEL_COLOR_ALIVE = '#ffffff'; // White progress label
 export const CAR_LABEL_COLOR_DEAD = '#9ca3af'; // Gray progress label
 
-// Normal input cars (blue)
-export const NORMAL_CAR_COLOR = '#226699'; // Dark muted blue (mutated variants)
-export const NORMAL_ELITE_CAR_COLOR = '#33aaff'; // Bright blue (elite)
-export const NORMAL_CAR_RAY_COLOR = NORMAL_CAR_COLOR;
-export const NORMAL_CAR_RAY_HIT_COLOR = NORMAL_CAR_COLOR;
-export const NORMAL_CAR_RAY_WIDTH = 0.5;
-export const NORMAL_CAR_RAY_HIT_RADIUS = 3;
+// NormReLU cars (blue) - 9 inputs, ReLU activation
+export const NORM_RELU_CAR_COLOR = '#226699'; // Dark muted blue (mutated variants)
+export const NORM_RELU_ELITE_CAR_COLOR = '#33aaff'; // Bright blue (elite)
+export const NORM_RELU_CAR_RAY_COLOR = NORM_RELU_CAR_COLOR;
+export const NORM_RELU_CAR_RAY_HIT_COLOR = NORM_RELU_CAR_COLOR;
+export const NORM_RELU_CAR_RAY_WIDTH = 0.5;
+export const NORM_RELU_CAR_RAY_HIT_RADIUS = 3;
 
-// Differential input cars (red)
-export const DIFF_CAR_COLOR = '#880000'; // Dark muted red (mutated variants)
-export const DIFF_ELITE_CAR_COLOR = '#ff5555'; // Bright red (elite)
-export const DIFF_CAR_RAY_COLOR = DIFF_CAR_COLOR;
-export const DIFF_CAR_RAY_HIT_COLOR = DIFF_CAR_COLOR;
-export const DIFF_CAR_RAY_WIDTH = 0.5;
-export const DIFF_CAR_RAY_HIT_RADIUS = 3;
+// DiffLinear cars (red) - 5 inputs, Linear activation
+export const DIFF_LINEAR_CAR_COLOR = '#880000'; // Dark muted red (mutated variants)
+export const DIFF_LINEAR_ELITE_CAR_COLOR = '#ff5555'; // Bright red (elite)
+export const DIFF_LINEAR_CAR_RAY_COLOR = DIFF_LINEAR_CAR_COLOR;
+export const DIFF_LINEAR_CAR_RAY_HIT_COLOR = DIFF_LINEAR_CAR_COLOR;
+export const DIFF_LINEAR_CAR_RAY_WIDTH = 0.5;
+export const DIFF_LINEAR_CAR_RAY_HIT_RADIUS = 3;
 
 // Centerline ray (debug visualization)
-export const CENTERLINE_RAY_HIT_COLOR = '#ffffff'; // Green centerline dot
+export const CENTERLINE_RAY_HIT_COLOR = '#ffffff'; // White centerline dot
 
 // Generation markers
-export const NORMAL_MARKER_COLOR = NORMAL_CAR_COLOR; // Blue markers for normal cars
-export const DIFF_MARKER_COLOR = DIFF_CAR_COLOR; // Red markers for diff cars
+export const NORM_RELU_MARKER_COLOR = NORM_RELU_CAR_COLOR; // Blue markers for NormReLU cars
+export const DIFF_LINEAR_MARKER_COLOR = DIFF_LINEAR_CAR_COLOR; // Red markers for DiffLinear cars
 export const GENERATION_MARKER_RADIUS = 6;

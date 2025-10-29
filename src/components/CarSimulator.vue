@@ -8,12 +8,12 @@
     ></canvas>
 
     <div class="hud">
-      <div class="stat" :style="{ color: NORMAL_ELITE_CAR_COLOR }">N-GEN: {{ ga.generationNormal }}</div>
-      <div class="stat" :style="{ color: DIFF_ELITE_CAR_COLOR }">D-GEN: {{ ga.generationDiff }}</div>
-      <div class="stat">{{ adaptiveMutationRateNormal }}</div>
-      <div class="stat">{{ adaptiveMutationRateDiff }}</div>
-      <div class="stat" :style="{ color: NORMAL_ELITE_CAR_COLOR }">NORMAL: {{ normalBestPercent }}%</div>
-      <div class="stat" :style="{ color: DIFF_ELITE_CAR_COLOR }">DIFF: {{ diffBestPercent }}%</div>
+      <div class="stat" :style="{ color: NORM_RELU_ELITE_CAR_COLOR }">NR-GEN: {{ ga.generationNormReLU }}</div>
+      <div class="stat" :style="{ color: DIFF_LINEAR_ELITE_CAR_COLOR }">DL-GEN: {{ ga.generationDiffLinear }}</div>
+      <div class="stat">{{ adaptiveMutationRateNormReLU }}</div>
+      <div class="stat">{{ adaptiveMutationRateDiffLinear }}</div>
+      <div class="stat" :style="{ color: NORM_RELU_ELITE_CAR_COLOR }">NORMRELU: {{ normReLUBestPercent }}%</div>
+      <div class="stat" :style="{ color: DIFF_LINEAR_ELITE_CAR_COLOR }">DIFFLINEAR: {{ diffLinearBestPercent }}%</div>
     </div>
 
     <div class="controls">
@@ -34,7 +34,7 @@ import { ref, onMounted, onUnmounted, computed, type Ref } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
-import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, NORMAL_ELITE_CAR_COLOR, DIFF_ELITE_CAR_COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, NORMAL_MARKER_COLOR, DIFF_MARKER_COLOR, GENERATION_MARKER_RADIUS, DEFAULT_DIE_ON_BACKWARDS, DEFAULT_KILL_SLOW_CARS } from '@/config';
+import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, NORM_RELU_ELITE_CAR_COLOR, DIFF_LINEAR_ELITE_CAR_COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, NORM_RELU_MARKER_COLOR, DIFF_LINEAR_MARKER_COLOR, GENERATION_MARKER_RADIUS, DEFAULT_DIE_ON_BACKWARDS, DEFAULT_KILL_SLOW_CARS } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
@@ -74,93 +74,93 @@ const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed));
 const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(true);
 const speedMultiplier = ref(1);
-const generationTimeNormal = ref(0);
-const generationTimeDiff = ref(0);
-const generationMarkersNormal = ref<{ x: number; y: number; generation: number }[]>([]);
-const generationMarkersDiff = ref<{ x: number; y: number; generation: number }[]>([]);
+const generationTimeNormReLU = ref(0);
+const generationTimeDiffLinear = ref(0);
+const generationMarkersNormReLU = ref<{ x: number; y: number; generation: number }[]>([]);
+const generationMarkersDiffLinear = ref<{ x: number; y: number; generation: number }[]>([]);
 const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
 const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
 
 let animationFrameId: number | null = null;
 const FIXED_DT = 1 / 60; // 60 Hz physics
 
-const adaptiveMutationRateNormal = computed(() => {
+const adaptiveMutationRateNormReLU = computed(() => {
   const minGenerationTime = 1.0;
-  const effectiveTime = Math.max(generationTimeNormal.value, minGenerationTime);
+  const effectiveTime = Math.max(generationTimeNormReLU.value, minGenerationTime);
   const rate = GA_MUTATION_RATE / effectiveTime;
   const formatted = rate.toFixed(4).padStart(6, ' '); // "X.XXXX" format
-  return `σN=${formatted}`;
+  return `σNR=${formatted}`;
 });
 
-const adaptiveMutationRateDiff = computed(() => {
+const adaptiveMutationRateDiffLinear = computed(() => {
   const minGenerationTime = 1.0;
-  const effectiveTime = Math.max(generationTimeDiff.value, minGenerationTime);
+  const effectiveTime = Math.max(generationTimeDiffLinear.value, minGenerationTime);
   const rate = GA_MUTATION_RATE / effectiveTime;
   const formatted = rate.toFixed(4).padStart(6, ' '); // "X.XXXX" format
-  return `σD=${formatted}`;
+  return `σDL=${formatted}`;
 });
 
-const normalBestPercent = computed(() => {
+const normReLUBestPercent = computed(() => {
   const trackLength = track.getTotalLength();
-  return ((ga.value.bestFitnessNormal / trackLength) * 100).toFixed(1);
+  return ((ga.value.bestFitnessNormReLU / trackLength) * 100).toFixed(1);
 });
 
-const diffBestPercent = computed(() => {
+const diffLinearBestPercent = computed(() => {
   const trackLength = track.getTotalLength();
-  return ((ga.value.bestFitnessDiff / trackLength) * 100).toFixed(1);
+  return ((ga.value.bestFitnessDiffLinear / trackLength) * 100).toFixed(1);
 });
 
 // Initialize simulation
 const init = () => {
   population.value = ga.value.initializePopulation(track);
-  generationTimeNormal.value = 0;
-  generationTimeDiff.value = 0;
-  generationMarkersNormal.value = [];
-  generationMarkersDiff.value = [];
+  generationTimeNormReLU.value = 0;
+  generationTimeDiffLinear.value = 0;
+  generationMarkersNormReLU.value = [];
+  generationMarkersDiffLinear.value = [];
 };
 
-// Evolve normal population independently
-const evolveNormalPopulation = (reason: string, winnerCar?: Car) => {
-  const normalCars = population.value.filter(car => !car.useDifferentialInputs);
-  const diffCars = population.value.filter(car => car.useDifferentialInputs);
+// Evolve NormReLU population independently
+const evolveNormReLUPopulation = (reason: string, winnerCar?: Car) => {
+  const normReLUCars = population.value.filter(car => !car.useDifferentialInputs);
+  const diffLinearCars = population.value.filter(car => car.useDifferentialInputs);
 
-  // Find best normal car for marker
-  const sortedNormal = [...normalCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
-  const bestNormal = sortedNormal[0];
+  // Find best NormReLU car for marker
+  const sortedNormReLU = [...normReLUCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
+  const bestNormReLU = sortedNormReLU[0];
 
   // Save best position as marker
-  if (bestNormal) {
-    generationMarkersNormal.value.push({ x: bestNormal.x, y: bestNormal.y, generation: ga.value.generationNormal });
+  if (bestNormReLU) {
+    generationMarkersNormReLU.value.push({ x: bestNormReLU.x, y: bestNormReLU.y, generation: ga.value.generationNormReLU });
   }
 
-  // Evolve normal population
-  const newNormalCars = ga.value.evolveNormalPopulation(normalCars, track, generationTimeNormal.value, winnerCar);
-  generationTimeNormal.value = 0;
+  // Evolve NormReLU population
+  const newNormReLUCars = ga.value.evolveNormReLUPopulation(normReLUCars, track, generationTimeNormReLU.value, winnerCar);
+  generationTimeNormReLU.value = 0;
 
-  // Combine with existing diff cars
-  population.value = [...newNormalCars, ...diffCars];
+  // Combine with existing DiffLinear cars
+  population.value = [...newNormReLUCars, ...diffLinearCars];
 };
 
-// Evolve diff population independently
-const evolveDiffPopulation = (reason: string, winnerCar?: Car) => {
-  const normalCars = population.value.filter(car => !car.useDifferentialInputs);
-  const diffCars = population.value.filter(car => car.useDifferentialInputs);
+// Evolve DiffLinear population independently
+const evolveDiffLinearPopulation = (reason: string, winnerCar?: Car) => {
+  const normReLUCars = population.value.filter(car => !car.useDifferentialInputs);
+  const diffLinearCars = population.value.filter(car => car.useDifferentialInputs);
 
-  // Find best diff car for marker
-  const sortedDiff = [...diffCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
-  const bestDiff = sortedDiff[0];
+  // Find best DiffLinear car for marker
+  const sortedDiffLinear = [...diffLinearCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
+  const bestDiffLinear = sortedDiffLinear[0];
 
   // Save best position as marker
-  if (bestDiff) {
-    generationMarkersDiff.value.push({ x: bestDiff.x, y: bestDiff.y, generation: ga.value.generationDiff });
+  if (bestDiffLinear) {
+    generationMarkersDiffLinear.value.push({ x: bestDiffLinear.x, y: bestDiffLinear.y, generation: ga.value.generationDiffLinear });
   }
 
-  // Evolve diff population
-  const newDiffCars = ga.value.evolveDiffPopulation(diffCars, track, generationTimeDiff.value, winnerCar);
-  generationTimeDiff.value = 0;
+  // Evolve DiffLinear population
+  const newDiffLinearCars = ga.value.evolveDiffLinearPopulation(diffLinearCars, track, generationTimeDiffLinear.value, winnerCar);
+  generationTimeDiffLinear.value = 0;
 
-  // Combine with existing normal cars
-  population.value = [...normalCars, ...newDiffCars];
+  // Combine with existing NormReLU cars
+  population.value = [...normReLUCars, ...newDiffLinearCars];
 };
 
 // Update physics
@@ -190,9 +190,9 @@ const updatePhysics = (dt: number) => {
 
         // Evolve only that car's population type
         if (sameType) {
-          evolveDiffPopulation('car completed lap', car);
+          evolveDiffLinearPopulation('car completed lap', car);
         } else {
-          evolveNormalPopulation('car completed lap', car);
+          evolveNormReLUPopulation('car completed lap', car);
         }
         return; // Stop processing this frame
       }
@@ -212,22 +212,22 @@ const updatePhysics = (dt: number) => {
   }
 
   // Update generation times for both populations
-  generationTimeNormal.value += dt;
-  generationTimeDiff.value += dt;
+  generationTimeNormReLU.value += dt;
+  generationTimeDiffLinear.value += dt;
 
   // Check each population independently for all-dead condition
-  const normalCars = population.value.filter(c => !c.useDifferentialInputs);
-  const diffCars = population.value.filter(c => c.useDifferentialInputs);
+  const normReLUCars = population.value.filter(c => !c.useDifferentialInputs);
+  const diffLinearCars = population.value.filter(c => c.useDifferentialInputs);
 
-  const allNormalDead = normalCars.every(c => !c.alive);
-  const allDiffDead = diffCars.every(c => !c.alive);
+  const allNormReLUDead = normReLUCars.every(c => !c.alive);
+  const allDiffLinearDead = diffLinearCars.every(c => !c.alive);
 
-  if (allNormalDead && normalCars.length > 0) {
-    evolveNormalPopulation('all normal cars crashed');
+  if (allNormReLUDead && normReLUCars.length > 0) {
+    evolveNormReLUPopulation('all NormReLU cars crashed');
   }
 
-  if (allDiffDead && diffCars.length > 0) {
-    evolveDiffPopulation('all diff cars crashed');
+  if (allDiffLinearDead && diffLinearCars.length > 0) {
+    evolveDiffLinearPopulation('all DiffLinear cars crashed');
   }
 };
 
@@ -239,23 +239,23 @@ const render = (ctx: CanvasRenderingContext2D) => {
   // Render track
   track.render(ctx);
 
-  // Render generation markers (blue for normal, red for diff)
+  // Render generation markers (blue for NormReLU, red for DiffLinear)
   ctx.font = 'bold 16px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
 
-  // Render normal car markers (blue)
-  ctx.fillStyle = NORMAL_MARKER_COLOR;
-  for (const marker of generationMarkersNormal.value) {
+  // Render NormReLU car markers (blue)
+  ctx.fillStyle = NORM_RELU_MARKER_COLOR;
+  for (const marker of generationMarkersNormReLU.value) {
     ctx.beginPath();
     ctx.arc(marker.x, marker.y, GENERATION_MARKER_RADIUS, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillText(marker.generation.toString(), marker.x, marker.y - GENERATION_MARKER_RADIUS - 2);
   }
 
-  // Render diff car markers (red)
-  ctx.fillStyle = DIFF_MARKER_COLOR;
-  for (const marker of generationMarkersDiff.value) {
+  // Render DiffLinear car markers (red)
+  ctx.fillStyle = DIFF_LINEAR_MARKER_COLOR;
+  for (const marker of generationMarkersDiffLinear.value) {
     ctx.beginPath();
     ctx.arc(marker.x, marker.y, GENERATION_MARKER_RADIUS, 0, Math.PI * 2);
     ctx.fill();
@@ -266,9 +266,9 @@ const render = (ctx: CanvasRenderingContext2D) => {
   const deadCars = population.value.filter(car => !car.alive);
   const aliveCars = population.value.filter(car => car.alive);
 
-  // Separate elites (both normal and diff)
-  const elites = aliveCars.filter(car => car.color === NORMAL_ELITE_CAR_COLOR || car.color === DIFF_ELITE_CAR_COLOR);
-  const others = aliveCars.filter(car => car.color !== NORMAL_ELITE_CAR_COLOR && car.color !== DIFF_ELITE_CAR_COLOR);
+  // Separate elites (both NormReLU and DiffLinear)
+  const elites = aliveCars.filter(car => car.color === NORM_RELU_ELITE_CAR_COLOR || car.color === DIFF_LINEAR_ELITE_CAR_COLOR);
+  const others = aliveCars.filter(car => car.color !== NORM_RELU_ELITE_CAR_COLOR && car.color !== DIFF_LINEAR_ELITE_CAR_COLOR);
 
   // Render dead cars first
   for (const car of deadCars) {
@@ -306,8 +306,8 @@ const animate = () => {
 
 // Manually trigger next generation for both populations
 const nextGeneration = () => {
-  evolveNormalPopulation('manual trigger');
-  evolveDiffPopulation('manual trigger');
+  evolveNormReLUPopulation('manual trigger');
+  evolveDiffLinearPopulation('manual trigger');
 };
 
 // Reset the simulation by reloading the page
