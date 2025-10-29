@@ -3,7 +3,7 @@ import { NeuralNetwork } from './Neural';
 import { Track } from './Track';
 import { SeededRandom } from './math/geom';
 import {
-  GA_POPULATION_SIZE,
+  getPopulationSize,
   GA_MUTATION_RATE,
   GA_MUTATION_MIN_MULTIPLIER,
   GA_MUTATION_MAX_MULTIPLIER,
@@ -39,7 +39,7 @@ export class GeneticAlgorithm {
 
   // Accessor methods for backward compatibility and convenience
   get generationNormReLU(): number {
-    return this.stateByConfigId.get('normrelu')?.generation ?? 0;
+    return this.stateByConfigId.get('normgelu')?.generation ?? 0;
   }
 
   get generationDiffLinear(): number {
@@ -47,7 +47,7 @@ export class GeneticAlgorithm {
   }
 
   get bestFitnessNormReLU(): number {
-    return this.stateByConfigId.get('normrelu')?.bestFitness ?? 0;
+    return this.stateByConfigId.get('normgelu')?.bestFitness ?? 0;
   }
 
   get bestFitnessDiffLinear(): number {
@@ -55,7 +55,7 @@ export class GeneticAlgorithm {
   }
 
   get bestWeightsNormReLU(): any {
-    return this.stateByConfigId.get('normrelu')?.bestWeights ?? null;
+    return this.stateByConfigId.get('normgelu')?.bestWeights ?? null;
   }
 
   get bestWeightsDiffLinear(): any {
@@ -93,7 +93,7 @@ export class GeneticAlgorithm {
   // Initialize first generation with cars from all configured types
   initializePopulation(track: Track): Car[] {
     const population: Car[] = [];
-    const carsPerType = Math.floor(GA_POPULATION_SIZE / CAR_BRAIN_CONFIGS.length);
+    const carsPerType = Math.floor(getPopulationSize() / CAR_BRAIN_CONFIGS.length);
 
     for (const config of CAR_BRAIN_CONFIGS) {
       // Create cars for this type
@@ -139,7 +139,7 @@ export class GeneticAlgorithm {
       throw new Error(`Unknown config ID: ${config.id}`);
     }
 
-    const carsPerType = Math.floor(GA_POPULATION_SIZE / CAR_BRAIN_CONFIGS.length);
+    const carsPerType = Math.floor(getPopulationSize() / CAR_BRAIN_CONFIGS.length);
 
     // Sort by performance
     const sorted = [...cars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
@@ -230,8 +230,8 @@ export class GeneticAlgorithm {
     generationTime: number,
     winnerCar?: Car
   ): Car[] {
-    const config = CAR_BRAIN_CONFIGS.find(c => c.id === 'normrelu');
-    if (!config) throw new Error('NormReLU config not found');
+    const config = CAR_BRAIN_CONFIGS.find(c => c.id === 'normgelu');
+    if (!config) throw new Error('NormGeLU config not found');
     return this.evolvePopulation(normReLUCars, config, track, generationTime, winnerCar);
   }
 

@@ -89,7 +89,21 @@ export const GA_MUTATION_RATE = 0.08;
 
 // Population size - number of cars per generation
 // Higher = more diversity but slower evolution per generation
-export const GA_POPULATION_SIZE = 180;
+export const GA_POPULATION_SIZE_DESKTOP = 160;
+export const GA_POPULATION_SIZE_MOBILE = 80;
+
+// Get population size based on screen width
+export function getPopulationSize(): number {
+  if (typeof window === 'undefined') {
+    // Server-side or test environment - use desktop size
+    return GA_POPULATION_SIZE_DESKTOP;
+  }
+  // Mobile breakpoint at 768px (matches CSS media query)
+  return window.innerWidth <= 768 ? GA_POPULATION_SIZE_MOBILE : GA_POPULATION_SIZE_DESKTOP;
+}
+
+// Default constant for backward compatibility (uses desktop size for tests)
+export const GA_POPULATION_SIZE = GA_POPULATION_SIZE_DESKTOP;
 
 // Mutation multiplier range - creates diversity in mutation strength across population
 // Car #1 (elite): 0× mutation (exact copy)

@@ -40,12 +40,14 @@ describe('Configuration', () => {
     expect(config.TRACK_BOUNDARY_COLOR).toBeDefined();
     expect(config.TRACK_CENTERLINE_COLOR).toBeDefined();
     expect(config.START_FINISH_LINE_COLOR).toBeDefined();
-    expect(config.NORM_RELU_CAR_COLOR).toBeDefined();
-    expect(config.NORM_RELU_ELITE_CAR_COLOR).toBeDefined();
-    expect(config.DIFF_LINEAR_CAR_COLOR).toBeDefined();
-    expect(config.DIFF_LINEAR_ELITE_CAR_COLOR).toBeDefined();
     expect(config.CAR_LABEL_COLOR_ALIVE).toBeDefined();
     expect(config.CAR_LABEL_COLOR_DEAD).toBeDefined();
+
+    // Check that CAR_BRAIN_CONFIGS have proper color definitions
+    for (const carConfig of config.CAR_BRAIN_CONFIGS) {
+      expect(carConfig.colors.normal).toBeDefined();
+      expect(carConfig.colors.elite).toBeDefined();
+    }
   });
 
   it('should have all rendering dimensions', () => {
@@ -54,18 +56,13 @@ describe('Configuration', () => {
     expect(config.START_FINISH_LINE_WIDTH).toBeDefined();
   });
 
-  it('should have DiffLinear car ray visualization settings', () => {
-    expect(config.DIFF_LINEAR_CAR_RAY_COLOR).toBeDefined();
-    expect(config.DIFF_LINEAR_CAR_RAY_HIT_COLOR).toBeDefined();
-    expect(config.DIFF_LINEAR_CAR_RAY_WIDTH).toBeDefined();
-    expect(config.DIFF_LINEAR_CAR_RAY_HIT_RADIUS).toBeDefined();
-  });
-
-  it('should have NormReLU car ray visualization settings', () => {
-    expect(config.NORM_RELU_CAR_RAY_COLOR).toBeDefined();
-    expect(config.NORM_RELU_CAR_RAY_HIT_COLOR).toBeDefined();
-    expect(config.NORM_RELU_CAR_RAY_WIDTH).toBeDefined();
-    expect(config.NORM_RELU_CAR_RAY_HIT_RADIUS).toBeDefined();
+  it('should have car ray visualization settings in CAR_BRAIN_CONFIGS', () => {
+    for (const carConfig of config.CAR_BRAIN_CONFIGS) {
+      expect(carConfig.colors.ray).toBeDefined();
+      expect(carConfig.colors.rayHit).toBeDefined();
+      expect(carConfig.rayVisualization.width).toBeDefined();
+      expect(carConfig.rayVisualization.hitRadius).toBeDefined();
+    }
   });
 
   it('should have valid numeric values', () => {
@@ -99,18 +96,21 @@ describe('Configuration', () => {
       config.TRACK_BOUNDARY_COLOR,
       config.TRACK_CENTERLINE_COLOR,
       config.START_FINISH_LINE_COLOR,
-      config.NORM_RELU_CAR_COLOR,
-      config.NORM_RELU_ELITE_CAR_COLOR,
-      config.DIFF_LINEAR_CAR_COLOR,
-      config.DIFF_LINEAR_ELITE_CAR_COLOR,
       config.CAR_LABEL_COLOR_ALIVE,
       config.CAR_LABEL_COLOR_DEAD,
-      config.NORM_RELU_CAR_RAY_HIT_COLOR,
-      config.DIFF_LINEAR_CAR_RAY_HIT_COLOR
     ];
 
     colors.forEach(color => {
       expect(hexColorRegex.test(color) || rgbaColorRegex.test(color)).toBe(true);
     });
+
+    // Check CAR_BRAIN_CONFIGS colors
+    for (const carConfig of config.CAR_BRAIN_CONFIGS) {
+      expect(hexColorRegex.test(carConfig.colors.normal) || rgbaColorRegex.test(carConfig.colors.normal)).toBe(true);
+      expect(hexColorRegex.test(carConfig.colors.elite) || rgbaColorRegex.test(carConfig.colors.elite)).toBe(true);
+      expect(hexColorRegex.test(carConfig.colors.ray) || rgbaColorRegex.test(carConfig.colors.ray)).toBe(true);
+      expect(hexColorRegex.test(carConfig.colors.rayHit) || rgbaColorRegex.test(carConfig.colors.rayHit)).toBe(true);
+      expect(hexColorRegex.test(carConfig.colors.marker) || rgbaColorRegex.test(carConfig.colors.marker)).toBe(true);
+    }
   });
 });

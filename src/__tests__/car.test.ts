@@ -9,8 +9,8 @@ describe('Car', () => {
   let mockTrack: any;
 
   beforeEach(() => {
-    brain = NeuralNetwork.createRandom(12345);
-    car = new Car(100, 100, 0, brain, '#0088ff');
+    brain = NeuralNetwork.createRandom(12345, [9, 6, 1], 'relu');
+    car = new Car(100, 100, 0, brain, '#0088ff', false, 'test'); // Use standard inputs (9 sensors)
 
     // Create a mock track object
     mockTrack = {
@@ -126,7 +126,7 @@ describe('Car', () => {
   });
 
   it('should clone with a new brain', () => {
-    const newBrain = NeuralNetwork.createRandom(54321);
+    const newBrain = NeuralNetwork.createRandom(54321, [9, 6, 1], 'relu');
     const clonedCar = car.clone(newBrain);
 
     expect(clonedCar.x).toBe(car.x);
