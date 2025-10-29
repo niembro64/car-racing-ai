@@ -7,44 +7,50 @@
       :style="{ width: displayWidth + 'px', height: displayHeight + 'px' }"
     ></canvas>
 
-    <div class="hud">
-      <table class="stats-table">
-        <thead>
-          <tr>
-            <th>Type</th>
-            <th>Generation</th>
-            <th>Mutation Rate</th>
-            <th>Best Fitness</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="config in CAR_BRAIN_CONFIGS" :key="config.id">
-            <td :style="{ color: config.colors.elite, fontWeight: 'bold' }">
-              {{ config.displayName }}
-            </td>
-            <td :style="{ color: config.colors.elite }">
-              {{ ga.getGeneration(config.id) }}
-            </td>
-            <td>
-              {{ getAdaptiveMutationRate(config.id) }}
-            </td>
-            <td :style="{ color: config.colors.elite }">
-              {{ getBestFitnessPercent(config.id) }}%
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <div class="info-container">
+      <div class="controls">
+        <button @click="nextGeneration">NEXT GEN</button>
+        <button @click="reset">RESET</button>
+        <button @click="toggleDieOnBackwards" :class="{ active: dieOnBackwards }">
+          KILL BACK: {{ dieOnBackwards ? 'ON' : 'OFF' }}
+        </button>
+        <button @click="toggleKillSlowCars" :class="{ active: killSlowCars }">
+          KILL SLOW: {{ killSlowCars ? 'ON' : 'OFF' }}
+        </button>
+      </div>
 
-    <div class="controls">
-      <button @click="nextGeneration">NEXT GEN</button>
-      <button @click="reset">RESET</button>
-      <button @click="toggleDieOnBackwards" :class="{ active: dieOnBackwards }">
-        KILL BACK: {{ dieOnBackwards ? 'ON' : 'OFF' }}
-      </button>
-      <button @click="toggleKillSlowCars" :class="{ active: killSlowCars }">
-        KILL SLOW: {{ killSlowCars ? 'ON' : 'OFF' }}
-      </button>
+      <div class="hud">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Gen</th>
+              <th>Mutation</th>
+              <th>Mean</th>
+              <th>Best</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="config in CAR_BRAIN_CONFIGS" :key="config.id">
+              <td :style="{ color: config.colors.elite, fontWeight: 'bold' }">
+                {{ config.displayName }}
+              </td>
+              <td :style="{ color: config.colors.elite }">
+                {{ ga.getGeneration(config.id) }}
+              </td>
+              <td>
+                {{ getAdaptiveMutationRate(config.id) }}
+              </td>
+              <td :style="{ color: config.colors.elite }">
+                {{ getMeanFitnessPercent(config.id) }}%
+              </td>
+              <td :style="{ color: config.colors.elite }">
+                {{ getBestFitnessPercent(config.id) }}%
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>
@@ -54,7 +60,17 @@ import { ref, onMounted, onUnmounted, type Ref } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
-import { TRACK_WIDTH_HALF, GA_MUTATION_RATE, CAR_BRAIN_CONFIGS, CANVAS_WIDTH, CANVAS_HEIGHT, GENERATION_MARKER_RADIUS, DEFAULT_DIE_ON_BACKWARDS, DEFAULT_KILL_SLOW_CARS, type CarBrainConfig } from '@/config';
+import {
+  TRACK_WIDTH_HALF,
+  GA_MUTATION_RATE,
+  CAR_BRAIN_CONFIGS,
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  GENERATION_MARKER_RADIUS,
+  DEFAULT_DIE_ON_BACKWARDS,
+  DEFAULT_KILL_SLOW_CARS,
+  type CarBrainConfig,
+} from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
@@ -99,7 +115,9 @@ const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
 
 // Dynamic generation tracking for all config types
 const generationTimeByConfigId = ref<Map<string, number>>(new Map());
-const generationMarkersByConfigId = ref<Map<string, { x: number; y: number; generation: number }[]>>(new Map());
+const generationMarkersByConfigId = ref<
+  Map<string, { x: number; y: number; generation: number; fitness: number }[]>
+>(new Map());
 
 // Initialize tracking maps for all configs
 for (const config of CAR_BRAIN_CONFIGS) {
@@ -107,25 +125,49 @@ for (const config of CAR_BRAIN_CONFIGS) {
   generationMarkersByConfigId.value.set(config.id, []);
 }
 
-
 let animationFrameId: number | null = null;
 const FIXED_DT = 1 / 60; // 60 Hz physics
 
 // Generic helper to compute adaptive mutation rate for a config
 const getAdaptiveMutationRate = (configId: string): string => {
-  const config = CAR_BRAIN_CONFIGS.find(c => c.id === configId);
+  const config = CAR_BRAIN_CONFIGS.find((c) => c.id === configId);
   if (!config) return 'N/A';
 
   const minGenerationTime = 1.0;
-  const effectiveTime = Math.max(generationTimeByConfigId.value.get(configId) ?? 0, minGenerationTime);
+  const effectiveTime = Math.max(
+    generationTimeByConfigId.value.get(configId) ?? 0,
+    minGenerationTime
+  );
   const rate = GA_MUTATION_RATE / effectiveTime;
   return rate.toFixed(4); // Just the number for table display
 };
 
-// Generic helper to compute best fitness percentage for a config
-const getBestFitnessPercent = (configId: string): string => {
+// Generic helper to compute mean fitness percentage for a config (average of all generation markers)
+const getMeanFitnessPercent = (configId: string): string => {
+  const markers = generationMarkersByConfigId.value.get(configId) ?? [];
+
+  if (markers.length === 0) {
+    return '0.0';
+  }
+
   const trackLength = track.getTotalLength();
-  const bestFitness = ga.value.getBestFitness(configId);
+  const totalFitness = markers.reduce((sum, marker) => sum + marker.fitness, 0);
+  const meanFitness = totalFitness / markers.length;
+
+  return ((meanFitness / trackLength) * 100).toFixed(1);
+};
+
+// Generic helper to compute best fitness percentage for a config (max of all generation markers)
+const getBestFitnessPercent = (configId: string): string => {
+  const markers = generationMarkersByConfigId.value.get(configId) ?? [];
+
+  if (markers.length === 0) {
+    return '0.0';
+  }
+
+  const trackLength = track.getTotalLength();
+  const bestFitness = Math.max(...markers.map(marker => marker.fitness));
+
   return ((bestFitness / trackLength) * 100).toFixed(1);
 };
 
@@ -141,25 +183,46 @@ const init = () => {
 };
 
 // Generic evolution function that works with any car brain config
-const evolvePopulationByConfig = (config: CarBrainConfig, _reason: string, winnerCar?: Car) => {
-  // Separate cars by type
-  const configCars = population.value.filter(car => car.useDifferentialInputs === config.useDifferentialInputs);
-  const otherCars = population.value.filter(car => car.useDifferentialInputs !== config.useDifferentialInputs);
+const evolvePopulationByConfig = (
+  config: CarBrainConfig,
+  _reason: string,
+  winnerCar?: Car
+) => {
+  // Separate cars by configId (unique identifier)
+  const configCars = population.value.filter(
+    (car) => car.configId === config.id
+  );
+  const otherCars = population.value.filter(
+    (car) => car.configId !== config.id
+  );
 
   // Find best car for marker
-  const sortedCars = [...configCars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
+  const sortedCars = [...configCars].sort(
+    (a, b) => b.maxDistanceReached - a.maxDistanceReached
+  );
   const bestCar = sortedCars[0];
 
-  // Save best position as marker
+  // Save best position as marker (with fitness)
   if (bestCar) {
     const markers = generationMarkersByConfigId.value.get(config.id) ?? [];
-    markers.push({ x: bestCar.x, y: bestCar.y, generation: ga.value.getGeneration(config.id) });
+    markers.push({
+      x: bestCar.x,
+      y: bestCar.y,
+      generation: ga.value.getGeneration(config.id),
+      fitness: bestCar.maxDistanceReached,
+    });
     generationMarkersByConfigId.value.set(config.id, markers);
   }
 
   // Evolve this population
   const generationTime = generationTimeByConfigId.value.get(config.id) ?? 0;
-  const newCars = ga.value.evolvePopulation(configCars, config, track, generationTime, winnerCar);
+  const newCars = ga.value.evolvePopulation(
+    configCars,
+    config,
+    track,
+    generationTime,
+    winnerCar
+  );
   generationTimeByConfigId.value.set(config.id, 0);
 
   // Combine with other car types
@@ -181,13 +244,13 @@ const updatePhysics = (dt: number) => {
 
       // Check if car completed a lap (reached 100% progress)
       if (car.currentProgressRatio >= 1.0) {
-        // Find the config for this car type
-        const config = CAR_BRAIN_CONFIGS.find(c => c.useDifferentialInputs === car.useDifferentialInputs);
+        // Find the config for this car type by configId
+        const config = CAR_BRAIN_CONFIGS.find((c) => c.id === car.configId);
 
         if (config) {
           // Kill all cars of same type immediately
-          population.value.forEach(c => {
-            if (c.useDifferentialInputs === config.useDifferentialInputs && c !== car) {
+          population.value.forEach((c) => {
+            if (c.configId === config.id && c !== car) {
               c.alive = false;
               c.speed = 0;
             }
@@ -221,11 +284,14 @@ const updatePhysics = (dt: number) => {
 
   // Check each config population independently for all-dead condition
   for (const config of CAR_BRAIN_CONFIGS) {
-    const configCars = population.value.filter(c => c.useDifferentialInputs === config.useDifferentialInputs);
-    const allDead = configCars.every(c => !c.alive);
+    const configCars = population.value.filter((c) => c.configId === config.id);
+    const allDead = configCars.every((c) => !c.alive);
 
     if (allDead && configCars.length > 0) {
-      evolvePopulationByConfig(config, `all ${config.displayName} cars crashed`);
+      evolvePopulationByConfig(
+        config,
+        `all ${config.displayName} cars crashed`
+      );
     }
   }
 };
@@ -251,18 +317,22 @@ const render = (ctx: CanvasRenderingContext2D) => {
       ctx.beginPath();
       ctx.arc(marker.x, marker.y, GENERATION_MARKER_RADIUS, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillText(marker.generation.toString(), marker.x, marker.y - GENERATION_MARKER_RADIUS - 2);
+      ctx.fillText(
+        marker.generation.toString(),
+        marker.x,
+        marker.y - GENERATION_MARKER_RADIUS - 2
+      );
     }
   }
 
   // Render cars (dead first, then alive, then elites last)
-  const deadCars = population.value.filter(car => !car.alive);
-  const aliveCars = population.value.filter(car => car.alive);
+  const deadCars = population.value.filter((car) => !car.alive);
+  const aliveCars = population.value.filter((car) => car.alive);
 
   // Separate elites (check against all config elite colors)
-  const eliteColors = CAR_BRAIN_CONFIGS.map(c => c.colors.elite);
-  const elites = aliveCars.filter(car => eliteColors.includes(car.color));
-  const others = aliveCars.filter(car => !eliteColors.includes(car.color));
+  const eliteColors = CAR_BRAIN_CONFIGS.map((c) => c.colors.elite);
+  const elites = aliveCars.filter((car) => eliteColors.includes(car.color));
+  const others = aliveCars.filter((car) => !eliteColors.includes(car.color));
 
   // Render dead cars first
   for (const car of deadCars) {
@@ -286,7 +356,14 @@ const animate = () => {
   if (!ctx) return;
 
   // Run multiple physics steps for fast-forward
-  const steps = speedMultiplier.value === 1 ? 1 : speedMultiplier.value === 2 ? 2 : speedMultiplier.value === 4 ? 4 : 8;
+  const steps =
+    speedMultiplier.value === 1
+      ? 1
+      : speedMultiplier.value === 2
+      ? 2
+      : speedMultiplier.value === 4
+      ? 4
+      : 8;
 
   for (let i = 0; i < steps; i++) {
     updatePhysics(FIXED_DT);
@@ -361,10 +438,27 @@ canvas {
   image-rendering: pixelated;
 }
 
+.info-container {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px 16px;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+
 .hud {
   display: flex;
   justify-content: center;
-  padding: 8px 16px;
   margin: 0;
 }
 
@@ -405,17 +499,28 @@ canvas {
   background: rgba(255, 255, 255, 0.05);
 }
 
-@media (max-width: 640px) {
-  .simulator {
-    gap: 6px;
+/* Mobile layout: Table on top, buttons below */
+@media (max-width: 768px) {
+  .info-container {
+    flex-direction: column-reverse;
+    gap: 16px;
+    padding: 6px 12px;
+  }
+
+  .controls {
+    grid-template-columns: repeat(2, 1fr);
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
   }
 
   .hud {
-    padding: 6px 12px;
+    width: 100%;
   }
 
   .stats-table {
     font-size: 12px;
+    width: 100%;
   }
 
   .stats-table th,
@@ -426,15 +531,10 @@ canvas {
   .stats-table th {
     font-size: 10px;
   }
-}
 
-.controls {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin: 0;
-  padding: 0;
+  .simulator {
+    gap: 6px;
+  }
 }
 
 button {
@@ -457,7 +557,8 @@ button {
 
 button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
   background: #e5e7eb;
   border-color: #6b7280;
 }
@@ -481,12 +582,5 @@ button.active:hover {
 
 button.active:active {
   background: #047857;
-}
-
-@media (max-width: 640px) {
-  button {
-    padding: 14px 28px;
-    font-size: 16px;
-  }
 }
 </style>

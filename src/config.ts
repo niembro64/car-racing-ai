@@ -282,11 +282,11 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     activationType: 'relu',
 
     colors: {
-      normal: '#fbbf24',
+      normal: '#aaaa33',
       elite: '#fcd34d',
-      ray: '#fbbf24',
-      rayHit: '#fbbf24',
-      marker: '#fbbf24',
+      ray: '#aaaa33',
+      rayHit: '#aaaa33',
+      marker: '#aaaa33',
     },
     rayVisualization: {
       width: 0.5,

@@ -60,13 +60,17 @@ export class Car {
   // Input mode
   useDifferentialInputs: boolean;
 
+  // Config identifier (which brain config this car belongs to)
+  configId: string;
+
   constructor(
     x: number,
     y: number,
     angle: number,
     brain: NeuralNetwork,
     color: string,
-    useDifferentialInputs: boolean = DEFAULT_DIFFERENTIAL_INPUTS
+    useDifferentialInputs: boolean = DEFAULT_DIFFERENTIAL_INPUTS,
+    configId: string = 'unknown'
   ) {
     this.x = x;
     this.y = y;
@@ -82,6 +86,7 @@ export class Car {
     this.previousProgressRatio = -1;
     this.frameCount = 0;
     this.useDifferentialInputs = useDifferentialInputs;
+    this.configId = configId;
     this.brain = brain;
     this.rayCaster = new RayCaster();
     this.color = color;
@@ -244,13 +249,11 @@ export class Car {
 
   // Render car on canvas
   render(ctx: CanvasRenderingContext2D, showRays: boolean = false): void {
-    // Find the config for this car type based on useDifferentialInputs
-    const config = CAR_BRAIN_CONFIGS.find(
-      c => c.useDifferentialInputs === this.useDifferentialInputs
-    );
+    // Find the config for this car type by configId
+    const config = CAR_BRAIN_CONFIGS.find(c => c.id === this.configId);
 
     if (!config) {
-      console.error('No config found for car with useDifferentialInputs =', this.useDifferentialInputs);
+      console.error('No config found for car with configId =', this.configId);
       return;
     }
 

@@ -115,7 +115,8 @@ export class GeneticAlgorithm {
           startAngle,
           brain,
           config.colors.normal,
-          config.useDifferentialInputs
+          config.useDifferentialInputs,
+          config.id
         );
         population.push(car);
       }
@@ -192,7 +193,8 @@ export class GeneticAlgorithm {
             startAngle,
             eliteBrain,
             config.colors.elite,
-            config.useDifferentialInputs
+            config.useDifferentialInputs,
+            config.id
           )
         );
       } else {
@@ -209,7 +211,8 @@ export class GeneticAlgorithm {
             startAngle,
             mutatedBrain,
             config.colors.normal,
-            config.useDifferentialInputs
+            config.useDifferentialInputs,
+            config.id
           )
         );
       }
