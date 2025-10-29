@@ -1,11 +1,12 @@
 <template>
   <div class="simulator">
-    <canvas
-      ref="canvasRef"
-      :width="canvasWidth"
-      :height="canvasHeight"
-      :style="{ width: displayWidth + 'px', height: displayHeight + 'px' }"
-    ></canvas>
+    <div class="canvas-container">
+      <canvas
+        ref="canvasRef"
+        :width="canvasWidth"
+        :height="canvasHeight"
+      ></canvas>
+    </div>
 
     <div class="info-container">
       <div class="controls">
@@ -76,31 +77,6 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
 const canvasWidth = CANVAS_WIDTH;
 const canvasHeight = CANVAS_HEIGHT;
-
-// Calculate CSS display dimensions
-const displayWidth = ref(CANVAS_WIDTH);
-const displayHeight = ref(CANVAS_HEIGHT);
-
-const updateCanvasDimensions = () => {
-  // Reserve space for HUD (approximately 60px) and controls (approximately 70px)
-  const reservedHeight = 130;
-
-  const maxWidth = window.innerWidth;
-  const maxHeight = window.innerHeight - reservedHeight;
-
-  // Maintain 4:3 aspect ratio (800:600)
-  const aspectRatio = 4 / 3;
-
-  if (maxWidth / maxHeight > aspectRatio) {
-    // Height is the limiting factor
-    displayHeight.value = maxHeight;
-    displayWidth.value = Math.floor(maxHeight * aspectRatio);
-  } else {
-    // Width is the limiting factor
-    displayWidth.value = maxWidth;
-    displayHeight.value = Math.floor(maxWidth / aspectRatio);
-  }
-};
 
 const track = new Track(TRACK_WIDTH_HALF);
 // Use truly random seed based on current time and Math.random()
@@ -399,14 +375,11 @@ const toggleKillSlowCars = () => {
 
 // Lifecycle
 onMounted(() => {
-  updateCanvasDimensions();
-  window.addEventListener('resize', updateCanvasDimensions);
   init();
   animationFrameId = requestAnimationFrame(animate);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateCanvasDimensions);
   if (animationFrameId !== null) {
     cancelAnimationFrame(animationFrameId);
   }
@@ -428,14 +401,41 @@ onUnmounted(() => {
   background: #4a7c4e; /* Grass green background */
 }
 
+.canvas-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100vw;
+  flex-shrink: 1;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
 canvas {
   display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 200px); /* Reserve space for controls and table */
+  width: auto;
+  height: auto;
+  object-fit: contain;
   margin: 0;
   padding: 0;
   /* Use CSS to scale the canvas display size while keeping internal resolution at 800x600 */
   image-rendering: auto;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
+}
+
+/* Desktop: ensure canvas fits within viewport */
+@media (min-width: 769px) {
+  .canvas-container {
+    max-height: calc(100vh - 150px);
+  }
+
+  canvas {
+    max-height: calc(100vh - 170px);
+  }
 }
 
 .info-container {

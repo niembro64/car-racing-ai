@@ -47,7 +47,7 @@ export interface CarBrainConfig {
   // Neural network configuration
   architecture: number[]; // Layer sizes [input, hidden..., output]
   useDifferentialInputs: boolean; // true = differential pairs, false = raw sensors
-  activationType: 'relu' | 'linear'; // Hidden layer activation function
+  activationType: 'relu' | 'linear' | 'gelu'; // Hidden layer activation function
 
   // Visual appearance
   colors: {
@@ -180,6 +180,13 @@ export const NEURAL_NETWORK_ARCHITECTURE_STANDARD = [
   1,
 ];
 
+export const NEURAL_NETWORK_ARCHITECTURE_LARGE = [
+  SENSOR_RAY_ANGLES.length,
+  10,
+  10,
+  1,
+];
+
 // Differential mode: [5 inputs] → [4 hidden] → [1 output]
 // - Input layer: 1 forward sensor + 4 differential pairs (left - right)
 // - Hidden layer: 4 neurons (smaller network for fewer inputs)
@@ -287,6 +294,27 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
       ray: '#aaaa33',
       rayHit: '#aaaa33',
       marker: '#aaaa33',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    id: 'gelularge',
+    displayName: 'GELU_LARGE',
+    shortName: 'GL',
+    description: '10 raw sensor inputs with GELU activation in hidden layers',
+    architecture: NEURAL_NETWORK_ARCHITECTURE_LARGE,
+    useDifferentialInputs: false,
+    activationType: 'gelu',
+    // green
+    colors: {
+      normal: '#33aa33',
+      elite: '#6ee66e',
+      ray: '#33aa33',
+      rayHit: '#33aa33',
+      marker: '#33aa33',
     },
     rayVisualization: {
       width: 0.5,
