@@ -10,7 +10,7 @@
 
     <div class="info-container">
       <div class="controls">
-        <button @click="nextGeneration">NEXT GEN</button>
+        <button @click="nextGeneration">SYNC</button>
         <button @click="reset">RESET</button>
         <button @click="toggleDieOnBackwards" :class="{ active: dieOnBackwards }">
           KILL BACK: {{ dieOnBackwards ? 'ON' : 'OFF' }}
