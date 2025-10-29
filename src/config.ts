@@ -99,7 +99,9 @@ export function getPopulationSize(): number {
     return GA_POPULATION_SIZE_DESKTOP;
   }
   // Mobile breakpoint at 768px (matches CSS media query)
-  return window.innerWidth <= 768 ? GA_POPULATION_SIZE_MOBILE : GA_POPULATION_SIZE_DESKTOP;
+  return window.innerWidth <= 768
+    ? GA_POPULATION_SIZE_MOBILE
+    : GA_POPULATION_SIZE_DESKTOP;
 }
 
 // Default constant for backward compatibility (uses desktop size for tests)
@@ -257,7 +259,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     displayName: 'DIFF_LINEAR',
     shortName: 'DL',
     description:
-      '5 differential sensor inputs (1 forward + 4 L-R pairs) with Linear activation in hidden layers',
+      '5 differential sensor inputs (1 forward + 4 L-R pairs) with Linear activation in hidden layer of size 4',
     architecture: NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL,
     useDifferentialInputs: true,
     activationType: 'linear',
@@ -277,7 +279,8 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     id: 'normlinear',
     displayName: 'NORM_LINEAR',
     shortName: 'NL',
-    description: '9 raw sensor inputs with Linear activation in hidden layers',
+    description:
+      '9 raw sensor inputs with Linear activation in hidden layer of size 6',
     architecture: NEURAL_NETWORK_ARCHITECTURE_STANDARD,
     useDifferentialInputs: false,
     activationType: 'linear',
@@ -297,7 +300,8 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     id: 'normgelu',
     displayName: 'NORM_GELU',
     shortName: 'NG',
-    description: '9 raw sensor inputs with GELU activation in hidden layers',
+    description:
+      '9 raw sensor inputs with GELU activation in hidden layer of size 6',
     architecture: NEURAL_NETWORK_ARCHITECTURE_STANDARD,
     useDifferentialInputs: false,
     activationType: 'gelu',
@@ -318,7 +322,8 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     id: 'relularge',
     displayName: 'RELU_LARGE',
     shortName: 'RL',
-    description: '9 raw sensor inputs with ReLU activation in hidden layers and larger architecture',
+    description:
+      '9 raw sensor inputs with ReLU activation in two hidden layers of size 10 each',
     architecture: NEURAL_NETWORK_ARCHITECTURE_LARGE,
     useDifferentialInputs: false,
     activationType: 'relu',
