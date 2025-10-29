@@ -310,11 +310,11 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     activationType: 'gelu',
     // green
     colors: {
-      normal: '#33aa33',
+      normal: '#229922',
       elite: '#6ee66e',
-      ray: '#33aa33',
-      rayHit: '#33aa33',
-      marker: '#33aa33',
+      ray: '#229922',
+      rayHit: '#229922',
+      marker: '#229922',
     },
     rayVisualization: {
       width: 0.5,
