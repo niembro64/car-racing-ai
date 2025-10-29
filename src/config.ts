@@ -89,7 +89,7 @@ export const GA_MUTATION_RATE = 0.08;
 
 // Population size - number of cars per generation
 // Higher = more diversity but slower evolution per generation
-export const GA_POPULATION_SIZE = 100;
+export const GA_POPULATION_SIZE = 180;
 
 // Mutation multiplier range - creates diversity in mutation strength across population
 // Car #1 (elite): 0× mutation (exact copy)
@@ -280,13 +280,13 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    id: 'normrelu',
-    displayName: 'NORM_RELU',
-    shortName: 'NR',
-    description: '9 raw sensor inputs with ReLU activation in hidden layers',
+    id: 'normgelu',
+    displayName: 'NORM_GELU',
+    shortName: 'NG',
+    description: '9 raw sensor inputs with GELU activation in hidden layers',
     architecture: NEURAL_NETWORK_ARCHITECTURE_STANDARD,
     useDifferentialInputs: false,
-    activationType: 'relu',
+    activationType: 'gelu',
 
     colors: {
       normal: '#aaaa33',
@@ -301,13 +301,13 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    id: 'gelularge',
-    displayName: 'GELU_LARGE',
-    shortName: 'GL',
-    description: '10 raw sensor inputs with GELU activation in hidden layers',
+    id: 'relularge',
+    displayName: 'RELU_LARGE',
+    shortName: 'RL',
+    description: '9 raw sensor inputs with ReLU activation in hidden layers and larger architecture',
     architecture: NEURAL_NETWORK_ARCHITECTURE_LARGE,
     useDifferentialInputs: false,
-    activationType: 'gelu',
+    activationType: 'relu',
     // green
     colors: {
       normal: '#229922',
