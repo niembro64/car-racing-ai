@@ -63,7 +63,13 @@ export class GeneticAlgorithm {
       // Use Math.random() directly for true randomness in initial population
       const brainSeed =
         Date.now() + Math.random() * 1000000 + i * Math.random() * 1000;
-      const brain = NeuralNetwork.createRandom(brainSeed, architecture);
+
+      // Use linear activation for differential mode (preserves negative values)
+      const brain = NeuralNetwork.createRandom(
+        brainSeed,
+        architecture,
+        this.useDifferentialInputs
+      );
 
       // Start pointing forward along track with ±45° randomization
       const angleWiggle = (Math.random() - 0.5) * (Math.PI / 2); // ±45° = ±π/4, range is π/2
@@ -151,9 +157,15 @@ export class GeneticAlgorithm {
     this.generation++;
     const nextGeneration: Car[] = [];
 
+    const architecture = this.useDifferentialInputs
+      ? NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL
+      : NEURAL_NETWORK_ARCHITECTURE_STANDARD;
+
     const eliteBrain = NeuralNetwork.fromJSON(
       this.bestWeights,
-      this.rng.next() * 1000000
+      this.rng.next() * 1000000,
+      architecture,
+      this.useDifferentialInputs
     );
 
     // Print saved weights at start of generation

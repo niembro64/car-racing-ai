@@ -109,6 +109,45 @@ Differentials: [-40, -80, -120, -160]
 → Increasing negative gradient, prepare for left turn
 ```
 
+## Activation Functions
+
+### Standard Mode
+```
+Hidden layers: GELU (Gaussian Error Linear Unit)
+- Smooth, non-linear
+- Used in GPT, BERT, modern transformers
+- Good for complex pattern learning
+
+Output layer: Sigmoid
+- Range: [0, 1]
+- Mapped to steering: output × 2 - 1 → [-1, 1]
+```
+
+### Differential Mode
+```
+Hidden layers: Linear (Identity function)
+- f(x) = x
+- CRITICAL: Preserves negative differential values!
+- Negative values encode "more space on right"
+- Positive values encode "more space on left"
+
+Output layer: Tanh (Hyperbolic tangent)
+- Range: [-1, 1]
+- Perfect for steering (no remapping needed)
+- Negative = turn left, Positive = turn right
+```
+
+**Why Linear is Required for Differential Mode:**
+
+If we used ReLU or GELU with differential inputs:
+```
+Differential = left_distance - right_distance
+= 50 - 100 = -50 (more space on right, should turn right)
+
+With ReLU: max(0, -50) = 0 (information LOST!)
+With Linear: -50 (information preserved ✓)
+```
+
 ## Network Architecture Comparison
 
 ### Standard Mode
@@ -117,6 +156,8 @@ Total parameters:
 - Layer 1: 9 inputs × 6 neurons + 6 biases = 60 parameters
 - Layer 2: 6 neurons × 1 output + 1 bias = 7 parameters
 - Total: 67 parameters
+
+Activations: GELU → Sigmoid
 ```
 
 ### Differential Mode
@@ -125,6 +166,8 @@ Total parameters:
 - Layer 1: 5 inputs × 4 neurons + 4 biases = 24 parameters
 - Layer 2: 4 neurons × 1 output + 1 bias = 5 parameters
 - Total: 29 parameters
+
+Activations: Linear → Tanh
 ```
 
 **56% reduction in parameters!**

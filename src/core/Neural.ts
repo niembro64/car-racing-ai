@@ -17,14 +17,17 @@ export class NeuralNetwork {
   private structure: NetworkStructure;
   private rng: SeededRandom;
   private layerSizes: number[];
+  private useLinearActivation: boolean;
 
   constructor(
     weights: NetworkStructure | undefined,
     seed: number,
-    architecture?: number[]
+    architecture?: number[],
+    useLinearActivation: boolean = false
   ) {
     this.rng = new SeededRandom(seed);
     this.layerSizes = architecture || NEURAL_NETWORK_ARCHITECTURE;
+    this.useLinearActivation = useLinearActivation;
 
     if (weights) {
       this.structure = JSON.parse(JSON.stringify(weights));
@@ -77,6 +80,16 @@ export class NeuralNetwork {
     return 1 / (1 + Math.exp(-clamp(x, -10, 10)));
   }
 
+  // Linear activation (identity function)
+  private linear(x: number): number {
+    return x;
+  }
+
+  // Tanh activation (output range -1 to 1, good for steering)
+  private tanh(x: number): number {
+    return Math.tanh(clamp(x, -10, 10));
+  }
+
   // Forward pass through network
   private forward(input: number[]): number[] {
     let current = input;
@@ -92,11 +105,21 @@ export class NeuralNetwork {
           sum += current[k] * layer.weights[j][k];
         }
 
-        // Use GELU for hidden layers, sigmoid for output
-        if (i < this.structure.layers.length - 1) {
-          next.push(this.gelu(sum));
+        // Choose activation based on mode
+        if (this.useLinearActivation) {
+          // Linear mode: linear for hidden, tanh for output (range -1 to 1)
+          if (i < this.structure.layers.length - 1) {
+            next.push(this.linear(sum));
+          } else {
+            next.push(this.tanh(sum));
+          }
         } else {
-          next.push(this.sigmoid(sum));
+          // Standard mode: GELU for hidden layers, sigmoid for output
+          if (i < this.structure.layers.length - 1) {
+            next.push(this.gelu(sum));
+          } else {
+            next.push(this.sigmoid(sum));
+          }
         }
       }
 
@@ -111,10 +134,10 @@ export class NeuralNetwork {
     // Input array is just the rays
     const inputArray = input.rays;
 
-    if (inputArray.length !== NEURAL_NETWORK_ARCHITECTURE[0]) {
+    if (inputArray.length !== this.layerSizes[0]) {
       throw new Error(
         'Expected input length ' +
-          NEURAL_NETWORK_ARCHITECTURE[0] +
+          this.layerSizes[0] +
           ', got ' +
           inputArray.length
       );
@@ -134,7 +157,14 @@ export class NeuralNetwork {
     }
 
     // Map output to [-1, 1] range (negative = left, positive = right)
-    const direction = clamp(output[0] * 2 - 1, -1, 1);
+    let direction: number;
+    if (this.useLinearActivation) {
+      // Tanh output is already in [-1, 1] range
+      direction = clamp(output[0], -1, 1);
+    } else {
+      // Sigmoid output is in [0, 1] range, map to [-1, 1]
+      direction = clamp(output[0] * 2 - 1, -1, 1);
+    }
 
     // Final NaN check
     if (isNaN(direction)) {
@@ -164,7 +194,12 @@ export class NeuralNetwork {
   mutate(sigma: number, seed: number): NeuralNetwork {
     const currentWeights = this.toJSON();
     const mutatedWeights = this.mutateWeights(currentWeights, sigma, seed);
-    return new NeuralNetwork(mutatedWeights, seed);
+    return new NeuralNetwork(
+      mutatedWeights,
+      seed,
+      this.layerSizes,
+      this.useLinearActivation
+    );
   }
 
   // Mutate weights by adding gaussian noise
@@ -196,12 +231,21 @@ export class NeuralNetwork {
   }
 
   // Create a random network
-  static createRandom(seed: number, architecture?: number[]): NeuralNetwork {
-    return new NeuralNetwork(undefined, seed, architecture);
+  static createRandom(
+    seed: number,
+    architecture?: number[],
+    useLinearActivation?: boolean
+  ): NeuralNetwork {
+    return new NeuralNetwork(undefined, seed, architecture, useLinearActivation);
   }
 
   // Load network from JSON
-  static fromJSON(weights: NetworkStructure, seed: number): NeuralNetwork {
-    return new NeuralNetwork(weights, seed);
+  static fromJSON(
+    weights: NetworkStructure,
+    seed: number,
+    architecture?: number[],
+    useLinearActivation?: boolean
+  ): NeuralNetwork {
+    return new NeuralNetwork(weights, seed, architecture, useLinearActivation);
   }
 }

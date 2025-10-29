@@ -60,8 +60,8 @@ export const GA_POPULATION_SIZE = 100;
 // Mutation multiplier range - creates diversity in mutation strength across population
 // Car #1 (elite): 0× mutation (exact copy)
 // Car #2 to #N: MIN_MULTIPLIER to MAX_MULTIPLIER (progressive curve)
-export const GA_MUTATION_MIN_MULTIPLIER = 0.2;  // Minimum mutation (similar to elite)
-export const GA_MUTATION_MAX_MULTIPLIER = 1.5;  // Maximum mutation (aggressive exploration)
+export const GA_MUTATION_MIN_MULTIPLIER = 0.2; // Minimum mutation (similar to elite)
+export const GA_MUTATION_MAX_MULTIPLIER = 1.5; // Maximum mutation (aggressive exploration)
 
 // Mutation curve power - controls distribution of mutation rates
 // Lower values (0.5-2): more cars with moderate mutation
@@ -74,8 +74,8 @@ export const GA_MUTATION_CURVE_POWER = 2.0;
 
 export const CANVAS_WIDTH = 800;
 export const CANVAS_HEIGHT = 600;
-export const TRACK_WIDTH_HALF = 30;        // Half-width of track (pixels)
-export const SEGMENTS_PER_CURVE = 30;      // Smoothness of curves
+export const TRACK_WIDTH_HALF = 30; // Half-width of track (pixels)
+export const SEGMENTS_PER_CURVE = 30; // Smoothness of curves
 
 // Track waypoints (mirrored to create symmetric track)
 export const wp: Point[] = [
@@ -92,10 +92,10 @@ export const WAYPOINTS: Point[] = appendMirroredWaypoints(wp, CANVAS_WIDTH);
 // CAR PHYSICS
 // ============================================================================
 
-export const CAR_FORWARD_SPEED = 200;       // Constant forward speed (pixels/second)
-export const CAR_STEERING_SENSITIVITY = 1.0; // Steering multiplier (1.0 = standard)
-export const CAR_WIDTH = 10;                 // Car width (pixels)
-export const CAR_HEIGHT = 20;                // Car length (pixels)
+export const CAR_FORWARD_SPEED = 200; // Constant forward speed (pixels/second)
+export const CAR_STEERING_SENSITIVITY = 0.3; // Steering multiplier (1.0 = standard)
+export const CAR_WIDTH = 10; // Car width (pixels)
+export const CAR_HEIGHT = 20; // Car length (pixels)
 
 // ============================================================================
 // SENSOR CONFIGURATION
@@ -104,15 +104,15 @@ export const CAR_HEIGHT = 20;                // Car length (pixels)
 // Angles are relative to car's forward direction (0 = straight ahead)
 
 export const SENSOR_RAY_ANGLES = [
-  0,                  // 0°   - Straight ahead (critical for forward planning)
-  -Math.PI / 9,       // -20° - Near-left (detect upcoming left turns)
-  Math.PI / 9,        // +20° - Near-right (detect upcoming right turns)
-  -Math.PI / 4.5,     // -40° - Mid-left (see left track edge)
-  Math.PI / 4.5,      // +40° - Mid-right (see right track edge)
-  -Math.PI / 3,       // -60° - Wide-left (peripheral vision)
-  Math.PI / 3,        // +60° - Wide-right (peripheral vision)
-  -Math.PI / 2,       // -90° - Full left (side wall detection)
-  Math.PI / 2,        // +90° - Full right (side wall detection)
+  0, // 0°   - Straight ahead (critical for forward planning)
+  -Math.PI / 9, // -20° - Near-left (detect upcoming left turns)
+  Math.PI / 9, // +20° - Near-right (detect upcoming right turns)
+  -Math.PI / 4.5, // -40° - Mid-left (see left track edge)
+  Math.PI / 4.5, // +40° - Mid-right (see right track edge)
+  -Math.PI / 3, // -60° - Wide-left (peripheral vision)
+  Math.PI / 3, // +60° - Wide-right (peripheral vision)
+  -Math.PI / 2, // -90° - Full left (side wall detection)
+  Math.PI / 2, // +90° - Full right (side wall detection)
 ];
 
 // Total sensors: 9 rays providing 180° field of view
@@ -121,10 +121,10 @@ export const SENSOR_RAY_ANGLES = [
 // Sensor pair indices for differential input mode
 // Each pair represents [leftRayIndex, rightRayIndex]
 export const SENSOR_RAY_PAIRS = [
-  [1, 2],   // ±20° pair
-  [3, 4],   // ±40° pair
-  [5, 6],   // ±60° pair
-  [7, 8],   // ±90° pair
+  [1, 2], // ±20° pair
+  [3, 4], // ±40° pair
+  [5, 6], // ±60° pair
+  [7, 8], // ±90° pair
 ];
 
 // Differential input mode computes (leftDistance - rightDistance) for each pair
@@ -140,16 +140,25 @@ export const SENSOR_RAY_PAIRS = [
 // - Input layer: 9 distance sensors (raw values)
 // - Hidden layer: 6 neurons (pattern recognition)
 // - Output layer: 1 neuron (steering: -1 = full left, +1 = full right)
-export const NEURAL_NETWORK_ARCHITECTURE_STANDARD = [SENSOR_RAY_ANGLES.length, 6, 1];
+export const NEURAL_NETWORK_ARCHITECTURE_STANDARD = [
+  SENSOR_RAY_ANGLES.length,
+  6,
+  1,
+];
 
 // Differential mode: [5 inputs] → [4 hidden] → [1 output]
 // - Input layer: 1 forward sensor + 4 differential pairs (left - right)
 // - Hidden layer: 4 neurons (smaller network for fewer inputs)
 // - Output layer: 1 neuron (steering: -1 = full left, +1 = full right)
-export const NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL = [1 + SENSOR_RAY_PAIRS.length, 4, 1];
+export const NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL = [
+  1 + SENSOR_RAY_PAIRS.length,
+  4,
+  1,
+];
 
 // Default architecture (can be changed at runtime)
-export const NEURAL_NETWORK_ARCHITECTURE = NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL;
+export const NEURAL_NETWORK_ARCHITECTURE =
+  NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL;
 
 // Note: Can experiment with deeper networks for complex tracks:
 // - [9, 8, 1] - More capacity in single hidden layer
@@ -163,35 +172,35 @@ export const NEURAL_NETWORK_ARCHITECTURE = NEURAL_NETWORK_ARCHITECTURE_DIFFERENT
 export const CANVAS_BACKGROUND_COLOR = '#4a7c4e'; // Grass green
 
 // Track
-export const TRACK_SURFACE_COLOR = '#333333';       // Dark gray asphalt
-export const TRACK_BOUNDARY_COLOR = '#ffffff';      // White road edges
-export const TRACK_CENTERLINE_COLOR = '#fbbf24';    // Yellow lane marking
-export const START_FINISH_LINE_COLOR = '#10b981';   // Green start/finish line
+export const TRACK_SURFACE_COLOR = '#333333'; // Dark gray asphalt
+export const TRACK_BOUNDARY_COLOR = '#ffffff'; // White road edges
+export const TRACK_CENTERLINE_COLOR = '#fbbf24'; // Yellow lane marking
+export const START_FINISH_LINE_COLOR = '#10b981'; // Green start/finish line
 export const TRACK_BOUNDARY_WIDTH = 3;
 export const TRACK_CENTERLINE_WIDTH = 2;
 export const START_FINISH_LINE_WIDTH = 10;
 
 // Cars
-export const ELITE_CAR_COLOR = '#900901';           // Red (best from previous gen)
-export const NORMAL_CAR_COLOR = '#0088ff';          // Blue (mutated variants)
-export const CAR_LABEL_COLOR_ALIVE = '#ffffff';     // White progress label
-export const CAR_LABEL_COLOR_DEAD = '#9ca3af';      // Gray progress label
+export const ELITE_CAR_COLOR = '#900901'; // Red (best from previous gen)
+export const NORMAL_CAR_COLOR = '#0088ff'; // Blue (mutated variants)
+export const CAR_LABEL_COLOR_ALIVE = '#ffffff'; // White progress label
+export const CAR_LABEL_COLOR_DEAD = '#9ca3af'; // Gray progress label
 
 // Ray visualization (elite car)
-export const ELITE_CAR_RAY_COLOR = '#ffffff';       // White sensor rays
+export const ELITE_CAR_RAY_COLOR = '#ffffff'; // White sensor rays
 export const ELITE_CAR_RAY_HIT_COLOR = ELITE_CAR_COLOR;
 export const ELITE_CAR_RAY_WIDTH = 1;
 export const ELITE_CAR_RAY_HIT_RADIUS = 4;
 
 // Ray visualization (normal cars)
-export const NORMAL_CAR_RAY_COLOR = '#ffffff';      // White sensor rays
+export const NORMAL_CAR_RAY_COLOR = '#ffffff'; // White sensor rays
 export const NORMAL_CAR_RAY_HIT_COLOR = '#0088ff';
 export const NORMAL_CAR_RAY_WIDTH = 1;
 export const NORMAL_CAR_RAY_HIT_RADIUS = 4;
 
 // Centerline ray (debug visualization)
-export const CENTERLINE_RAY_HIT_COLOR = '#00ff00';  // Green centerline dot
+export const CENTERLINE_RAY_HIT_COLOR = '#00ff00'; // Green centerline dot
 
 // Generation markers
-export const GENERATION_MARKER_COLOR = '#ff8888';   // Red position markers
+export const GENERATION_MARKER_COLOR = '#ff8888'; // Red position markers
 export const GENERATION_MARKER_RADIUS = 3;
