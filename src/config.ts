@@ -61,7 +61,7 @@ export const GA_POPULATION_SIZE = 100;
 // Car #1 (elite): 0× mutation (exact copy)
 // Car #2 to #N: MIN_MULTIPLIER to MAX_MULTIPLIER (progressive curve)
 export const GA_MUTATION_MIN_MULTIPLIER = 0.2; // Minimum mutation (similar to elite)
-export const GA_MUTATION_MAX_MULTIPLIER = 1.5; // Maximum mutation (aggressive exploration)
+export const GA_MUTATION_MAX_MULTIPLIER = 3.5; // Maximum mutation (aggressive exploration)
 
 // Mutation curve power - controls distribution of mutation rates
 // Lower values (0.5-2): more cars with moderate mutation
@@ -170,7 +170,7 @@ export const NEURAL_NETWORK_ARCHITECTURE =
 
 export const DEFAULT_DIE_ON_BACKWARDS = true;      // Kill cars that go backwards
 export const DEFAULT_KILL_SLOW_CARS = true;        // Kill cars that don't reach 1% in 1 second
-export const DEFAULT_DIFFERENTIAL_INPUTS = true;   // Use differential input mode (5 inputs vs 9)
+export const DEFAULT_DIFFERENTIAL_INPUTS = false;   // Use differential input mode (5 inputs vs 9)
 
 // ============================================================================
 // RENDERING CONFIGURATION
@@ -189,7 +189,7 @@ export const TRACK_CENTERLINE_COLOR = '#fbbf24'; // Yellow lane marking
 export const START_FINISH_LINE_COLOR = '#10b981'; // Green start/finish line
 export const TRACK_BOUNDARY_WIDTH = 3;
 export const TRACK_CENTERLINE_WIDTH = 2;
-export const START_FINISH_LINE_WIDTH = 10;
+export const START_FINISH_LINE_WIDTH = 20;
 
 // Cars
 export const CAR_LABEL_COLOR_ALIVE = '#ffffff'; // White progress label
@@ -214,4 +214,4 @@ export const CENTERLINE_RAY_HIT_COLOR = '#00ff00'; // Green centerline dot
 
 // Generation markers
 export const GENERATION_MARKER_COLOR = '#ff0000'; // Red position markers
-export const GENERATION_MARKER_RADIUS = 3;
+export const GENERATION_MARKER_RADIUS = 6;

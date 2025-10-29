@@ -17,10 +17,10 @@
       <button @click="nextGeneration">Next Generation</button>
       <button @click="reset">Reset</button>
       <button @click="toggleDieOnBackwards" :class="{ active: dieOnBackwards }">
-        Die On Backwards: {{ dieOnBackwards ? ' ON' : 'OFF' }}
+        Kill Backwards: {{ dieOnBackwards ? ' ON' : 'OFF' }}
       </button>
       <button @click="toggleKillSlowCars" :class="{ active: killSlowCars }">
-        Kill Slow Cars: {{ killSlowCars ? ' ON' : 'OFF' }}
+        Kill Slow: {{ killSlowCars ? ' ON' : 'OFF' }}
       </button>
       <button @click="toggleDifferentialInputs" :class="{ active: useDifferentialInputs }">
         Differential Inputs: {{ useDifferentialInputs ? ' ON' : 'OFF' }}
@@ -152,13 +152,13 @@ const updatePhysics = (dt: number) => {
         return; // Stop processing this frame
       }
 
-      // Kill car if it has gone backwards (when dieOnBackwards is enabled)
+      // Kill car if it has gone backwards (when Kill Backwards is enabled)
       if (dieOnBackwards.value && car.alive && car.hasGoneBackwards()) {
         car.alive = false;
         car.speed = 0;
       }
 
-      // Kill car if it hasn't made minimum progress after 1 second (when killSlowCars is enabled)
+      // Kill car if it hasn't made minimum progress after 1 second (when Kill Slow is enabled)
       if (killSlowCars.value && car.alive && car.hasFailedMinimumProgress()) {
         car.alive = false;
         car.speed = 0;
@@ -251,12 +251,12 @@ const reset = () => {
   window.location.reload();
 };
 
-// Toggle die on backwards mode
+// Toggle Kill Backwards mode
 const toggleDieOnBackwards = () => {
   dieOnBackwards.value = !dieOnBackwards.value;
 };
 
-// Toggle kill slow cars mode
+// Toggle Kill Slow mode
 const toggleKillSlowCars = () => {
   killSlowCars.value = !killSlowCars.value;
 };

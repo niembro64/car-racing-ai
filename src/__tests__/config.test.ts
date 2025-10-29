@@ -75,8 +75,16 @@ describe('Configuration', () => {
     expect(config.CAR_HEIGHT).toBeGreaterThan(0);
   });
 
-  it('should have neural network architecture matching ray count', () => {
-    expect(config.NEURAL_NETWORK_ARCHITECTURE[0]).toBe(config.SENSOR_RAY_ANGLES.length);
+  it('should have valid neural network architectures for both modes', () => {
+    // Standard mode uses all raw sensor rays
+    expect(config.NEURAL_NETWORK_ARCHITECTURE_STANDARD[0]).toBe(config.SENSOR_RAY_ANGLES.length);
+
+    // Differential mode uses 1 forward ray + 4 differential pairs
+    expect(config.NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL[0]).toBe(1 + config.SENSOR_RAY_PAIRS.length);
+
+    // Both should have output layer of size 1 (steering)
+    expect(config.NEURAL_NETWORK_ARCHITECTURE_STANDARD[config.NEURAL_NETWORK_ARCHITECTURE_STANDARD.length - 1]).toBe(1);
+    expect(config.NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL[config.NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL.length - 1]).toBe(1);
   });
 
   it('should have valid hex colors', () => {

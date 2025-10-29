@@ -12,6 +12,7 @@ import {
   NORMAL_CAR_COLOR,
   NEURAL_NETWORK_ARCHITECTURE_STANDARD,
   NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL,
+  DEFAULT_DIFFERENTIAL_INPUTS,
 } from '@/config';
 
 export class GeneticAlgorithm {
@@ -21,7 +22,7 @@ export class GeneticAlgorithm {
   private rng: SeededRandom;
   useDifferentialInputs: boolean;
 
-  constructor(seed: number, useDifferentialInputs: boolean = false) {
+  constructor(seed: number, useDifferentialInputs: boolean = DEFAULT_DIFFERENTIAL_INPUTS) {
     this.rng = new SeededRandom(seed);
     this.useDifferentialInputs = useDifferentialInputs;
   }
@@ -64,11 +65,9 @@ export class GeneticAlgorithm {
       const brainSeed =
         Date.now() + Math.random() * 1000000 + i * Math.random() * 1000;
 
-      // Use linear activation for differential mode (preserves negative values)
       const brain = NeuralNetwork.createRandom(
         brainSeed,
-        architecture,
-        this.useDifferentialInputs
+        architecture
       );
 
       // Start pointing forward along track with ±45° randomization
@@ -181,8 +180,7 @@ export class GeneticAlgorithm {
     const eliteBrain = NeuralNetwork.fromJSON(
       this.bestWeights,
       this.rng.next() * 1000000,
-      architecture,
-      this.useDifferentialInputs
+      architecture
     );
 
     // Print saved weights at start of generation

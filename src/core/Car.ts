@@ -26,6 +26,7 @@ import {
   CENTERLINE_RAY_HIT_COLOR,
   SENSOR_RAY_PAIRS,
   SHOW_CAR_PERCENTAGES,
+  DEFAULT_DIFFERENTIAL_INPUTS,
 } from '@/config';
 
 export class Car {
@@ -73,7 +74,7 @@ export class Car {
     angle: number,
     brain: NeuralNetwork,
     color: string,
-    useDifferentialInputs: boolean = false
+    useDifferentialInputs: boolean = DEFAULT_DIFFERENTIAL_INPUTS
   ) {
     this.x = x;
     this.y = y;

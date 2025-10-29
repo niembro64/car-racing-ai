@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { NeuralNetwork } from '../core/Neural';
 import type { NeuralInput } from '../types/neural';
-import { NEURAL_NETWORK_ARCHITECTURE, SENSOR_RAY_ANGLES } from '../config';
+import { NEURAL_NETWORK_ARCHITECTURE_STANDARD, SENSOR_RAY_ANGLES } from '../config';
+
+// Use STANDARD architecture for tests (9 inputs matching raw sensor data)
+const TEST_ARCHITECTURE = NEURAL_NETWORK_ARCHITECTURE_STANDARD;
 
 // Helper function to create test input with correct number of rays
 const createTestInput = (values?: number[]): NeuralInput => {
@@ -16,13 +19,13 @@ const createTestInput = (values?: number[]): NeuralInput => {
 
 describe('NeuralNetwork', () => {
   it('should create a random neural network', () => {
-    const brain = NeuralNetwork.createRandom(12345);
+    const brain = NeuralNetwork.createRandom(12345, TEST_ARCHITECTURE);
     expect(brain).toBeDefined();
   });
 
   it('should produce consistent output for same input with same seed', () => {
-    const brain1 = NeuralNetwork.createRandom(12345);
-    const brain2 = NeuralNetwork.createRandom(12345);
+    const brain1 = NeuralNetwork.createRandom(12345, TEST_ARCHITECTURE);
+    const brain2 = NeuralNetwork.createRandom(12345, TEST_ARCHITECTURE);
 
     const input = createTestInput();
 
@@ -33,7 +36,7 @@ describe('NeuralNetwork', () => {
   });
 
   it('should produce output in valid range [-1, 1]', () => {
-    const brain = NeuralNetwork.createRandom(12345);
+    const brain = NeuralNetwork.createRandom(12345, TEST_ARCHITECTURE);
 
     const input = createTestInput();
 
@@ -44,7 +47,7 @@ describe('NeuralNetwork', () => {
   });
 
   it('should handle multiple different inputs', () => {
-    const brain = NeuralNetwork.createRandom(12345);
+    const brain = NeuralNetwork.createRandom(12345, TEST_ARCHITECTURE);
 
     const rayCount = SENSOR_RAY_ANGLES.length;
     const inputs: NeuralInput[] = [
@@ -61,9 +64,9 @@ describe('NeuralNetwork', () => {
   });
 
   it('should export and import weights correctly', () => {
-    const brain1 = NeuralNetwork.createRandom(12345);
+    const brain1 = NeuralNetwork.createRandom(12345, TEST_ARCHITECTURE);
     const weights = brain1.toJSON();
-    const brain2 = NeuralNetwork.fromJSON(weights, 54321);
+    const brain2 = NeuralNetwork.fromJSON(weights, 54321, TEST_ARCHITECTURE);
 
     const input = createTestInput();
 
@@ -74,7 +77,7 @@ describe('NeuralNetwork', () => {
   });
 
   it('should create different outputs after mutation', () => {
-    const brain = NeuralNetwork.createRandom(12345);
+    const brain = NeuralNetwork.createRandom(12345, TEST_ARCHITECTURE);
     const mutatedBrain = brain.mutate(0.1, 54321);
 
     const input = createTestInput();
@@ -87,7 +90,7 @@ describe('NeuralNetwork', () => {
   });
 
   it('should throw error for incorrect input size', () => {
-    const brain = NeuralNetwork.createRandom(12345);
+    const brain = NeuralNetwork.createRandom(12345, TEST_ARCHITECTURE);
 
     const invalidInput: NeuralInput = {
       rays: [0.5, 0.3] // Wrong size
@@ -97,7 +100,7 @@ describe('NeuralNetwork', () => {
   });
 
   it('should handle edge case inputs', () => {
-    const brain = NeuralNetwork.createRandom(12345);
+    const brain = NeuralNetwork.createRandom(12345, TEST_ARCHITECTURE);
 
     const rayCount = SENSOR_RAY_ANGLES.length;
 
@@ -113,7 +116,7 @@ describe('NeuralNetwork', () => {
   });
 
   it('should mutate ALL weights and biases in the network', () => {
-    const brain = NeuralNetwork.createRandom(12345);
+    const brain = NeuralNetwork.createRandom(12345, TEST_ARCHITECTURE);
     const mutatedBrain = brain.mutate(0.5, 54321); // Higher sigma for more visible changes
 
     const originalWeights = brain.toJSON();
@@ -159,17 +162,17 @@ describe('NeuralNetwork', () => {
   });
 
   it('should initialize all parameters for any architecture', () => {
-    const brain = NeuralNetwork.createRandom(12345);
+    const brain = NeuralNetwork.createRandom(12345, TEST_ARCHITECTURE);
     const weights = brain.toJSON();
 
     // Verify correct number of layers
-    const expectedLayers = NEURAL_NETWORK_ARCHITECTURE.length - 1;
+    const expectedLayers = TEST_ARCHITECTURE.length - 1;
     expect(weights.layers.length).toBe(expectedLayers);
 
     // Verify each layer has correct dimensions
     for (let i = 0; i < expectedLayers; i++) {
-      const inputSize = NEURAL_NETWORK_ARCHITECTURE[i];
-      const outputSize = NEURAL_NETWORK_ARCHITECTURE[i + 1];
+      const inputSize = TEST_ARCHITECTURE[i];
+      const outputSize = TEST_ARCHITECTURE[i + 1];
 
       expect(weights.layers[i].weights.length).toBe(outputSize);
       expect(weights.layers[i].weights[0].length).toBe(inputSize);
@@ -182,8 +185,8 @@ describe('NeuralNetwork', () => {
 
     // Calculate expected param count
     for (let i = 0; i < expectedLayers; i++) {
-      const inputSize = NEURAL_NETWORK_ARCHITECTURE[i];
-      const outputSize = NEURAL_NETWORK_ARCHITECTURE[i + 1];
+      const inputSize = TEST_ARCHITECTURE[i];
+      const outputSize = TEST_ARCHITECTURE[i + 1];
       expectedParams += (inputSize * outputSize) + outputSize; // weights + biases
     }
 
@@ -206,6 +209,6 @@ describe('NeuralNetwork', () => {
     }
 
     expect(paramCount).toBe(expectedParams);
-    console.log(`Verified all ${paramCount} parameters are properly initialized for architecture [${NEURAL_NETWORK_ARCHITECTURE.join(', ')}]`);
+    console.log(`Verified all ${paramCount} parameters are properly initialized for architecture [${TEST_ARCHITECTURE.join(', ')}]`);
   });
 });

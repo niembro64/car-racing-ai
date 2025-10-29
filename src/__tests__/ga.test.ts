@@ -32,7 +32,9 @@ describe('GeneticAlgorithm', () => {
     population.forEach(car => {
       expect(car.x).toBeCloseTo(track.startPosition.x, 1);
       expect(car.y).toBeCloseTo(track.startPosition.y, 1);
-      expect(car.angle).toBeCloseTo(track.startAngle, 2);
+      // Cars spawn with ±45° angle wiggle, so check they're within that range
+      const angleDiff = Math.abs(car.angle - track.startAngle);
+      expect(angleDiff).toBeLessThanOrEqual(Math.PI / 2); // ±45° = ±π/4, max diff is π/2
     });
   });
 

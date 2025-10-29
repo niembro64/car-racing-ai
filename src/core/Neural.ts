@@ -17,17 +17,14 @@ export class NeuralNetwork {
   private structure: NetworkStructure;
   private rng: SeededRandom;
   private layerSizes: number[];
-  private useLinearActivation: boolean;
 
   constructor(
     weights: NetworkStructure | undefined,
     seed: number,
-    architecture?: number[],
-    useLinearActivation: boolean = false
+    architecture?: number[]
   ) {
     this.rng = new SeededRandom(seed);
     this.layerSizes = architecture || NEURAL_NETWORK_ARCHITECTURE;
-    this.useLinearActivation = useLinearActivation;
 
     if (weights) {
       this.structure = JSON.parse(JSON.stringify(weights));
@@ -65,26 +62,6 @@ export class NeuralNetwork {
     return { layers };
   }
 
-  // GELU activation (Gaussian Error Linear Unit)
-  // Used in GPT, BERT, Vision Transformers - state-of-the-art activation
-  // Formula: GELU(x) ≈ 0.5 * x * (1 + tanh(√(2/π) * (x + 0.044715 * x³)))
-  private gelu(x: number): number {
-    const clampedX = clamp(x, -10, 10);
-    const cube = clampedX * clampedX * clampedX;
-    const inner = Math.sqrt(2 / Math.PI) * (clampedX + 0.044715 * cube);
-    return 0.5 * clampedX * (1 + Math.tanh(inner));
-  }
-
-  // Sigmoid activation
-  private sigmoid(x: number): number {
-    return 1 / (1 + Math.exp(-clamp(x, -10, 10)));
-  }
-
-  // Linear activation (identity function)
-  private linear(x: number): number {
-    return x;
-  }
-
   // Tanh activation (output range -1 to 1, good for steering)
   private tanh(x: number): number {
     return Math.tanh(clamp(x, -10, 10));
@@ -97,6 +74,7 @@ export class NeuralNetwork {
     for (let i = 0; i < this.structure.layers.length; i++) {
       const layer = this.structure.layers[i];
       const next: number[] = [];
+      const isOutputLayer = i === this.structure.layers.length - 1;
 
       for (let j = 0; j < layer.weights.length; j++) {
         let sum = layer.biases[j];
@@ -105,21 +83,11 @@ export class NeuralNetwork {
           sum += current[k] * layer.weights[j][k];
         }
 
-        // Choose activation based on mode
-        if (this.useLinearActivation) {
-          // Linear mode: linear for hidden, tanh for output (range -1 to 1)
-          if (i < this.structure.layers.length - 1) {
-            next.push(this.linear(sum));
-          } else {
-            next.push(this.tanh(sum));
-          }
+        // Linear activation for hidden layers, tanh for output layer
+        if (isOutputLayer) {
+          next.push(this.tanh(sum));
         } else {
-          // Standard mode: GELU for hidden layers, sigmoid for output
-          if (i < this.structure.layers.length - 1) {
-            next.push(this.linear(sum));
-          } else {
-            next.push(this.tanh(sum));
-          }
+          next.push(sum); // Linear activation (identity)
         }
       }
 
@@ -156,15 +124,8 @@ export class NeuralNetwork {
       return { direction: 0 };
     }
 
-    // Map output to [-1, 1] range (negative = left, positive = right)
-    let direction: number;
-    if (this.useLinearActivation) {
-      // Tanh output is already in [-1, 1] range
-      direction = clamp(output[0], -1, 1);
-    } else {
-      // Sigmoid output is in [0, 1] range, map to [-1, 1]
-      direction = clamp(output[0] * 2 - 1, -1, 1);
-    }
+    // Tanh output is already in [-1, 1] range (negative = left, positive = right)
+    const direction = clamp(output[0], -1, 1);
 
     // Final NaN check
     if (isNaN(direction)) {
@@ -197,8 +158,7 @@ export class NeuralNetwork {
     return new NeuralNetwork(
       mutatedWeights,
       seed,
-      this.layerSizes,
-      this.useLinearActivation
+      this.layerSizes
     );
   }
 
@@ -233,19 +193,17 @@ export class NeuralNetwork {
   // Create a random network
   static createRandom(
     seed: number,
-    architecture?: number[],
-    useLinearActivation?: boolean
+    architecture?: number[]
   ): NeuralNetwork {
-    return new NeuralNetwork(undefined, seed, architecture, useLinearActivation);
+    return new NeuralNetwork(undefined, seed, architecture);
   }
 
   // Load network from JSON
   static fromJSON(
     weights: NetworkStructure,
     seed: number,
-    architecture?: number[],
-    useLinearActivation?: boolean
+    architecture?: number[]
   ): NeuralNetwork {
-    return new NeuralNetwork(weights, seed, architecture, useLinearActivation);
+    return new NeuralNetwork(weights, seed, architecture);
   }
 }
