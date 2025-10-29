@@ -10,6 +10,7 @@
     <div class="hud">
       <div class="stat">Generation: {{ ga.generation }}</div>
       <div class="stat">{{ adaptiveMutationRate }}</div>
+      <div class="stat">Inputs: {{ useDifferentialInputs ? 'Differential (5)' : 'Standard (9)' }}</div>
     </div>
 
     <div class="controls">
@@ -20,6 +21,9 @@
       </button>
       <button @click="toggleKillSlowCars" :class="{ active: killSlowCars }">
         Kill Slow Cars: {{ killSlowCars ? ' ON' : 'OFF' }}
+      </button>
+      <button @click="toggleDifferentialInputs" :class="{ active: useDifferentialInputs }">
+        Differential Inputs: {{ useDifferentialInputs ? ' ON' : 'OFF' }}
       </button>
     </div>
   </div>
@@ -64,8 +68,9 @@ const updateCanvasDimensions = () => {
 
 const track = new Track(TRACK_WIDTH_HALF);
 // Use truly random seed based on current time and Math.random()
-const randomSeed = Date.now() + Math.random() * 1000000;
-const ga = new GeneticAlgorithm(randomSeed);
+const useDifferentialInputs = ref(true); // Start with differential inputs ON
+let randomSeed = Date.now() + Math.random() * 1000000;
+const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed, useDifferentialInputs.value));
 
 const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(true);
@@ -88,7 +93,7 @@ const adaptiveMutationRate = computed(() => {
 
 // Initialize simulation
 const init = () => {
-  population.value = ga.initializePopulation(track);
+  population.value = ga.value.initializePopulation(track);
   generationTime.value = 0;
   generationMarkers.value = [];
 };
@@ -101,10 +106,10 @@ const evolveToNextGeneration = (reason: string) => {
   // Find the best car (by maxDistanceReached) and save its position
   const sortedCars = [...population.value].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
   const bestCar = sortedCars[0];
-  generationMarkers.value.push({ x: bestCar.x, y: bestCar.y, generation: ga.generation });
+  generationMarkers.value.push({ x: bestCar.x, y: bestCar.y, generation: ga.value.generation });
 
   // Evolve to next generation (pass generation time for adaptive mutation rate)
-  population.value = ga.evolvePopulation(population.value, track, generationTime.value);
+  population.value = ga.value.evolvePopulation(population.value, track, generationTime.value);
   generationTime.value = 0;
 };
 
@@ -228,6 +233,24 @@ const toggleDieOnBackwards = () => {
 // Toggle kill slow cars mode
 const toggleKillSlowCars = () => {
   killSlowCars.value = !killSlowCars.value;
+};
+
+// Toggle differential inputs mode (completely resets simulation)
+const toggleDifferentialInputs = () => {
+  useDifferentialInputs.value = !useDifferentialInputs.value;
+
+  // Complete reset: new GA instance with new architecture
+  randomSeed = Date.now() + Math.random() * 1000000;
+  ga.value = new GeneticAlgorithm(randomSeed, useDifferentialInputs.value);
+
+  // Reset all state
+  generationMarkers.value = [];
+  generationTime.value = 0;
+
+  // Initialize new population
+  init();
+
+  console.log(`Switched to ${useDifferentialInputs.value ? 'differential' : 'standard'} input mode`);
 };
 
 // Lifecycle

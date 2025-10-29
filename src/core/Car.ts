@@ -24,6 +24,7 @@ import {
   NORMAL_CAR_RAY_WIDTH,
   NORMAL_CAR_RAY_HIT_RADIUS,
   CENTERLINE_RAY_HIT_COLOR,
+  SENSOR_RAY_PAIRS,
 } from '@/config';
 
 export class Car {
@@ -62,12 +63,16 @@ export class Car {
   // Color for rendering
   color: string;
 
+  // Input mode
+  useDifferentialInputs: boolean;
+
   constructor(
     x: number,
     y: number,
     angle: number,
     brain: NeuralNetwork,
-    color: string
+    color: string,
+    useDifferentialInputs: boolean = false
   ) {
     this.x = x;
     this.y = y;
@@ -82,6 +87,7 @@ export class Car {
     this.currentProgressRatio = 0;
     this.previousProgressRatio = -1;
     this.frameCount = 0;
+    this.useDifferentialInputs = useDifferentialInputs;
     this.brain = brain;
     this.rayCaster = new RayCaster();
     this.color = color;
@@ -123,9 +129,25 @@ export class Car {
     });
     this.lastCenterlinePoint = centerlineResult.point;
 
-    // Prepare neural network input (only rays)
+    // Prepare neural network input based on mode
+    let inputRays: number[];
+
+    if (this.useDifferentialInputs) {
+      // Differential mode: forward ray + (left - right) pairs
+      inputRays = [distances[0]]; // Forward ray (index 0)
+
+      // Add differential pairs (left - right)
+      for (const [leftIdx, rightIdx] of SENSOR_RAY_PAIRS) {
+        const differential = distances[leftIdx] - distances[rightIdx];
+        inputRays.push(differential);
+      }
+    } else {
+      // Standard mode: all raw ray distances
+      inputRays = distances;
+    }
+
     const input: NeuralInput = {
-      rays: distances,
+      rays: inputRays,
     };
 
     // Get AI output (only direction)

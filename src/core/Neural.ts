@@ -18,9 +18,13 @@ export class NeuralNetwork {
   private rng: SeededRandom;
   private layerSizes: number[];
 
-  constructor(weights: NetworkStructure | undefined, seed: number) {
+  constructor(
+    weights: NetworkStructure | undefined,
+    seed: number,
+    architecture?: number[]
+  ) {
     this.rng = new SeededRandom(seed);
-    this.layerSizes = NEURAL_NETWORK_ARCHITECTURE;
+    this.layerSizes = architecture || NEURAL_NETWORK_ARCHITECTURE;
 
     if (weights) {
       this.structure = JSON.parse(JSON.stringify(weights));
@@ -192,8 +196,8 @@ export class NeuralNetwork {
   }
 
   // Create a random network
-  static createRandom(seed: number): NeuralNetwork {
-    return new NeuralNetwork(undefined, seed);
+  static createRandom(seed: number, architecture?: number[]): NeuralNetwork {
+    return new NeuralNetwork(undefined, seed, architecture);
   }
 
   // Load network from JSON

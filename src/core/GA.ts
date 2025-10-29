@@ -10,6 +10,8 @@ import {
   GA_MUTATION_CURVE_POWER,
   ELITE_CAR_COLOR,
   NORMAL_CAR_COLOR,
+  NEURAL_NETWORK_ARCHITECTURE_STANDARD,
+  NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL,
 } from '@/config';
 
 export class GeneticAlgorithm {
@@ -17,9 +19,11 @@ export class GeneticAlgorithm {
   bestFitness: number = 0;
   bestWeights: any = null;
   private rng: SeededRandom;
+  useDifferentialInputs: boolean;
 
-  constructor(seed: number) {
+  constructor(seed: number, useDifferentialInputs: boolean = false) {
     this.rng = new SeededRandom(seed);
+    this.useDifferentialInputs = useDifferentialInputs;
   }
 
   // Calculate mutation multiplier for a given brain index
@@ -41,7 +45,13 @@ export class GeneticAlgorithm {
   initializePopulation(track: Track): Car[] {
     const population: Car[] = [];
 
-    console.log('Starting with random population');
+    const architecture = this.useDifferentialInputs
+      ? NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL
+      : NEURAL_NETWORK_ARCHITECTURE_STANDARD;
+
+    const inputMode = this.useDifferentialInputs ? 'differential' : 'standard';
+    console.log(`Starting with random population (${inputMode} inputs)`);
+    console.log(`Neural network architecture: ${architecture.join(' → ')}`);
     console.log(
       `Spawning ${GA_POPULATION_SIZE} cars at (${track.startPosition.x.toFixed(
         1
@@ -53,7 +63,7 @@ export class GeneticAlgorithm {
       // Use Math.random() directly for true randomness in initial population
       const brainSeed =
         Date.now() + Math.random() * 1000000 + i * Math.random() * 1000;
-      const brain = NeuralNetwork.createRandom(brainSeed);
+      const brain = NeuralNetwork.createRandom(brainSeed, architecture);
 
       // Start pointing forward along track with ±45° randomization
       const angleWiggle = (Math.random() - 0.5) * (Math.PI / 2); // ±45° = ±π/4, range is π/2
@@ -64,7 +74,8 @@ export class GeneticAlgorithm {
         track.startPosition.y,
         startAngle,
         brain,
-        NORMAL_CAR_COLOR
+        NORMAL_CAR_COLOR,
+        this.useDifferentialInputs
       );
       population.push(car);
     }
@@ -206,7 +217,8 @@ export class GeneticAlgorithm {
         track.startPosition.y,
         eliteAngle,
         eliteBrain,
-        ELITE_CAR_COLOR
+        ELITE_CAR_COLOR,
+        this.useDifferentialInputs
       )
     );
 
@@ -229,7 +241,8 @@ export class GeneticAlgorithm {
           track.startPosition.y,
           angle,
           mutatedBrain,
-          NORMAL_CAR_COLOR
+          NORMAL_CAR_COLOR,
+          this.useDifferentialInputs
         )
       );
     }

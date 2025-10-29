@@ -118,16 +118,38 @@ export const SENSOR_RAY_ANGLES = [
 // Total sensors: 9 rays providing 180° field of view
 // Distribution: even coverage from -90° to +90° for comprehensive environment awareness
 
+// Sensor pair indices for differential input mode
+// Each pair represents [leftRayIndex, rightRayIndex]
+export const SENSOR_RAY_PAIRS = [
+  [1, 2],   // ±20° pair
+  [3, 4],   // ±40° pair
+  [5, 6],   // ±60° pair
+  [7, 8],   // ±90° pair
+];
+
+// Differential input mode computes (leftDistance - rightDistance) for each pair
+// This gives 5 inputs total: 1 forward + 4 differential pairs
+// Benefits: Smaller network, encodes directional bias directly
+
 // ============================================================================
 // NEURAL NETWORK ARCHITECTURE
 // ============================================================================
 // Network structure: [input_neurons, hidden_layer_1, ..., output_neurons]
 
-// Architecture: [9 inputs] → [6 hidden] → [1 output]
-// - Input layer: 9 distance sensors
-// - Hidden layer: 6 neurons (allows pattern recognition for racing strategy)
-// - Output layer: 1 neuron (steering direction: -1 = full left, +1 = full right)
-export const NEURAL_NETWORK_ARCHITECTURE = [SENSOR_RAY_ANGLES.length, 6, 1];
+// Standard mode: [9 inputs] → [6 hidden] → [1 output]
+// - Input layer: 9 distance sensors (raw values)
+// - Hidden layer: 6 neurons (pattern recognition)
+// - Output layer: 1 neuron (steering: -1 = full left, +1 = full right)
+export const NEURAL_NETWORK_ARCHITECTURE_STANDARD = [SENSOR_RAY_ANGLES.length, 6, 1];
+
+// Differential mode: [5 inputs] → [4 hidden] → [1 output]
+// - Input layer: 1 forward sensor + 4 differential pairs (left - right)
+// - Hidden layer: 4 neurons (smaller network for fewer inputs)
+// - Output layer: 1 neuron (steering: -1 = full left, +1 = full right)
+export const NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL = [1 + SENSOR_RAY_PAIRS.length, 4, 1];
+
+// Default architecture (can be changed at runtime)
+export const NEURAL_NETWORK_ARCHITECTURE = NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL;
 
 // Note: Can experiment with deeper networks for complex tracks:
 // - [9, 8, 1] - More capacity in single hidden layer
