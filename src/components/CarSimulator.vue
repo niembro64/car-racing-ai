@@ -39,6 +39,12 @@
         >
           ALL TYPES
         </button>
+        <button
+          @click="toggleCarSpeed"
+          :class="{ active: carSpeedMultiplier > 1 }"
+        >
+          {{ carSpeedMultiplier }}x SPEED
+        </button>
       </div>
 
       <div class="hud">
@@ -282,6 +288,7 @@ const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed));
 const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(true);
 const speedMultiplier = ref(1);
+const carSpeedMultiplier = ref(1); // Toggle between 1x and 10x car speed
 const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
 const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
 const mutationByDistance = ref(DEFAULT_MUTATION_BY_DISTANCE);
@@ -732,7 +739,7 @@ const updatePhysics = (dt: number) => {
 
   for (const car of population.value) {
     if (car.alive) {
-      car.update(dt, track.wallSegments, track, delayedSteering.value, CAR_STEERING_DELAY_SECONDS);
+      car.update(dt, track.wallSegments, track, delayedSteering.value, CAR_STEERING_DELAY_SECONDS, carSpeedMultiplier.value);
 
       // Update fitness and check for backwards movement
       const result = track.getClosestPointOnCenterline({ x: car.x, y: car.y });
@@ -1071,6 +1078,15 @@ const toggleAllCarTypes = () => {
 // Toggle Delayed Steering mode
 const toggleDelayedSteering = () => {
   delayedSteering.value = !delayedSteering.value;
+};
+
+// Toggle Car Speed (cycle through 1x, 2x, 5x, 10x)
+const toggleCarSpeed = () => {
+  const speeds = [1, 2, 5, 10];
+  const currentIndex = speeds.indexOf(carSpeedMultiplier.value);
+  const nextIndex = (currentIndex + 1) % speeds.length;
+  carSpeedMultiplier.value = speeds[nextIndex];
+  print(`[Speed] Car speed set to ${carSpeedMultiplier.value}x`);
 };
 
 // Render graph

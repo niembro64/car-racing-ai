@@ -1,4 +1,11 @@
-import type { Point, Segment, RayHit, NeuralInput, NeuralOutput, InputModificationType } from '@/types';
+import type {
+  Point,
+  Segment,
+  RayHit,
+  NeuralInput,
+  NeuralOutput,
+  InputModificationType,
+} from '@/types';
 import {
   createCarPolygon,
   polygonIntersectsSegments,
@@ -16,7 +23,7 @@ import {
   CENTERLINE_RAY_HIT_COLOR,
   SENSOR_RAY_PAIRS,
   SHOW_CAR_PERCENTAGES,
-  CAR_BRAIN_CONFIGS,
+  CAR_BRAIN_CONFIGS_DEFINED,
 } from '@/config';
 
 export class Car {
@@ -96,7 +103,14 @@ export class Car {
   }
 
   // Update physics and AI
-  update(dt: number, wallSegments: Segment[], track: any, steeringDelayEnabled: boolean = false, steeringDelaySeconds: number = 0.5): void {
+  update(
+    dt: number,
+    wallSegments: Segment[],
+    track: any,
+    steeringDelayEnabled: boolean = false,
+    steeringDelaySeconds: number = 0.5,
+    speedMultiplier: number = 1
+  ): void {
     if (!this.alive) return;
 
     // Increment frame counter and elapsed time
@@ -152,16 +166,16 @@ export class Car {
     }
 
     // Apply physics
-    this.applyPhysics(output, dt);
+    this.applyPhysics(output, dt, speedMultiplier);
 
     // Check collision
     this.checkCollision(wallSegments);
   }
 
   // Apply physics based on AI output
-  private applyPhysics(output: NeuralOutput, dt: number): void {
-    // Constant forward speed
-    this.speed = CAR_FORWARD_SPEED;
+  private applyPhysics(output: NeuralOutput, dt: number, speedMultiplier: number = 1): void {
+    // Constant forward speed (with optional multiplier)
+    this.speed = CAR_FORWARD_SPEED * speedMultiplier;
 
     // Update position
     const headingX = Math.cos(this.angle);
@@ -259,8 +273,8 @@ export class Car {
 
   // Render car on canvas
   render(ctx: CanvasRenderingContext2D, showRays: boolean = false): void {
-    // Find the config for this car type by configId
-    const config = CAR_BRAIN_CONFIGS.find((c) => c.id === this.configId);
+    // Find the config for this car type by configId (check all defined configs)
+    const config = CAR_BRAIN_CONFIGS_DEFINED.find((c) => c.id === this.configId);
 
     if (!config) {
       console.error('No config found for car with configId =', this.configId);
@@ -355,10 +369,20 @@ export class Car {
     }
 
     ctx.lineWidth = 1;
-    const scaledWidth = this.width * this.sizeMultiplier;
+    const scaledWidth = this.width;
     const scaledHeight = this.height * this.sizeMultiplier;
-    ctx.fillRect(-scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
-    ctx.strokeRect(-scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
+    ctx.fillRect(
+      -scaledWidth / 2,
+      -scaledHeight / 2,
+      scaledWidth,
+      scaledHeight
+    );
+    ctx.strokeRect(
+      -scaledWidth / 2,
+      -scaledHeight / 2,
+      scaledWidth,
+      scaledHeight
+    );
 
     // Draw direction indicator (white stripe at front)
     ctx.fillStyle = this.alive ? '#ffffff' : '#d1d5db';

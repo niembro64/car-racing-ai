@@ -12,6 +12,7 @@ import {
   GA_MUTATION_MAX_MULTIPLIER,
   GA_MUTATION_CURVE_POWER,
   CAR_BRAIN_CONFIGS,
+  CAR_BRAIN_CONFIGS_DEFINED,
   CAR_START_ANGLE_WIGGLE,
 } from '@/config';
 
@@ -23,8 +24,8 @@ export class GeneticAlgorithm {
   constructor(seed: number) {
     this.rng = new SeededRandom(seed);
 
-    // Initialize state for all configs
-    for (const config of CAR_BRAIN_CONFIGS) {
+    // Initialize state for all defined configs (including inactive ones)
+    for (const config of CAR_BRAIN_CONFIGS_DEFINED) {
       this.stateByConfigId.set(config.id, {
         generation: 0,
         bestFitness: 0,
