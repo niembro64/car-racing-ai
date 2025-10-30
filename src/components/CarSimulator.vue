@@ -41,6 +41,7 @@
               <th>{{ isMobile ? 'MUT' : 'Mutation' }}</th>
               <th>Mean</th>
               <th>Best</th>
+              <th>Lap</th>
               <th>STB</th>
               <th>Hidden</th>
               <th>{{ isMobile ? 'A' : 'Activ' }}</th>
@@ -70,6 +71,9 @@
               </td>
               <td>
                 {{ getBestFitnessPercent(config.id) }}
+              </td>
+              <td style="font-weight: bold">
+                {{ getLapTime(config.id) }}
               </td>
               <td>
                 {{ getSecondsToBest(config.id) }}
@@ -281,47 +285,70 @@ const generationTimeByConfigId = ref<Map<string, number>>(new Map());
 const generationMarkersByConfigId = ref<
   Map<string, { x: number; y: number; generation: number; fitness: number }[]>
 >(new Map());
+const lapCompletionTimeByConfigId = ref<Map<string, number>>(new Map());
 
 // Initialize tracking maps for all configs
 for (const config of CAR_BRAIN_CONFIGS) {
   generationTimeByConfigId.value.set(config.id, 0);
   generationMarkersByConfigId.value.set(config.id, []);
+  lapCompletionTimeByConfigId.value.set(config.id, Infinity); // Start at infinity (no lap completed)
 }
 
 let animationFrameId: number | null = null;
 const FIXED_DT = 1 / 60; // 60 Hz physics
 
-// Computed property for scores (average of mean and best, with STB efficiency factor)
+/**
+ * Hierarchical comparison function for car brain configs
+ * Priority order:
+ * 1. Lap completion time (lower is better) - Infinity if not completed
+ * 2. Best fitness (higher is better)
+ * 3. Mean fitness (higher is better)
+ *
+ * Returns: negative if a < b, positive if a > b, 0 if equal
+ */
+const compareConfigs = (a: CarBrainConfig, b: CarBrainConfig): number => {
+  // Priority 1: Lap completion time (lower is better)
+  const lapTimeA = lapCompletionTimeByConfigId.value.get(a.id) ?? Infinity;
+  const lapTimeB = lapCompletionTimeByConfigId.value.get(b.id) ?? Infinity;
+
+  if (lapTimeA !== lapTimeB) {
+    return lapTimeA - lapTimeB; // Lower lap time wins
+  }
+
+  // Priority 2: Best fitness (higher is better)
+  const bestA = getBestFitnessPercentRaw(a.id);
+  const bestB = getBestFitnessPercentRaw(b.id);
+
+  if (Math.abs(bestA - bestB) > 0.01) { // Tolerance for floating point
+    return bestB - bestA; // Higher best fitness wins
+  }
+
+  // Priority 3: Mean fitness (higher is better)
+  const meanA = getMeanFitnessPercentRaw(a.id);
+  const meanB = getMeanFitnessPercentRaw(b.id);
+
+  return meanB - meanA; // Higher mean fitness wins
+};
+
+/**
+ * Computed score for display purposes
+ * Converts hierarchical ranking to a normalized percentage score
+ */
 const scoreByConfigId = computed(() => {
   const scores = new Map<string, number>();
 
-  // Calculate composite scores (performance * efficiency)
-  for (const config of CAR_BRAIN_CONFIGS) {
-    const mean = getMeanFitnessPercentRaw(config.id);
-    const best = getBestFitnessPercentRaw(config.id);
-    const performanceScore = (mean + best) / 2;
+  // Sort configs by hierarchical comparison
+  const sorted = [...CAR_BRAIN_CONFIGS].sort(compareConfigs);
 
-    // Get seconds to best and calculate efficiency multiplier
-    const stb = ga.value.getSecondsToBest(config.id);
-    // Efficiency factor: faster convergence is rewarded
-    // 0s = 1.0x, 30s = 0.67x, 60s = 0.5x, 120s = 0.33x
-    const efficiencyFactor = 1.0 / (1 + stb / 60);
+  // Assign scores based on rank (100% for 1st, scaling down)
+  const numConfigs = sorted.length;
+  sorted.forEach((config, index) => {
+    // Score based on rank: 1st = 100%, 2nd = 83%, 3rd = 67%, etc.
+    const rankScore = ((numConfigs - index) / numConfigs) * 100;
+    scores.set(config.id, rankScore);
+  });
 
-    // Composite score = performance * efficiency
-    const compositeScore = performanceScore * efficiencyFactor;
-    scores.set(config.id, compositeScore);
-  }
-
-  // Find max score
-  const maxScore = Math.max(...Array.from(scores.values()), 0.0001); // Avoid division by zero
-
-  // Normalize scores (top score = 100%)
-  const normalizedScores = new Map<string, number>();
-  for (const [configId, score] of scores.entries()) {
-    normalizedScores.set(configId, (score / maxScore) * 100);
-  }
-
-  return normalizedScores;
+  return scores;
 });
 
 // Performance computed properties
@@ -329,13 +356,10 @@ const totalCars = computed(() => population.value.length);
 const aliveCars = computed(() => population.value.filter(c => c.alive).length);
 const deadCars = computed(() => population.value.filter(c => !c.alive).length);
 
-// Computed property to sort car brain configs by score (descending)
+// Computed property to sort car brain configs by hierarchical comparison
 const sortedCarBrainConfigs = computed(() => {
-  return [...CAR_BRAIN_CONFIGS].sort((a, b) => {
-    const scoreA = scoreByConfigId.value.get(a.id) ?? 0;
-    const scoreB = scoreByConfigId.value.get(b.id) ?? 0;
-    return scoreB - scoreA; // Descending order (best first)
-  });
+  // Use the hierarchical comparison function directly
+  return [...CAR_BRAIN_CONFIGS].sort(compareConfigs);
 });
 
 // Computed property for mutation rates (updates every frame)
@@ -481,6 +505,14 @@ const getSecondsToBest = (configId: string): string => {
   return seconds.toFixed(1) + 's';
 };
 
+const getLapTime = (configId: string): string => {
+  const lapTime = lapCompletionTimeByConfigId.value.get(configId) ?? Infinity;
+  if (lapTime === Infinity) {
+    return '—'; // Em dash for no lap completed
+  }
+  return lapTime.toFixed(1) + 's';
+};
+
 const getScorePercent = (configId: string): string => {
   const score = scoreByConfigId.value.get(configId) ?? 0;
   return formatPercentage(score);
@@ -505,10 +537,11 @@ const init = () => {
 
   population.value = ga.value.initializePopulation(track, targetPopulation.value);
 
-  // Reset generation times and markers for all configs
+  // Reset generation times, markers, and lap times for all configs
   for (const config of CAR_BRAIN_CONFIGS) {
     generationTimeByConfigId.value.set(config.id, 0);
     generationMarkersByConfigId.value.set(config.id, []);
+    lapCompletionTimeByConfigId.value.set(config.id, Infinity);
   }
 };
 
@@ -566,6 +599,7 @@ const evolvePopulationByConfig = (
     targetPopulation.value
   );
   generationTimeByConfigId.value.set(config.id, 0);
+  lapCompletionTimeByConfigId.value.set(config.id, Infinity); // Reset lap time for new generation
 
   // Combine with other car types
   population.value = [...newCars, ...otherCars];
@@ -590,6 +624,14 @@ const updatePhysics = (dt: number) => {
         const config = CAR_BRAIN_CONFIGS.find((c) => c.id === car.configId);
 
         if (config) {
+          // Record lap completion time (only if not already recorded this generation)
+          const currentLapTime = lapCompletionTimeByConfigId.value.get(config.id) ?? Infinity;
+          if (currentLapTime === Infinity) {
+            const completionTime = generationTimeByConfigId.value.get(config.id) ?? 0;
+            lapCompletionTimeByConfigId.value.set(config.id, completionTime);
+            console.log(`[Lap Complete] ${config.displayName} completed lap in ${completionTime.toFixed(2)}s`);
+          }
+
           // Kill all cars of same type immediately
           population.value.forEach((c) => {
             if (c.configId === config.id && c !== car) {
@@ -856,10 +898,11 @@ const reset = () => {
 
   population.value = ga.value.initializePopulation(track, targetPopulation.value);
 
-  // Clear generation times and markers for all configs
+  // Clear generation times, markers, and lap times for all configs
   for (const config of CAR_BRAIN_CONFIGS) {
     generationTimeByConfigId.value.set(config.id, 0);
     generationMarkersByConfigId.value.set(config.id, []);
+    lapCompletionTimeByConfigId.value.set(config.id, Infinity);
   }
 
   // Reset performance management system
