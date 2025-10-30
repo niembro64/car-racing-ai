@@ -288,6 +288,8 @@ export const ADAPTIVE_MIN_CARS_PER_TYPE = 1;
 export const DEFAULT_DIE_ON_BACKWARDS = true;
 export const DEFAULT_KILL_SLOW_CARS = true;
 export const DEFAULT_MUTATION_BY_DISTANCE = true;
+export const DEFAULT_DELAYED_STEERING = true;
+export const CAR_STEERING_DELAY_SECONDS = 0.2;
 
 export const CANVAS_BACKGROUND_COLOR = '#4a7c4e';
 

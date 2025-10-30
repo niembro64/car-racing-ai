@@ -27,6 +27,12 @@
         >
           MUT DIST
         </button>
+        <button
+          @click="toggleDelayedSteering"
+          :class="{ active: delayedSteering }"
+        >
+          DELAY TURN
+        </button>
       </div>
 
       <div class="hud">
@@ -218,6 +224,8 @@ import {
   DEFAULT_DIE_ON_BACKWARDS,
   DEFAULT_KILL_SLOW_CARS,
   DEFAULT_MUTATION_BY_DISTANCE,
+  DEFAULT_DELAYED_STEERING,
+  CAR_STEERING_DELAY_SECONDS,
   GA_MUTATION_BASE,
   GA_MUTATION_PROGRESS_FACTOR,
   GA_MUTATION_MIN,
@@ -256,6 +264,7 @@ const speedMultiplier = ref(1);
 const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
 const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
 const mutationByDistance = ref(DEFAULT_MUTATION_BY_DISTANCE);
+const delayedSteering = ref(DEFAULT_DELAYED_STEERING);
 const frameCounter = ref(0);
 const viewMode = ref<'table' | 'graph' | 'performance'>('table');
 const graphCanvasRef = ref<HTMLCanvasElement | null>(null);
@@ -643,7 +652,7 @@ const updatePhysics = (dt: number) => {
 
   for (const car of population.value) {
     if (car.alive) {
-      car.update(dt, track.wallSegments, track);
+      car.update(dt, track.wallSegments, track, delayedSteering.value, CAR_STEERING_DELAY_SECONDS);
 
       // Update fitness and check for backwards movement
       const result = track.getClosestPointOnCenterline({ x: car.x, y: car.y });
@@ -973,6 +982,11 @@ const toggleKillSlowCars = () => {
 // Toggle Mutation by Distance mode
 const toggleMutationByDistance = () => {
   mutationByDistance.value = !mutationByDistance.value;
+};
+
+// Toggle Delayed Steering mode
+const toggleDelayedSteering = () => {
+  delayedSteering.value = !delayedSteering.value;
 };
 
 // Render graph

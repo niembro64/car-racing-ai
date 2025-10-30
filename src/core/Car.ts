@@ -36,6 +36,7 @@ export class Car {
   currentProgressRatio: number; // Current course percentage done as a ratio (same as displayed percentage / 100)
   previousProgressRatio: number; // Previous course percentage done as a ratio
   frameCount: number; // Number of frames this car has been alive
+  elapsedTime: number; // Total time this car has been alive (in seconds)
 
   // Dimensions
   width: number = CAR_WIDTH;
@@ -83,6 +84,7 @@ export class Car {
     this.currentProgressRatio = 0;
     this.previousProgressRatio = -1;
     this.frameCount = 0;
+    this.elapsedTime = 0;
     this.inputModification = inputModification;
     this.configId = configId;
     this.brain = brain;
@@ -91,11 +93,12 @@ export class Car {
   }
 
   // Update physics and AI
-  update(dt: number, wallSegments: Segment[], track: any): void {
+  update(dt: number, wallSegments: Segment[], track: any, steeringDelayEnabled: boolean = false, steeringDelaySeconds: number = 0.5): void {
     if (!this.alive) return;
 
-    // Increment frame counter
+    // Increment frame counter and elapsed time
     this.frameCount++;
+    this.elapsedTime += dt;
 
     // Cast rays for sensors using PHYSICS angle
     // Rays should be relative to direction of travel, not visual orientation
@@ -137,7 +140,13 @@ export class Car {
     };
 
     // Get AI output (only direction)
-    const output: NeuralOutput = this.brain.run(input);
+    let output: NeuralOutput = this.brain.run(input);
+
+    // Check if steering should be delayed
+    if (steeringDelayEnabled && this.elapsedTime < steeringDelaySeconds) {
+      // Prevent steering by forcing direction to 0
+      output = { ...output, direction: 0 };
+    }
 
     // Apply physics
     this.applyPhysics(output, dt);
