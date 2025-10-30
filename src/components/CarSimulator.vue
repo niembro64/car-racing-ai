@@ -90,6 +90,7 @@ import { ref, computed, onMounted, onUnmounted, type Ref } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
+import type { CarBrainConfig, InputModificationType, ActivationType } from '@/types';
 import {
   TRACK_WIDTH_HALF,
   CAR_BRAIN_CONFIGS,
@@ -99,9 +100,6 @@ import {
   DEFAULT_DIE_ON_BACKWARDS,
   DEFAULT_KILL_SLOW_CARS,
   DEFAULT_MUTATION_BY_DISTANCE,
-  type CarBrainConfig,
-  InputModificationType,
-  ActivationType,
 } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);

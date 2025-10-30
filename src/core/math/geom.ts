@@ -1,17 +1,7 @@
-export interface Point {
-  x: number;
-  y: number;
-}
+import type { Point, Segment, RayHit, ProjectionResult } from '@/types';
 
-export interface Segment {
-  p1: Point;
-  p2: Point;
-}
-
-export interface RayHit {
-  distance: number;
-  point: Point;
-}
+// Re-export types for backward compatibility
+export type { Point, Segment, RayHit, ProjectionResult };
 
 // Deterministic RNG with seed
 export class SeededRandom {
@@ -105,7 +95,7 @@ export function distance(p1: Point, p2: Point): number {
 export function projectPointOntoSegment(
   point: Point,
   seg: Segment
-): { projection: Point; t: number; distance: number } {
+): ProjectionResult {
   const { p1, p2 } = seg;
   const dx = p2.x - p1.x;
   const dy = p2.y - p1.y;

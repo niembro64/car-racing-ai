@@ -1,44 +1,13 @@
-import { Point } from './core/math/geom';
+import type { Point, InputModificationType, ActivationType, CarBrainConfig } from './types';
+
+// Re-export types for backward compatibility
+export type { Point, InputModificationType, ActivationType, CarBrainConfig };
 
 // ============================================================================
 // CAR BRAIN CONFIGURATION SYSTEM
 // ============================================================================
 // Defines all car types with their neural network architectures, colors,
 // and visualization settings in a centralized, extensible structure.
-
-export type InputModificationType = 'dir' | 'pair';
-
-export type ActivationType = 'relu' | 'linear' | 'gelu' | 'step';
-
-export interface CarBrainConfig {
-  // Identification
-  id: string; // Unique identifier (e.g., 'normrelu', 'difflinear')
-  displayName: string; // Full name for display (e.g., 'NormReLU', 'DiffLinear')
-  shortName: string; // Abbreviated name for HUD (e.g., 'NR', 'DL')
-  description: string; // Human-readable description of the approach
-
-  // Neural network configuration
-  nn: {
-    architecture: number[]; // Layer sizes [input, hidden..., output]
-    inputModification: InputModificationType; // 'direct' = raw sensors, 'pair_diff' = differential pairs
-    activationType: ActivationType; // Hidden layer activation function
-  };
-
-  // Visual appearance
-  colors: {
-    normal: string; // Color for standard (mutated) cars
-    elite: string; // Color for elite (best) car
-    ray: string; // Color for sensor rays
-    rayHit: string; // Color for ray hit points
-    marker: string; // Color for generation markers on track
-  };
-
-  // Ray visualization settings
-  rayVisualization: {
-    width: number; // Line width for sensor rays
-    hitRadius: number; // Radius of hit point circles
-  };
-}
 
 export function appendMirroredWaypoints(
   waypoints: Point[],

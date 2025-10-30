@@ -1,4 +1,4 @@
-import type { Point, Segment, RayHit } from './math/geom';
+import type { Point, Segment, RayHit, NeuralInput, NeuralOutput, InputModificationType } from '@/types';
 import {
   createCarPolygon,
   polygonIntersectsSegments,
@@ -6,7 +6,6 @@ import {
 } from './math/geom';
 import { NeuralNetwork } from './Neural';
 import { RayCaster } from './Ray';
-import type { NeuralInput, NeuralOutput } from '@/types/neural';
 import {
   CAR_FORWARD_SPEED,
   CAR_STEERING_SENSITIVITY,
@@ -18,7 +17,6 @@ import {
   SENSOR_RAY_PAIRS,
   SHOW_CAR_PERCENTAGES,
   CAR_BRAIN_CONFIGS,
-  type InputModificationType,
 } from '@/config';
 
 export class Car {

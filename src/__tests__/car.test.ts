@@ -10,7 +10,7 @@ describe('Car', () => {
 
   beforeEach(() => {
     brain = NeuralNetwork.createRandom(12345, [9, 6, 1], 'relu');
-    car = new Car(100, 100, 0, brain, '#0088ff', 'direct', 'test'); // Use direct inputs (9 sensors)
+    car = new Car(100, 100, 0, brain, '#0088ff', 'dir', 'test'); // Use direct inputs (9 sensors)
 
     // Create a mock track object
     mockTrack = {

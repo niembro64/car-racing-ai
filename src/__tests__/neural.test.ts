@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { NeuralNetwork } from '../core/Neural';
-import type { NeuralInput } from '../types/neural';
+import type { NeuralInput } from '../types';
 import { NN_ARCH_MEDIUM, SENSOR_RAY_ANGLES } from '../config';
 
 // Use STANDARD architecture for tests (9 inputs matching raw sensor data)

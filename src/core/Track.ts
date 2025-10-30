@@ -1,4 +1,4 @@
-import type { Point, Segment } from './math/geom';
+import type { Point, Segment, CenterlinePointResult } from '@/types';
 import {
   offsetPolyline,
   computeCumulativeLengths,
@@ -136,10 +136,7 @@ export class Track {
   }
 
   // Get closest point on centerline and the distance traveled
-  getClosestPointOnCenterline(position: Point): {
-    point: Point;
-    distance: number;
-  } {
+  getClosestPointOnCenterline(position: Point): CenterlinePointResult {
     let minDist = Infinity;
     let closestPoint: Point = this.centerline[0];
     let bestDistance = 0;

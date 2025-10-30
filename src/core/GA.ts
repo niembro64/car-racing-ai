@@ -2,6 +2,7 @@ import { Car } from './Car';
 import { NeuralNetwork } from './Neural';
 import { Track } from './Track';
 import { SeededRandom } from './math/geom';
+import type { CarBrainConfig, ConfigEvolutionState } from '@/types';
 import {
   getPopulationSize,
   GA_MUTATION_BASE,
@@ -11,15 +12,7 @@ import {
   GA_MUTATION_MAX_MULTIPLIER,
   GA_MUTATION_CURVE_POWER,
   CAR_BRAIN_CONFIGS,
-  type CarBrainConfig,
 } from '@/config';
-
-// Per-config evolution state
-interface ConfigEvolutionState {
-  generation: number;
-  bestFitness: number;
-  bestWeights: any;
-}
 
 export class GeneticAlgorithm {
   // Map from config ID to evolution state

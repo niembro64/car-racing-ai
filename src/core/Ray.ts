@@ -1,4 +1,4 @@
-import type { Point, Segment, RayHit } from './math/geom';
+import type { Point, Segment, RayHit, RayCastResult } from '@/types';
 import { castRay } from './math/geom';
 import { SENSOR_RAY_ANGLES } from '@/config';
 
@@ -18,7 +18,7 @@ export class RayCaster {
     position: Point,
     heading: number,
     wallSegments: Segment[]
-  ): { distances: number[]; hits: (RayHit | null)[] } {
+  ): RayCastResult {
     const distances: number[] = [];
     const hits: (RayHit | null)[] = [];
 

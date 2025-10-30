@@ -1,28 +1,17 @@
-import type { NeuralInput, NeuralOutput } from '@/types/neural';
-import { clamp } from './math/geom';
-import { SeededRandom } from './math/geom';
-
-// Simple feed-forward neural network implementation
-interface Layer {
-  weights: number[][];
-  biases: number[];
-}
-
-interface NetworkStructure {
-  layers: Layer[];
-}
+import type { NeuralInput, NeuralOutput, Layer, NetworkStructure, ActivationType } from '@/types';
+import { clamp, SeededRandom } from './math/geom';
 
 export class NeuralNetwork {
   private structure: NetworkStructure;
   private rng: SeededRandom;
   private layerSizes: number[];
-  private activationType: 'relu' | 'linear' | 'gelu' | 'step';
+  private activationType: ActivationType;
 
   constructor(
     weights: NetworkStructure | undefined,
     seed: number,
     architecture: number[],
-    activationType: 'relu' | 'linear' | 'gelu' | 'step' = 'relu'
+    activationType: ActivationType = 'relu'
   ) {
     this.rng = new SeededRandom(seed);
     this.layerSizes = architecture;
@@ -210,7 +199,7 @@ export class NeuralNetwork {
   static createRandom(
     seed: number,
     architecture: number[],
-    activationType: 'relu' | 'linear' | 'gelu' | 'step'
+    activationType: ActivationType
   ): NeuralNetwork {
     return new NeuralNetwork(undefined, seed, architecture, activationType);
   }
@@ -220,7 +209,7 @@ export class NeuralNetwork {
     weights: NetworkStructure,
     seed: number,
     architecture: number[],
-    activationType: 'relu' | 'linear' | 'gelu' | 'step'
+    activationType: ActivationType
   ): NeuralNetwork {
     return new NeuralNetwork(weights, seed, architecture, activationType);
   }
