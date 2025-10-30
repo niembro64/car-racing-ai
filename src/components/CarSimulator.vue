@@ -44,7 +44,7 @@
               <th v-if="!isMobile">Score</th>
               <th>Type</th>
               <th>Gen</th>
-              <th>{{ isMobile ? 'MUT' : 'Mutation' }}</th>
+              <th>{{ isMobile ? 'MUT' : 'NEXT MUT' }}</th>
               <th>Mean</th>
               <th>Best</th>
               <th>Lap</th>
@@ -60,8 +60,11 @@
               :key="config.id"
               :style="{ backgroundColor: config.colors.dark }"
             >
-              <td v-if="!isMobile" style="font-weight: bold">
-                {{ getScorePercent(config.id) }}
+              <td v-if="!isMobile">
+                <PercentageBar
+                  :percentage="scoreByConfigId.get(config.id) ?? 0"
+                  variant="white"
+                />
               </td>
               <td style="font-weight: bold">
                 {{ isMobile ? config.mobileDisplayName : config.displayName }}
@@ -70,13 +73,22 @@
                 {{ ga.getGeneration(config.id) }}
               </td>
               <td>
-                {{ mutationRateByConfigId.get(config.id) }}
+                <PercentageBar
+                  :percentage="mutationRatePercentByConfigId.get(config.id) ?? 0"
+                  variant="white"
+                />
               </td>
               <td>
-                {{ getMeanFitnessPercent(config.id) }}
+                <PercentageBar
+                  :percentage="getMeanFitnessPercentRaw(config.id)"
+                  variant="white"
+                />
               </td>
               <td>
-                {{ getBestFitnessPercent(config.id) }}
+                <PercentageBar
+                  :percentage="getBestFitnessPercentRaw(config.id)"
+                  variant="white"
+                />
               </td>
               <td>
                 {{ getBestLapTime(config.id) }}
@@ -213,6 +225,7 @@ import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
 import { PerformanceMonitor } from '@/core/PerformanceMonitor';
 import { PopulationController } from '@/core/PopulationController';
+import PercentageBar from './PercentageBar.vue';
 import type { CarBrainConfig, InputModificationType, ActivationType } from '@/types';
 import {
   TRACK_WIDTH_HALF,
@@ -456,6 +469,41 @@ const mutationRateByConfigId = computed(() => {
   }
 
   return rates;
+});
+
+// Computed property for mutation rates as raw percentages (for bars)
+const mutationRatePercentByConfigId = computed(() => {
+  void frameCounter.value; // Trigger on every frame
+  const isMutationByDistance = mutationByDistance.value; // Trigger on toggle
+
+  const percentages = new Map<string, number>();
+
+  for (const config of CAR_BRAIN_CONFIGS) {
+    if (isMutationByDistance) {
+      const trackLength = track.getTotalLength();
+
+      const carsOfType = population.value.filter(car => car.configId === config.id);
+      const currentBest = carsOfType.length > 0
+        ? Math.max(...carsOfType.map(car => car.maxDistanceReached))
+        : 0;
+
+      const bestDistance = currentBest;
+
+      const progressPercentage = bestDistance / trackLength;
+      const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
+      const rate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
+
+      // Normalize to 0-100% range (GA_MUTATION_BASE is max)
+      const normalizedPercent = (rate / GA_MUTATION_BASE) * 100;
+      percentages.set(config.id, normalizedPercent);
+    } else {
+      // When MUT DIST is OFF, use constant minimum mutation
+      const normalizedPercent = (GA_MUTATION_MIN / GA_MUTATION_BASE) * 100;
+      percentages.set(config.id, normalizedPercent);
+    }
+  }
+
+  return percentages;
 });
 
 // Get background color for activation type
