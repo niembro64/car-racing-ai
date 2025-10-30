@@ -43,7 +43,7 @@ export const TRACK_WIDTH_HALF = 40;
 export const SEGMENTS_PER_CURVE = 20;
 
 export const SHOW_CAR_PERCENTAGES = false;
-export const DEBUG_SHOW_WAYPOINTS = true;
+export const DEBUG_SHOW_WAYPOINTS = false;
 
 export const wp: Point[] = [
   { x: 400, y: 60 },
