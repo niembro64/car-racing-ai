@@ -173,6 +173,15 @@ import {
   GA_MUTATION_PROGRESS_FACTOR,
   GA_MUTATION_MIN,
   DEBUG_SHOW_WAYPOINTS,
+  ADAPTIVE_POPULATION_ENABLED,
+  ADAPTIVE_POPULATION_INITIAL,
+  ADAPTIVE_POPULATION_MIN,
+  ADAPTIVE_POPULATION_MAX,
+  ADAPTIVE_POPULATION_STEP,
+  ADAPTIVE_FPS_TARGET,
+  ADAPTIVE_FPS_LOW_THRESHOLD,
+  ADAPTIVE_FPS_HIGH_THRESHOLD,
+  ADAPTIVE_ADJUSTMENT_INTERVAL,
   wp,
 } from '@/config';
 
@@ -209,13 +218,10 @@ const HISTORY_SIZE = 60; // Track last 60 frames for averaging
 let lastFrameTime = performance.now();
 let fpsUpdateCounter = 0;
 
-// Adaptive population control
-const adaptivePopulation = ref(true);
-const targetPopulation = ref(120); // Dynamic target based on performance
-const fpsTarget = ref(50); // Target FPS for adaptive mode
-const FPS_LOW_THRESHOLD = 40; // Below this, reduce population
-const FPS_HIGH_THRESHOLD = 55; // Above this, can increase population
-const POPULATION_ADJUST_INTERVAL = 180; // Adjust every 3 seconds (at 60fps)
+// Adaptive population control (using config values)
+const adaptivePopulation = ref(ADAPTIVE_POPULATION_ENABLED);
+const targetPopulation = ref(ADAPTIVE_POPULATION_INITIAL);
+const fpsTarget = ref(ADAPTIVE_FPS_TARGET);
 
 // Dynamic generation tracking for all config types
 const generationTimeByConfigId = ref<Map<string, number>>(new Map());
@@ -668,13 +674,19 @@ const adjustPopulationSize = () => {
   const fps = currentFps.value;
 
   // If FPS is too low, reduce population
-  if (fps < FPS_LOW_THRESHOLD && targetPopulation.value > 30) {
-    targetPopulation.value = Math.max(30, targetPopulation.value - 12); // Reduce by 12 (2 per config)
+  if (fps < ADAPTIVE_FPS_LOW_THRESHOLD && targetPopulation.value > ADAPTIVE_POPULATION_MIN) {
+    targetPopulation.value = Math.max(
+      ADAPTIVE_POPULATION_MIN,
+      targetPopulation.value - ADAPTIVE_POPULATION_STEP
+    );
     console.log(`FPS too low (${fps}), reducing target population to ${targetPopulation.value}`);
   }
   // If FPS is comfortably high, increase population
-  else if (fps > FPS_HIGH_THRESHOLD && targetPopulation.value < 240) {
-    targetPopulation.value = Math.min(240, targetPopulation.value + 12); // Increase by 12 (2 per config)
+  else if (fps > ADAPTIVE_FPS_HIGH_THRESHOLD && targetPopulation.value < ADAPTIVE_POPULATION_MAX) {
+    targetPopulation.value = Math.min(
+      ADAPTIVE_POPULATION_MAX,
+      targetPopulation.value + ADAPTIVE_POPULATION_STEP
+    );
     console.log(`FPS good (${fps}), increasing target population to ${targetPopulation.value}`);
   }
 };
@@ -719,7 +731,7 @@ const animate = () => {
   updatePerformanceMetrics(frameTime, updateTime, renderTime);
 
   // Adjust population based on performance (every 3 seconds)
-  if (frameCounter.value % POPULATION_ADJUST_INTERVAL === 0) {
+  if (frameCounter.value % ADAPTIVE_ADJUSTMENT_INTERVAL === 0) {
     adjustPopulationSize();
   }
 
