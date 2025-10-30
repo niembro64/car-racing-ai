@@ -60,7 +60,6 @@
               <th>Mean</th>
               <th>Best</th>
               <th>Lap</th>
-              <th v-if="!isMobile">STB</th>
               <th>Hidden</th>
               <th>{{ isMobile ? 'A' : 'Activ' }}</th>
               <th>{{ isMobile ? 'I' : 'Input' }}</th>
@@ -104,9 +103,6 @@
               </td>
               <td>
                 {{ getBestLapTime(config.id) }}
-              </td>
-              <td v-if="!isMobile">
-                {{ getSecondsToBest(config.id) }}
               </td>
               <td>
                 {{ getHiddenLayers(config.nn.architecture) }}
@@ -238,7 +234,7 @@ import { GeneticAlgorithm } from '@/core/GA';
 import { PerformanceMonitor } from '@/core/PerformanceMonitor';
 import { PopulationController } from '@/core/PopulationController';
 import PercentageBar from './PercentageBar.vue';
-import type { CarBrainConfig, InputModificationType, ActivationType } from '@/types';
+import type { CarBrainConfig, InputModificationType, ActivationType, SpeedMultiplier } from '@/types';
 import {
   TRACK_WIDTH_HALF,
   CAR_BRAIN_CONFIGS,
@@ -251,6 +247,7 @@ import {
   DEFAULT_KILL_SLOW_CARS,
   DEFAULT_MUTATION_BY_DISTANCE,
   DEFAULT_DELAYED_STEERING,
+  DEFAULT_SPEED_MULTIPLIER,
   CAR_STEERING_DELAY_SECONDS,
   GA_MUTATION_BASE,
   GA_MUTATION_PROGRESS_FACTOR,
@@ -288,7 +285,7 @@ const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed));
 const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(true);
 const speedMultiplier = ref(1);
-const carSpeedMultiplier = ref(1); // Toggle between 1x and 10x car speed
+const carSpeedMultiplier = ref<SpeedMultiplier>(DEFAULT_SPEED_MULTIPLIER);
 const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
 const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
 const mutationByDistance = ref(DEFAULT_MUTATION_BY_DISTANCE);
@@ -630,17 +627,12 @@ const getBestFitnessPercent = (configId: string): string => {
   return formatPercentage(getBestFitnessPercentRaw(configId));
 };
 
-const getSecondsToBest = (configId: string): string => {
-  const seconds = ga.value.getSecondsToBest(configId);
-  return seconds.toFixed(1) + 's';
-};
-
 const getBestLapTime = (configId: string): string => {
   const lapTime = bestLapTimeByConfigId.value.get(configId) ?? Infinity;
   if (lapTime === Infinity) {
     return '—'; // Em dash for no lap completed
   }
-  return lapTime.toFixed(1) + 's';
+  return lapTime.toFixed(3) + 's';
 };
 
 const getScorePercent = (configId: string): string => {
@@ -1082,7 +1074,7 @@ const toggleDelayedSteering = () => {
 
 // Toggle Car Speed (cycle through 1x, 2x, 5x, 10x)
 const toggleCarSpeed = () => {
-  const speeds = [1, 2, 5, 10];
+  const speeds: SpeedMultiplier[] = [1, 2, 5, 10];
   const currentIndex = speeds.indexOf(carSpeedMultiplier.value);
   const nextIndex = (currentIndex + 1) % speeds.length;
   carSpeedMultiplier.value = speeds[nextIndex];

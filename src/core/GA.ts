@@ -30,7 +30,6 @@ export class GeneticAlgorithm {
         generation: 0,
         bestFitness: 0,
         bestWeights: null,
-        secondsToBest: 0,
         totalTime: 0,
       });
     }
@@ -72,10 +71,6 @@ export class GeneticAlgorithm {
 
   getBestWeights(configId: string): any {
     return this.stateByConfigId.get(configId)?.bestWeights ?? null;
-  }
-
-  getSecondsToBest(configId: string): number {
-    return this.stateByConfigId.get(configId)?.secondsToBest ?? 0;
   }
 
   getTotalTime(configId: string): number {
@@ -174,11 +169,9 @@ export class GeneticAlgorithm {
     // Update total time (accumulate generation time)
     state.totalTime += generationTime;
 
-    // Track fitness improvements and time to reach them
+    // Track fitness improvements
     if (bestCar.maxDistanceReached > state.bestFitness) {
       state.bestFitness = bestCar.maxDistanceReached;
-      // Update secondsToBest when we reach a new best
-      state.secondsToBest = state.totalTime;
     }
 
     // Increment generation
@@ -356,7 +349,6 @@ export class GeneticAlgorithm {
       state.generation = 0;
       state.bestFitness = 0;
       state.bestWeights = null;
-      state.secondsToBest = 0;
       state.totalTime = 0;
     }
   }

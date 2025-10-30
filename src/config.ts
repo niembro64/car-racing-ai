@@ -3,6 +3,7 @@ import type {
   InputModificationType,
   ActivationType,
   CarBrainConfig,
+  SpeedMultiplier,
 } from './types';
 
 export type { Point, InputModificationType, ActivationType, CarBrainConfig };
@@ -92,11 +93,11 @@ export const SENSOR_RAY_PAIRS = [
 ];
 
 export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 1];
-export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 4, 1];
-export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 6, 3, 1];
+export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 3, 1];
+export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 3, 2, 1];
 export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 1];
-export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 4, 1];
-export const NN_ARCH_DIFF_LARGE = [1 + SENSOR_RAY_PAIRS.length, 6, 3, 1];
+export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 3, 1];
+export const NN_ARCH_DIFF_LARGE = [1 + SENSOR_RAY_PAIRS.length, 3, 2, 1];
 
 export const NEURAL_NETWORK_ARCHITECTURE = NN_ARCH_DIFF_MEDIUM;
 
@@ -362,6 +363,7 @@ export const DEFAULT_KILL_SLOW_CARS = true;
 export const DEFAULT_MUTATION_BY_DISTANCE = true;
 export const DEFAULT_DELAYED_STEERING = true;
 export const CAR_STEERING_DELAY_SECONDS = 0.2;
+export const DEFAULT_SPEED_MULTIPLIER: SpeedMultiplier = 2;
 
 export const ENABLE_CONSOLE_LOGS = true;
 

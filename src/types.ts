@@ -58,6 +58,8 @@ export interface GenomeData {
   fitness: number;
 }
 
+// Speed multiplier options
+export type SpeedMultiplier = 1 | 2 | 5 | 10;
 // ============================================================================
 // CAR BRAIN CONFIGURATION TYPES
 // ============================================================================
@@ -100,7 +102,6 @@ export interface ConfigEvolutionState {
   generation: number;
   bestFitness: number;
   bestWeights: any;
-  secondsToBest: number; // Time in seconds to reach current best fitness
   totalTime: number; // Total elapsed time in seconds for this config
 }
 
