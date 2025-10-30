@@ -12,6 +12,7 @@ import {
   GA_MUTATION_MAX_MULTIPLIER,
   GA_MUTATION_CURVE_POWER,
   CAR_BRAIN_CONFIGS,
+  CAR_START_ANGLE_WIGGLE,
 } from '@/config';
 
 export class GeneticAlgorithm {
@@ -102,7 +103,7 @@ export class GeneticAlgorithm {
           config.nn.activationType
         );
 
-        const angleWiggle = (Math.random() - 0.5) * (Math.PI / 2);
+        const angleWiggle = (Math.random() - 0.5) * 2 * CAR_START_ANGLE_WIGGLE;
         const startAngle = track.startAngle + angleWiggle;
 
         const car = new Car(
@@ -164,7 +165,7 @@ export class GeneticAlgorithm {
     let baseMutationRate: number;
     if (mutationByDistance) {
       const trackLength = track.getTotalLength();
-      const progressPercentage = bestCar.maxDistanceReached / trackLength;
+      const progressPercentage = state.bestFitness / trackLength;
       const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
       baseMutationRate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
     } else {
@@ -184,7 +185,7 @@ export class GeneticAlgorithm {
 
     // Create cars: 1 elite + (carsPerType - 1) mutations
     for (let i = 0; i < carsPerType; i++) {
-      const angleWiggle = (this.rng.next() - 0.5) * (Math.PI / 2);
+      const angleWiggle = (this.rng.next() - 0.5) * 2 * CAR_START_ANGLE_WIGGLE;
       const startAngle = track.startAngle + angleWiggle;
 
       if (i === 0) {

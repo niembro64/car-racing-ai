@@ -39,7 +39,7 @@
               <th>Mean</th>
               <th>Best</th>
               <th>Hidden</th>
-              <th>Act</th>
+              <th>Activ</th>
               <th>Input</th>
             </tr>
           </thead>
@@ -194,14 +194,10 @@ const formatPercentage = (value: number): string => {
 };
 
 const getAdaptiveMutationRate = (configId: string): string => {
-  const carsOfType = population.value.filter(car => car.configId === configId);
-  const bestCurrentDistance = carsOfType.length > 0
-    ? Math.max(...carsOfType.map(car => car.maxDistanceReached))
-    : 0;
-
   if (mutationByDistance.value) {
     const trackLength = track.getTotalLength();
-    const progressPercentage = bestCurrentDistance / trackLength;
+    const bestFitness = ga.value.getBestFitness(configId);
+    const progressPercentage = bestFitness / trackLength;
     const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
     const rate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
     return rate.toFixed(4);
@@ -615,7 +611,7 @@ canvas {
   background: rgba(0, 0, 0, 0.8);
   color: #ffffff;
   padding: 4px 6px;
-  text-align: left;
+  text-align: center;
   font-weight: 700;
   text-transform: uppercase;
   font-size: 10px;
@@ -626,7 +622,7 @@ canvas {
 .stats-table td {
   padding: 4px 6px;
   color: #ffffff;
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 

@@ -20,13 +20,13 @@ export function appendMirroredWaypoints(
   return [...waypoints, ...mirroredTail];
 }
 
-export const GA_MUTATION_BASE = 0.3;
+export const GA_MUTATION_BASE = 0.005;
 export const GA_MUTATION_PROGRESS_FACTOR = 0.29;
 export const GA_MUTATION_MIN = 0.01;
 export const GA_MUTATION_RATE = 0.1;
 
-export const GA_POPULATION_SIZE_DESKTOP = 160;
-export const GA_POPULATION_SIZE_MOBILE = 80;
+export const GA_POPULATION_SIZE_DESKTOP = 100;
+export const GA_POPULATION_SIZE_MOBILE = 60;
 
 export function getPopulationSize(): number {
   if (typeof window === 'undefined') {
@@ -71,6 +71,7 @@ export const CAR_FORWARD_SPEED = 200;
 export const CAR_STEERING_SENSITIVITY = 0.3;
 export const CAR_WIDTH = 10;
 export const CAR_HEIGHT = 20;
+export const CAR_START_ANGLE_WIGGLE = Math.PI / 6;
 
 export const SENSOR_RAY_ANGLES = [
   0,
@@ -107,7 +108,7 @@ export const NEURAL_NETWORK_ARCHITECTURE = NN_ARCH_DIFF_MEDIUM;
 
 export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
   {
-    displayName: 'Diffbot',
+    displayName: 'DiffBot',
     id: 'difflinear',
     shortName: 'DB',
     description:
@@ -176,7 +177,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    displayName: 'Bigbrain',
+    displayName: 'BigBrain',
     id: 'relularge',
     shortName: 'BB',
     description:
@@ -199,7 +200,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    displayName: 'Stairbot',
+    displayName: 'StairBot',
     id: 'normstep',
     shortName: 'SB',
     description:
@@ -222,7 +223,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    displayName: 'Smolbrain',
+    displayName: 'SmolBrain',
     id: 'diffsmall',
     shortName: 'SB2',
     description:
