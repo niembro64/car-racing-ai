@@ -67,10 +67,10 @@ export const wp: Point[] = [
 export const WAYPOINTS: Point[] = appendMirroredWaypoints(wp, CANVAS_WIDTH);
 
 export const CAR_FORWARD_SPEED = 250;
-export const CAR_STEERING_SENSITIVITY = 0.4;
+export const CAR_STEERING_SENSITIVITY = 0.2;
 export const CAR_WIDTH = 10;
 export const CAR_HEIGHT = 20;
-export const CAR_START_ANGLE_WIGGLE = Math.PI / 6;
+export const CAR_START_ANGLE_WIGGLE = Math.PI / 16;
 
 export const SENSOR_RAY_ANGLES = [
   0,

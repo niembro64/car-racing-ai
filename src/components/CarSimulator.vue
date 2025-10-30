@@ -159,8 +159,8 @@
                 </thead>
                 <tbody>
                   <tr>
-                    <td class="label-cell">Target Cars</td>
-                    <td class="value-cell">{{ targetPopulation }}</td>
+                    <td class="label-cell">Target/Type</td>
+                    <td class="value-cell">{{ targetPopulationPerType }}</td>
                   </tr>
                   <tr>
                     <td class="label-cell">Total Cars</td>
@@ -287,11 +287,12 @@ const populationController = new PopulationController({
   hysteresisThreshold: POP_HYSTERESIS_THRESHOLD,
   emergencyFpsThreshold: PERF_EMERGENCY_FPS,
   safeFpsThreshold: PERF_SAFE_FPS
-});
+}, CAR_BRAIN_CONFIGS.length);
 
 // UI state (for reactive display)
 const currentFps = ref(60);
-const targetPopulation = ref(POP_INITIAL);
+const targetPopulationPerType = ref(Math.floor(POP_INITIAL / CAR_BRAIN_CONFIGS.length));
+const targetPopulationTotal = computed(() => targetPopulationPerType.value * CAR_BRAIN_CONFIGS.length);
 const performanceStability = ref(1.0);
 const performanceTrend = ref(0);
 const performanceHeadroom = ref(1.0);
@@ -565,10 +566,9 @@ const cycleView = () => {
 // Initialize simulation
 const init = () => {
   // Initialize with target population (PID controller will adapt based on performance)
-  const carsPerType = Math.floor(targetPopulation.value / CAR_BRAIN_CONFIGS.length);
-  console.log(`[Init] Starting with ${targetPopulation.value} cars (${carsPerType} per type) | PID-based adaptive control enabled`);
+  console.log(`[Init] Starting with ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | PID-based adaptive control enabled`);
 
-  population.value = ga.value.initializePopulation(track, targetPopulation.value);
+  population.value = ga.value.initializePopulation(track, targetPopulationTotal.value);
 
   // Reset generation times, markers, and lap times for all configs
   for (const config of CAR_BRAIN_CONFIGS) {
@@ -616,11 +616,10 @@ const evolvePopulationByConfig = (
     generationMarkersByConfigId.value.set(config.id, markers);
   }
 
-  // Evolve this population with Target Population (based on current FPS)
+  // Evolve this population with per-type target population (based on current FPS)
   const generationTime = generationTimeByConfigId.value.get(config.id) ?? 0;
-  const carsPerType = Math.floor(targetPopulation.value / CAR_BRAIN_CONFIGS.length);
 
-  console.log(`[Evolution] ${config.displayName}: ${targetPopulation.value} cars (${carsPerType} per type) | Target: ${fpsTarget.value} FPS`);
+  console.log(`[Evolution] ${config.displayName}: ${targetPopulationPerType.value} cars for this type | Total: ${targetPopulationTotal.value} | Target: ${fpsTarget.value} FPS`);
 
   const newCars = ga.value.evolvePopulation(
     configCars,
@@ -629,7 +628,7 @@ const evolvePopulationByConfig = (
     generationTime,
     winnerCar,
     mutationByDistance.value,
-    targetPopulation.value
+    targetPopulationPerType.value
   );
   generationTimeByConfigId.value.set(config.id, 0);
   lapCompletionTimeByConfigId.value.set(config.id, Infinity); // Reset lap time for new generation
@@ -866,15 +865,14 @@ const adjustPopulationSize = () => {
   // Calculate optimal population using PID controller
   const adjustment = populationController.calculateOptimalPopulation(metrics);
 
-  // Update UI state
-  targetPopulation.value = adjustment.population;
+  // Update UI state (per-type population)
+  targetPopulationPerType.value = adjustment.populationPerType;
 
   // Log adjustment details
   if (adjustment.delta !== 0) {
-    const carsPerType = Math.floor(adjustment.population / CAR_BRAIN_CONFIGS.length);
     console.log(
       `[PerfMgmt] ${adjustment.reason} | ` +
-      `Total: ${adjustment.population} (${carsPerType}/type) | ` +
+      `Total: ${adjustment.totalPopulation} (${adjustment.populationPerType}/type × ${adjustment.numTypes} types) | ` +
       `Stability: ${(adjustment.metrics.stability * 100).toFixed(0)}% | ` +
       `Trend: ${adjustment.metrics.trend > 0 ? '↗' : adjustment.metrics.trend < 0 ? '↘' : '→'} ${(adjustment.metrics.trend * 100).toFixed(0)}% | ` +
       `Headroom: ${(adjustment.metrics.headroom * 100).toFixed(0)}%`
@@ -941,10 +939,9 @@ const reset = () => {
   randomSeed = Date.now() + Math.random() * 1000000;
   ga.value = new GeneticAlgorithm(randomSeed);
 
-  const carsPerType = Math.floor(targetPopulation.value / CAR_BRAIN_CONFIGS.length);
-  console.log(`[Reset] Re-creating ${targetPopulation.value} cars (${carsPerType} per type) | Target: ${fpsTarget.value} FPS`);
+  console.log(`[Reset] Re-creating ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | Target: ${fpsTarget.value} FPS`);
 
-  population.value = ga.value.initializePopulation(track, targetPopulation.value);
+  population.value = ga.value.initializePopulation(track, targetPopulationTotal.value);
 
   // Clear generation times, markers, and lap times for all configs
   for (const config of CAR_BRAIN_CONFIGS) {
@@ -960,7 +957,7 @@ const reset = () => {
   frameCounter.value = 0;
 
   // Reset target population to initial value
-  targetPopulation.value = POP_INITIAL;
+  targetPopulationPerType.value = Math.floor(POP_INITIAL / CAR_BRAIN_CONFIGS.length);
 };
 
 // Toggle Kill Backwards mode

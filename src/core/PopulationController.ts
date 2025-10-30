@@ -38,7 +38,9 @@ export interface PopulationControllerConfig {
 }
 
 export interface PopulationAdjustment {
-  population: number;
+  totalPopulation: number; // Total across all types
+  populationPerType: number; // Population per car type
+  numTypes: number; // Number of car types
   delta: number;
   reason: string;
   metrics: {
@@ -52,6 +54,7 @@ export interface PopulationAdjustment {
 
 export class PopulationController {
   private config: PopulationControllerConfig;
+  private numCarTypes: number;
 
   // PID state
   private currentPopulation: number;
@@ -63,8 +66,9 @@ export class PopulationController {
   private consecutiveIncreases: number = 0;
   private consecutiveDecreases: number = 0;
 
-  constructor(config: PopulationControllerConfig) {
+  constructor(config: PopulationControllerConfig, numCarTypes: number) {
     this.config = config;
+    this.numCarTypes = numCarTypes;
     this.currentPopulation = config.initialPopulation;
   }
 
@@ -136,7 +140,9 @@ export class PopulationController {
     const reason = this.generateReason(actualChange, metrics, { proportional, integral, derivative, predictive });
 
     return {
-      population: newPopulation,
+      totalPopulation: newPopulation,
+      populationPerType: Math.floor(newPopulation / this.numCarTypes),
+      numTypes: this.numCarTypes,
       delta: actualChange,
       reason,
       metrics: {
@@ -237,7 +243,9 @@ export class PopulationController {
     this.errorIntegral = 0; // Reset integral to prevent windup
 
     return {
-      population: newPopulation,
+      totalPopulation: newPopulation,
+      populationPerType: Math.floor(newPopulation / this.numCarTypes),
+      numTypes: this.numCarTypes,
       delta,
       reason: `🚨 EMERGENCY: ${triggerReason} (curr: ${metrics.currentFps.toFixed(1)}, 0.1%: ${metrics.p0_1Fps.toFixed(1)}), reducing ${Math.abs(delta)} cars`,
       metrics: {
@@ -255,7 +263,9 @@ export class PopulationController {
    */
   private noChange(metrics: PerformanceMetrics, reason: string = 'Not adjustment interval'): PopulationAdjustment {
     return {
-      population: this.currentPopulation,
+      totalPopulation: this.currentPopulation,
+      populationPerType: Math.floor(this.currentPopulation / this.numCarTypes),
+      numTypes: this.numCarTypes,
       delta: 0,
       reason,
       metrics: {

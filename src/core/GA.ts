@@ -141,15 +141,16 @@ export class GeneticAlgorithm {
     generationTime: number,
     winnerCar?: Car,
     mutationByDistance: boolean = true,
-    populationSize?: number
+    carsForThisType?: number
   ): Car[] {
     const state = this.stateByConfigId.get(config.id);
     if (!state) {
       throw new Error(`Unknown config ID: ${config.id}`);
     }
 
-    const targetSize = populationSize ?? getPopulationSize();
-    const carsPerType = Math.floor(targetSize / CAR_BRAIN_CONFIGS.length);
+    // If no per-type size specified, use default divided equally
+    const defaultTotalSize = getPopulationSize();
+    const carsPerType = carsForThisType ?? Math.floor(defaultTotalSize / CAR_BRAIN_CONFIGS.length);
 
     // Sort by performance
     const sorted = [...cars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);
