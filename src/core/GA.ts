@@ -97,12 +97,13 @@ export class GeneticAlgorithm {
   }
 
   // Initialize first generation with cars from all configured types
-  initializePopulation(track: Track, populationSize?: number): Car[] {
+  initializePopulation(track: Track, populationSize?: number, configs?: CarBrainConfig[]): Car[] {
     const population: Car[] = [];
+    const activeConfigs = configs ?? CAR_BRAIN_CONFIGS;
     const targetSize = populationSize ?? getPopulationSize();
-    const carsPerType = Math.floor(targetSize / CAR_BRAIN_CONFIGS.length);
+    const carsPerType = Math.floor(targetSize / activeConfigs.length);
 
-    for (const config of CAR_BRAIN_CONFIGS) {
+    for (const config of activeConfigs) {
       // Create cars for this type
       for (let i = 0; i < carsPerType; i++) {
         const brainSeed =

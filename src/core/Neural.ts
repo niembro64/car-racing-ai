@@ -1,4 +1,10 @@
-import type { NeuralInput, NeuralOutput, Layer, NetworkStructure, ActivationType } from '@/types';
+import type {
+  NeuralInput,
+  NeuralOutput,
+  Layer,
+  NetworkStructure,
+  ActivationType,
+} from '@/types';
 import { SeededRandom } from './math/geom';
 
 export class NeuralNetwork {
@@ -52,6 +58,10 @@ export class NeuralNetwork {
     return { layers };
   }
 
+  private linear(x: number): number {
+    return x;
+  }
+
   private tanh(x: number): number {
     return Math.tanh(x);
   }
@@ -94,15 +104,18 @@ export class NeuralNetwork {
 
         // Use appropriate activation based on layer and config
         if (isOutputLayer) {
-          next.push(this.tanh(sum)); // Always tanh for output
+          next.push(this.linear(sum));
+          // next.push(this.tanh(sum));
         } else if (this.activationType === 'relu') {
           next.push(this.relu(sum)); // ReLU for hidden layers
         } else if (this.activationType === 'gelu') {
           next.push(this.gelu(sum)); // GELU for hidden layers
         } else if (this.activationType === 'step') {
           next.push(this.step(sum)); // Step for hidden layers
+        } else if (this.activationType === 'linear') {
+          next.push(this.linear(sum)); // Linear for hidden layers
         } else {
-          next.push(sum); // Linear (identity) for hidden layers
+          throw new Error('Unknown activation type: ' + this.activationType);
         }
       }
 

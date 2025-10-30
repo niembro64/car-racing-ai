@@ -33,6 +33,12 @@
         >
           DELAY TURN
         </button>
+        <button
+          @click="toggleAllCarTypes"
+          :class="{ active: useAllCarTypes }"
+        >
+          ALL TYPES
+        </button>
       </div>
 
       <div class="hud">
@@ -230,6 +236,7 @@ import type { CarBrainConfig, InputModificationType, ActivationType } from '@/ty
 import {
   TRACK_WIDTH_HALF,
   CAR_BRAIN_CONFIGS,
+  CAR_BRAIN_CONFIGS_DEFINED,
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
   GENERATION_MARKER_RADIUS,
@@ -279,6 +286,7 @@ const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
 const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
 const mutationByDistance = ref(DEFAULT_MUTATION_BY_DISTANCE);
 const delayedSteering = ref(DEFAULT_DELAYED_STEERING);
+const useAllCarTypes = ref(false); // Toggle between active cars only and all cars
 const frameCounter = ref(0);
 const viewMode = ref<'table' | 'graph' | 'performance'>('table');
 const graphCanvasRef = ref<HTMLCanvasElement | null>(null);
@@ -286,6 +294,11 @@ const graphCanvasRef = ref<HTMLCanvasElement | null>(null);
 // Check if mobile for responsive formatting
 const isMobile = computed(() => {
   return typeof window !== 'undefined' && window.innerWidth <= 768;
+});
+
+// Active car configs based on toggle
+const activeCarConfigs = computed(() => {
+  return useAllCarTypes.value ? CAR_BRAIN_CONFIGS_DEFINED : CAR_BRAIN_CONFIGS;
 });
 
 // ============================================================================
@@ -310,12 +323,12 @@ const populationController = new PopulationController({
   hysteresisThreshold: POP_HYSTERESIS_THRESHOLD,
   emergencyFpsThreshold: PERF_EMERGENCY_FPS,
   safeFpsThreshold: PERF_SAFE_FPS
-}, CAR_BRAIN_CONFIGS.length);
+}, CAR_BRAIN_CONFIGS.length); // Initial setup uses default active configs
 
 // UI state (for reactive display)
 const currentFps = ref(60);
 const targetPopulationPerType = ref(Math.floor(POP_INITIAL / CAR_BRAIN_CONFIGS.length));
-const targetPopulationTotal = computed(() => targetPopulationPerType.value * CAR_BRAIN_CONFIGS.length);
+const targetPopulationTotal = computed(() => targetPopulationPerType.value * activeCarConfigs.value.length);
 const performanceStability = ref(1.0);
 const performanceTrend = ref(0);
 const performanceHeadroom = ref(1.0);
@@ -343,8 +356,8 @@ const generationMarkersByConfigId = ref<
 const lapCompletionTimeByConfigId = ref<Map<string, number>>(new Map()); // Current generation lap time
 const bestLapTimeByConfigId = ref<Map<string, number>>(new Map()); // Best lap time ever (across all generations)
 
-// Initialize tracking maps for all configs
-for (const config of CAR_BRAIN_CONFIGS) {
+// Initialize tracking maps for all possible configs (including inactive ones)
+for (const config of CAR_BRAIN_CONFIGS_DEFINED) {
   generationTimeByConfigId.value.set(config.id, 0);
   generationMarkersByConfigId.value.set(config.id, []);
   lapCompletionTimeByConfigId.value.set(config.id, Infinity); // Current gen: Start at infinity
@@ -418,7 +431,7 @@ const scoreByConfigId = computed(() => {
   const scores = new Map<string, number>();
 
   // Calculate comprehensive score for each config
-  for (const config of CAR_BRAIN_CONFIGS) {
+  for (const config of activeCarConfigs.value) {
     const score = calculateComprehensiveScore(config.id);
     scores.set(config.id, score);
   }
@@ -434,7 +447,7 @@ const deadCars = computed(() => population.value.filter(c => !c.alive).length);
 // Computed property to sort car brain configs by hierarchical comparison
 const sortedCarBrainConfigs = computed(() => {
   // Use the hierarchical comparison function directly
-  return [...CAR_BRAIN_CONFIGS].sort(compareConfigs);
+  return [...activeCarConfigs.value].sort(compareConfigs);
 });
 
 // Computed property for mutation rates (updates every frame)
@@ -445,7 +458,7 @@ const mutationRateByConfigId = computed(() => {
 
   const rates = new Map<string, string>();
 
-  for (const config of CAR_BRAIN_CONFIGS) {
+  for (const config of activeCarConfigs.value) {
     if (isMutationByDistance) {
       const trackLength = track.getTotalLength();
 
@@ -478,7 +491,7 @@ const mutationRatePercentByConfigId = computed(() => {
 
   const percentages = new Map<string, number>();
 
-  for (const config of CAR_BRAIN_CONFIGS) {
+  for (const config of activeCarConfigs.value) {
     if (isMutationByDistance) {
       const trackLength = track.getTotalLength();
 
@@ -644,10 +657,10 @@ const init = () => {
   // Initialize with target population (PID controller will adapt based on performance)
   print(`[Init] Starting with ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | PID-based adaptive control enabled`);
 
-  population.value = ga.value.initializePopulation(track, targetPopulationTotal.value);
+  population.value = ga.value.initializePopulation(track, targetPopulationTotal.value, activeCarConfigs.value);
 
-  // Reset generation times, markers, and lap times for all configs
-  for (const config of CAR_BRAIN_CONFIGS) {
+  // Reset generation times, markers, and lap times for active configs
+  for (const config of activeCarConfigs.value) {
     generationTimeByConfigId.value.set(config.id, 0);
     generationMarkersByConfigId.value.set(config.id, []);
     lapCompletionTimeByConfigId.value.set(config.id, Infinity);
@@ -730,8 +743,8 @@ const updatePhysics = (dt: number) => {
       // Use threshold < 1.0 to account for discrete physics updates
       // Cars may not land exactly at the finish line due to frame timing
       if (car.currentProgressRatio >= LAP_COMPLETION_THRESHOLD) {
-        // Find the config for this car type by configId
-        const config = CAR_BRAIN_CONFIGS.find((c) => c.id === car.configId);
+        // Find the config for this car type by configId (check all defined configs)
+        const config = CAR_BRAIN_CONFIGS_DEFINED.find((c) => c.id === car.configId);
 
         if (config) {
           // Record lap completion time (only if not already recorded this generation)
@@ -780,14 +793,14 @@ const updatePhysics = (dt: number) => {
     }
   }
 
-  // Update generation times for all config types
-  for (const config of CAR_BRAIN_CONFIGS) {
+  // Update generation times for active config types
+  for (const config of activeCarConfigs.value) {
     const currentTime = generationTimeByConfigId.value.get(config.id) ?? 0;
     generationTimeByConfigId.value.set(config.id, currentTime + dt);
   }
 
   // Check each config population independently for all-dead condition
-  for (const config of CAR_BRAIN_CONFIGS) {
+  for (const config of activeCarConfigs.value) {
     const configCars = population.value.filter((c) => c.configId === config.id);
     const allDead = configCars.every((c) => !c.alive);
 
@@ -840,12 +853,12 @@ const render = (ctx: CanvasRenderingContext2D) => {
     }
   }
 
-  // Render generation markers dynamically for all configs
+  // Render generation markers dynamically for active configs
   ctx.font = 'bold 16px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
 
-  for (const config of CAR_BRAIN_CONFIGS) {
+  for (const config of activeCarConfigs.value) {
     const markers = generationMarkersByConfigId.value.get(config.id) ?? [];
     ctx.fillStyle = config.colors.dark;
 
@@ -865,10 +878,9 @@ const render = (ctx: CanvasRenderingContext2D) => {
   const deadCars = population.value.filter((car) => !car.alive);
   const aliveCars = population.value.filter((car) => car.alive);
 
-  // Separate elites (check against all config dark colors for elite identification)
-  const eliteColors = CAR_BRAIN_CONFIGS.map((c) => c.colors.dark);
-  const elites = aliveCars.filter((car) => eliteColors.includes(car.color));
-  const others = aliveCars.filter((car) => !eliteColors.includes(car.color));
+  // Separate elites (now identified by size multiplier > 1.0)
+  const elites = aliveCars.filter((car) => car.sizeMultiplier > 1.0);
+  const others = aliveCars.filter((car) => car.sizeMultiplier === 1.0);
 
   // Render dead cars first
   for (const car of deadCars) {
@@ -999,9 +1011,9 @@ const animate = () => {
   animationFrameId = requestAnimationFrame(animate);
 };
 
-// Manually trigger next generation for all populations
+// Manually trigger next generation for all active populations
 const nextGeneration = () => {
-  for (const config of CAR_BRAIN_CONFIGS) {
+  for (const config of activeCarConfigs.value) {
     evolvePopulationByConfig(config, 'manual trigger');
   }
 };
@@ -1017,10 +1029,10 @@ const reset = () => {
 
   print(`[Reset] Re-creating ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | Target: ${fpsTarget.value} FPS`);
 
-  population.value = ga.value.initializePopulation(track, targetPopulationTotal.value);
+  population.value = ga.value.initializePopulation(track, targetPopulationTotal.value, activeCarConfigs.value);
 
-  // Clear generation times, markers, and lap times for all configs
-  for (const config of CAR_BRAIN_CONFIGS) {
+  // Clear generation times, markers, and lap times for active configs
+  for (const config of activeCarConfigs.value) {
     generationTimeByConfigId.value.set(config.id, 0);
     generationMarkersByConfigId.value.set(config.id, []);
     lapCompletionTimeByConfigId.value.set(config.id, Infinity);
@@ -1033,7 +1045,7 @@ const reset = () => {
   frameCounter.value = 0;
 
   // Reset target population to initial value
-  targetPopulationPerType.value = Math.floor(POP_INITIAL / CAR_BRAIN_CONFIGS.length);
+  targetPopulationPerType.value = Math.floor(POP_INITIAL / activeCarConfigs.value.length);
 };
 
 // Toggle Kill Backwards mode
@@ -1049,6 +1061,11 @@ const toggleKillSlowCars = () => {
 // Toggle Mutation by Distance mode
 const toggleMutationByDistance = () => {
   mutationByDistance.value = !mutationByDistance.value;
+};
+
+// Toggle All Car Types mode
+const toggleAllCarTypes = () => {
+  useAllCarTypes.value = !useAllCarTypes.value;
 };
 
 // Toggle Delayed Steering mode
@@ -1085,10 +1102,10 @@ const renderGraph = () => {
   ctx.fillStyle = '#1a1a1a';
   ctx.fillRect(0, 0, width, height);
 
-  // Calculate raw score history for each config
+  // Calculate raw score history for each active config
   const configHistories: Map<string, { generation: number; score: number }[]> = new Map();
 
-  for (const config of CAR_BRAIN_CONFIGS) {
+  for (const config of activeCarConfigs.value) {
     const markers = generationMarkersByConfigId.value.get(config.id) ?? [];
     if (markers.length === 0) continue;
 
@@ -1252,8 +1269,8 @@ const renderGraph = () => {
   ctx.fillText('Score (%)', 0, 0);
   ctx.restore();
 
-  // Draw lines for each config
-  for (const config of CAR_BRAIN_CONFIGS) {
+  // Draw lines for each active config
+  for (const config of activeCarConfigs.value) {
     const history = configHistories.get(config.id);
     if (!history || history.length === 0) continue;
 
@@ -1307,6 +1324,17 @@ watch(frameCounter, () => {
   if (viewMode.value === 'graph') {
     renderGraph();
   }
+});
+
+// Watch for toggle of all car types - reset and reinitialize
+watch(useAllCarTypes, () => {
+  print(`[Toggle] ${useAllCarTypes.value ? 'Enabling all car types' : 'Using active car types only'}`);
+
+  // Update population controller with new car type count
+  populationController.setPopulation(POP_INITIAL);
+
+  // Reset and reinitialize with new car types
+  reset();
 });
 
 // Lifecycle
