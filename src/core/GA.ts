@@ -6,8 +6,8 @@ import type { CarBrainConfig, ConfigEvolutionState } from '@/types';
 import {
   getPopulationSize,
   GA_MUTATION_BASE,
-  GA_MUTATION_DISTANCE_FACTOR,
-  GA_MUTATION_DISTANCE_DENOMINATOR,
+  GA_MUTATION_PROGRESS_FACTOR,
+  GA_MUTATION_MIN,
   GA_MUTATION_MIN_MULTIPLIER,
   GA_MUTATION_MAX_MULTIPLIER,
   GA_MUTATION_CURVE_POWER,
@@ -161,17 +161,13 @@ export class GeneticAlgorithm {
     // Increment generation
     state.generation++;
 
-    // Calculate mutation rate
     let baseMutationRate: number;
     if (mutationByDistance) {
-      // Base mutation + distance-based mutation
-      // Formula: base + factor / (distance + denominator)
-      // This naturally limits max mutation to base + factor/denominator
-      const distanceMutation = GA_MUTATION_DISTANCE_FACTOR /
-        (bestCar.maxDistanceReached + GA_MUTATION_DISTANCE_DENOMINATOR);
-      baseMutationRate = GA_MUTATION_BASE + distanceMutation;
+      const trackLength = track.getTotalLength();
+      const progressPercentage = bestCar.maxDistanceReached / trackLength;
+      const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
+      baseMutationRate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
     } else {
-      // Fixed mutation rate when distance-based is disabled
       baseMutationRate = 0.01;
     }
 
@@ -233,17 +229,16 @@ export class GeneticAlgorithm {
     return nextGeneration;
   }
 
-  // Helper to calculate current mutation rate for display
-  getCurrentMutationRate(configId: string, mutationByDistance: boolean): number {
+  getCurrentMutationRate(configId: string, mutationByDistance: boolean, track: Track): number {
     const state = this.stateByConfigId.get(configId);
     if (!state) return 0;
 
     if (mutationByDistance) {
-      // Get the last best fitness for this config
       const bestFitness = state.bestFitness || 0;
-      const distanceMutation = GA_MUTATION_DISTANCE_FACTOR /
-        (bestFitness + GA_MUTATION_DISTANCE_DENOMINATOR);
-      return GA_MUTATION_BASE + distanceMutation;
+      const trackLength = track.getTotalLength();
+      const progressPercentage = bestFitness / trackLength;
+      const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
+      return Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
     } else {
       return 0.01;
     }

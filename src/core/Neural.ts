@@ -1,5 +1,5 @@
 import type { NeuralInput, NeuralOutput, Layer, NetworkStructure, ActivationType } from '@/types';
-import { clamp, SeededRandom } from './math/geom';
+import { SeededRandom } from './math/geom';
 
 export class NeuralNetwork {
   private structure: NetworkStructure;
@@ -35,8 +35,7 @@ export class NeuralNetwork {
       const weights: number[][] = [];
       const biases: number[] = [];
 
-      // Xavier initialization
-      const scale = Math.sqrt(2.0 / (inputSize + outputSize));
+      const scale = 0.1;
 
       for (let j = 0; j < outputSize; j++) {
         const neuronWeights: number[] = [];
@@ -53,9 +52,8 @@ export class NeuralNetwork {
     return { layers };
   }
 
-  // Tanh activation (output range -1 to 1, good for steering)
   private tanh(x: number): number {
-    return Math.tanh(clamp(x, -10, 10));
+    return Math.tanh(x);
   }
 
   // ReLU activation (max(0, x))
@@ -139,10 +137,8 @@ export class NeuralNetwork {
       return { direction: 0 };
     }
 
-    // Tanh output is already in [-1, 1] range (negative = left, positive = right)
-    const direction = clamp(output[0], -1, 1);
+    const direction = output[0];
 
-    // Final NaN check
     if (isNaN(direction)) {
       return { direction: 0 };
     }
@@ -177,18 +173,16 @@ export class NeuralNetwork {
     const mutationRng = new SeededRandom(seed);
 
     for (const layer of mutated.layers) {
-      // Mutate weights - each weight gets a unique random noise
       for (let i = 0; i < layer.weights.length; i++) {
         for (let j = 0; j < layer.weights[i].length; j++) {
           const noise = mutationRng.gaussian(0, sigma);
-          layer.weights[i][j] = clamp(layer.weights[i][j] + noise, -10, 10);
+          layer.weights[i][j] += noise;
         }
       }
 
-      // Mutate biases - each bias gets a unique random noise
       for (let i = 0; i < layer.biases.length; i++) {
         const noise = mutationRng.gaussian(0, sigma);
-        layer.biases[i] = clamp(layer.biases[i] + noise, -10, 10);
+        layer.biases[i] += noise;
       }
     }
 

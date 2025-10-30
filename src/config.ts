@@ -16,8 +16,8 @@ export function appendMirroredWaypoints(
 }
 
 export const GA_MUTATION_BASE = 0.01;
-export const GA_MUTATION_DISTANCE_FACTOR = 100.0;
-export const GA_MUTATION_DISTANCE_DENOMINATOR = 100.0;
+export const GA_MUTATION_PROGRESS_FACTOR = 0.009;
+export const GA_MUTATION_MIN = 0.001;
 export const GA_MUTATION_RATE = 0.08;
 export const GA_POPULATION_SIZE_DESKTOP = 160;
 export const GA_POPULATION_SIZE_MOBILE = 80;
@@ -52,7 +52,7 @@ export const wp: Point[] = [
 export const WAYPOINTS: Point[] = appendMirroredWaypoints(wp, CANVAS_WIDTH);
 
 export const CAR_FORWARD_SPEED = 200;
-export const CAR_STEERING_SENSITIVITY = 0.05;
+export const CAR_STEERING_SENSITIVITY = 0.6;
 export const CAR_WIDTH = 10;
 export const CAR_HEIGHT = 20;
 
@@ -76,9 +76,9 @@ export const SENSOR_RAY_PAIRS = [
 ];
 
 export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 1];
-export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 6, 1];
-export const NN_ARCH_NORMAL_LARGE = [SENSOR_RAY_ANGLES.length, 10, 10, 1];
-export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 6, 1];
+export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 3, 1];
+export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 5, 5, 1];
+export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 3, 1];
 export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 1];
 
 export const NEURAL_NETWORK_ARCHITECTURE = NN_ARCH_DIFF_MEDIUM;
@@ -160,7 +160,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     description:
       '9 raw sensor inputs with ReLU activation in two hidden layers of size 10 each',
     nn: {
-      architecture: NN_ARCH_NORMAL_LARGE,
+      architecture: NN_ARCH_LARGE,
       inputModification: 'dir',
       activationType: 'relu',
     },

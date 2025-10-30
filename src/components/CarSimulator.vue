@@ -38,6 +38,7 @@
               <th>Mutation</th>
               <th>Mean</th>
               <th>Best</th>
+              <th>Hidden</th>
               <th>Act</th>
               <th>Input</th>
             </tr>
@@ -62,6 +63,9 @@
               </td>
               <td>
                 {{ getBestFitnessPercent(config.id) }}
+              </td>
+              <td>
+                {{ getHiddenLayers(config.nn.architecture) }}
               </td>
               <td
                 :style="{
@@ -100,6 +104,9 @@ import {
   DEFAULT_DIE_ON_BACKWARDS,
   DEFAULT_KILL_SLOW_CARS,
   DEFAULT_MUTATION_BY_DISTANCE,
+  GA_MUTATION_BASE,
+  GA_MUTATION_PROGRESS_FACTOR,
+  GA_MUTATION_MIN,
 } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -184,16 +191,28 @@ const formatPercentage = (value: number): string => {
   }
 };
 
-// Generic helper to compute current mutation rate for a config
 const getAdaptiveMutationRate = (configId: string): string => {
-  const rate = ga.value.getCurrentMutationRate(
-    configId,
-    mutationByDistance.value
-  );
-  return rate.toFixed(4); // Just the number for table display
+  const carsOfType = population.value.filter(car => car.configId === configId);
+  const bestCurrentDistance = carsOfType.length > 0
+    ? Math.max(...carsOfType.map(car => car.maxDistanceReached))
+    : 0;
+
+  if (mutationByDistance.value) {
+    const trackLength = track.getTotalLength();
+    const progressPercentage = bestCurrentDistance / trackLength;
+    const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
+    const rate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
+    return rate.toFixed(4);
+  } else {
+    return GA_MUTATION_BASE.toFixed(4);
+  }
 };
 
-// Generic helper to compute mean fitness percentage for a config (average of all generation markers)
+const getHiddenLayers = (architecture: number[]): string => {
+  const hiddenLayers = architecture.slice(1, -1);
+  return `[${hiddenLayers.join(',')}]`;
+};
+
 const getMeanFitnessPercent = (configId: string): string => {
   const markers = generationMarkersByConfigId.value.get(configId) ?? [];
 
