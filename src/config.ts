@@ -104,6 +104,7 @@ export const NEURAL_NETWORK_ARCHITECTURE = NN_ARCH_DIFF_MEDIUM;
 export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
   {
     displayName: 'DiffBot',
+    mobileDisplayName: 'Diff',
     id: 'difflinear',
     shortName: 'DB',
     description:
@@ -124,6 +125,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
   },
   {
     displayName: 'Flatty',
+    mobileDisplayName: 'Flat',
     id: 'normlinear',
     shortName: 'FL',
     description:
@@ -144,6 +146,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
   },
   {
     displayName: 'Smoothie',
+    mobileDisplayName: 'Smooth',
     id: 'normgelu',
     shortName: 'SM',
     description:
@@ -164,6 +167,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
   },
   {
     displayName: 'BigBrain',
+    mobileDisplayName: 'BigB',
     id: 'relularge',
     shortName: 'BB',
     description:
@@ -184,6 +188,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
   },
   {
     displayName: 'WiggleBot',
+    mobileDisplayName: 'Wiggle',
     id: 'normstep',
     shortName: 'SB',
     description:
@@ -204,6 +209,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
   },
   {
     displayName: 'SmolDiff',
+    mobileDisplayName: 'Smol',
     id: 'diffsmall',
     shortName: 'SB2',
     description:
@@ -233,16 +239,47 @@ export function getCarBrainConfig(id: string): CarBrainConfig | undefined {
   return CAR_BRAIN_CONFIGS.find((config) => config.id === id);
 }
 
-// Adaptive Population Control Settings
-export const ADAPTIVE_POPULATION_ENABLED = true;
-export const ADAPTIVE_POPULATION_INITIAL = CAR_BRAIN_CONFIGS.length * 30; // 60 cars (10 per type)
-export const ADAPTIVE_POPULATION_MIN = CAR_BRAIN_CONFIGS.length * 5; // 30 cars (5 per type)
-export const ADAPTIVE_POPULATION_MAX = CAR_BRAIN_CONFIGS.length * 200; // 90 cars (15 per type)
-export const ADAPTIVE_POPULATION_STEP = CAR_BRAIN_CONFIGS.length * 1; // Adjust by 6 cars (1 per type)
-export const ADAPTIVE_FPS_TARGET = 55; // Target FPS to maintain
-export const ADAPTIVE_FPS_LOW_THRESHOLD = 50; // Below this, reduce population
-export const ADAPTIVE_FPS_HIGH_THRESHOLD = 58; // Above this, can increase population
-export const ADAPTIVE_ADJUSTMENT_INTERVAL = 180; // Frames between adjustments (3 seconds at 60fps)
+// ============================================================================
+// Performance Management System
+// ============================================================================
+// Advanced adaptive population control using PID control theory and
+// multi-metric performance monitoring for optimal system performance
+
+export const PERFORMANCE_MANAGEMENT_ENABLED = true;
+
+// Performance Monitor Configuration
+export const PERF_TARGET_FPS = 60;
+export const PERF_HISTORY_SIZE = 120; // 2 seconds of history at 60fps
+
+// Population Controller Configuration
+export const POP_INITIAL = CAR_BRAIN_CONFIGS.length * 30; // 180 cars (30 per type)
+export const POP_MIN = CAR_BRAIN_CONFIGS.length * 1; // 6 cars (1 per type)
+export const POP_MAX = CAR_BRAIN_CONFIGS.length * 50; // 300 cars (50 per type)
+
+// PID Controller Gains (tuned for stability and responsiveness)
+// P: Responds to current error (how far from target FPS)
+// I: Eliminates steady-state error (accumulates over time)
+// D: Dampens oscillation (responds to rate of change)
+export const PID_KP = 2.0; // Proportional gain
+export const PID_KI = 0.1; // Integral gain
+export const PID_KD = 1.0; // Derivative gain
+
+// Adjustment Constraints
+export const POP_MAX_CHANGE_RATE = 0.15; // Max 15% change per adjustment
+export const POP_ADJUSTMENT_INTERVAL = 180; // Adjust every 180 frames (3s at 60fps)
+
+// Hysteresis (prevents oscillation near target)
+export const POP_HYSTERESIS_THRESHOLD = 0.05; // ±5% of target FPS
+
+// Performance Thresholds
+export const PERF_EMERGENCY_FPS = 20; // Aggressive reduction below this
+export const PERF_SAFE_FPS = 50; // Conservative growth above this
+
+// Legacy compatibility (for gradual migration)
+export const ADAPTIVE_POPULATION_ENABLED = PERFORMANCE_MANAGEMENT_ENABLED;
+export const ADAPTIVE_POPULATION_INITIAL = POP_INITIAL;
+export const ADAPTIVE_TARGET_FPS = PERF_TARGET_FPS;
+export const ADAPTIVE_MIN_CARS_PER_TYPE = 1;
 
 export const DEFAULT_DIE_ON_BACKWARDS = true;
 export const DEFAULT_KILL_SLOW_CARS = true;

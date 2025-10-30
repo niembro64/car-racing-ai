@@ -65,7 +65,8 @@ export interface GenomeData {
 export interface CarBrainConfig {
   // Identification
   id: string; // Unique identifier (e.g., 'normgelu', 'difflinear')
-  displayName: string; // Full name for display (e.g., 'Smoothie', 'Diffbot')
+  displayName: string; // Full name for desktop (e.g., 'Smoothie', 'Diffbot')
+  mobileDisplayName: string; // Shorter name for mobile (e.g., 'Smooth', 'Diff')
   shortName: string; // Abbreviated name for HUD (e.g., 'SM', 'DB')
   description: string; // Human-readable description of the approach
 

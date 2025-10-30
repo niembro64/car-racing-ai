@@ -57,7 +57,7 @@
                 {{ getScorePercent(config.id) }}
               </td>
               <td style="font-weight: bold">
-                {{ config.displayName }}
+                {{ isMobile ? config.mobileDisplayName : config.displayName }}
               </td>
               <td>
                 {{ ga.getGeneration(config.id) }}
@@ -147,7 +147,19 @@
                 </tr>
                 <tr>
                   <td style="font-weight: bold">Adaptive Mode</td>
-                  <td>{{ adaptivePopulation ? 'ON' : 'OFF' }}</td>
+                  <td>{{ adaptivePopulation ? 'PID' : 'OFF' }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold">Stability</td>
+                  <td>{{ (performanceStability * 100).toFixed(0) }}%</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold">Trend</td>
+                  <td>{{ performanceTrend > 0 ? '↗' : performanceTrend < 0 ? '↘' : '→' }} {{ (performanceTrend * 100).toFixed(0) }}%</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold">Headroom</td>
+                  <td>{{ (performanceHeadroom * 100).toFixed(0) }}%</td>
                 </tr>
               </tbody>
             </table>
@@ -163,6 +175,8 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick, type Ref } from
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
+import { PerformanceMonitor } from '@/core/PerformanceMonitor';
+import { PopulationController } from '@/core/PopulationController';
 import type { CarBrainConfig, InputModificationType, ActivationType } from '@/types';
 import {
   TRACK_WIDTH_HALF,
@@ -177,15 +191,20 @@ import {
   GA_MUTATION_PROGRESS_FACTOR,
   GA_MUTATION_MIN,
   DEBUG_SHOW_WAYPOINTS,
-  ADAPTIVE_POPULATION_ENABLED,
-  ADAPTIVE_POPULATION_INITIAL,
-  ADAPTIVE_POPULATION_MIN,
-  ADAPTIVE_POPULATION_MAX,
-  ADAPTIVE_POPULATION_STEP,
-  ADAPTIVE_FPS_TARGET,
-  ADAPTIVE_FPS_LOW_THRESHOLD,
-  ADAPTIVE_FPS_HIGH_THRESHOLD,
-  ADAPTIVE_ADJUSTMENT_INTERVAL,
+  PERFORMANCE_MANAGEMENT_ENABLED,
+  PERF_TARGET_FPS,
+  PERF_HISTORY_SIZE,
+  POP_INITIAL,
+  POP_MIN,
+  POP_MAX,
+  PID_KP,
+  PID_KI,
+  PID_KD,
+  POP_MAX_CHANGE_RATE,
+  POP_ADJUSTMENT_INTERVAL,
+  POP_HYSTERESIS_THRESHOLD,
+  PERF_EMERGENCY_FPS,
+  PERF_SAFE_FPS,
   wp,
 } from '@/config';
 
@@ -214,27 +233,48 @@ const isMobile = computed(() => {
   return typeof window !== 'undefined' && window.innerWidth <= 768;
 });
 
-// Performance monitoring
+// ============================================================================
+// Performance Management System
+// ============================================================================
+// Professional performance monitoring and adaptive population control
+
+// Performance Monitor: Tracks FPS, stability, trends, and other metrics
+const performanceMonitor = new PerformanceMonitor(PERF_TARGET_FPS, PERF_HISTORY_SIZE);
+
+// Population Controller: PID-based adaptive population management
+const populationController = new PopulationController({
+  targetFps: PERF_TARGET_FPS,
+  minPopulation: POP_MIN,
+  maxPopulation: POP_MAX,
+  initialPopulation: POP_INITIAL,
+  kProportional: PID_KP,
+  kIntegral: PID_KI,
+  kDerivative: PID_KD,
+  maxChangeRate: POP_MAX_CHANGE_RATE,
+  adjustmentInterval: POP_ADJUSTMENT_INTERVAL,
+  hysteresisThreshold: POP_HYSTERESIS_THRESHOLD,
+  emergencyFpsThreshold: PERF_EMERGENCY_FPS,
+  safeFpsThreshold: PERF_SAFE_FPS
+});
+
+// UI state (for reactive display)
 const currentFps = ref(60);
+const targetPopulation = ref(POP_INITIAL);
+const performanceStability = ref(1.0);
+const performanceTrend = ref(0);
+const performanceHeadroom = ref(1.0);
+
+// Profiling metrics (for display)
 const avgFrameTime = ref(16.67);
 const avgUpdateTime = ref(0);
 const avgRenderTime = ref(0);
-const fpsHistory: number[] = [];
-const frameTimeHistory: number[] = [];
 const updateTimeHistory: number[] = [];
 const renderTimeHistory: number[] = [];
-const HISTORY_SIZE = 60; // Track last 60 frames for averaging
-let lastFrameTime = performance.now();
-let fpsUpdateCounter = 0;
+const HISTORY_SIZE = 60;
 
-// Adaptive population control (using config values)
-const adaptivePopulation = ref(ADAPTIVE_POPULATION_ENABLED);
-const targetPopulation = ref(ADAPTIVE_POPULATION_INITIAL);
-const fpsTarget = ref(ADAPTIVE_FPS_TARGET);
-let fpsLowThreshold = ADAPTIVE_FPS_LOW_THRESHOLD;
-let fpsHighThreshold = ADAPTIVE_FPS_HIGH_THRESHOLD;
-let fpsCalibrated = false;
-const FPS_CALIBRATION_FRAMES = 120; // Calibrate after 2 seconds
+// Population control state
+const adaptivePopulation = ref(PERFORMANCE_MANAGEMENT_ENABLED);
+const fpsTarget = ref(PERF_TARGET_FPS);
 
 // Dynamic generation tracking for all config types
 const generationTimeByConfigId = ref<Map<string, number>>(new Map());
@@ -459,7 +499,10 @@ const cycleView = () => {
 
 // Initialize simulation
 const init = () => {
-  // Use adaptive target population
+  // Initialize with target population (PID controller will adapt based on performance)
+  const carsPerType = Math.floor(targetPopulation.value / CAR_BRAIN_CONFIGS.length);
+  console.log(`[Init] Starting with ${targetPopulation.value} cars (${carsPerType} per type) | PID-based adaptive control enabled`);
+
   population.value = ga.value.initializePopulation(track, targetPopulation.value);
 
   // Reset generation times and markers for all configs
@@ -507,8 +550,12 @@ const evolvePopulationByConfig = (
     generationMarkersByConfigId.value.set(config.id, markers);
   }
 
-  // Evolve this population
+  // Evolve this population with Target Population (based on current FPS)
   const generationTime = generationTimeByConfigId.value.get(config.id) ?? 0;
+  const carsPerType = Math.floor(targetPopulation.value / CAR_BRAIN_CONFIGS.length);
+
+  console.log(`[Evolution] ${config.displayName}: ${targetPopulation.value} cars (${carsPerType} per type) | Target: ${fpsTarget.value} FPS`);
+
   const newCars = ga.value.evolvePopulation(
     configCars,
     config,
@@ -677,87 +724,71 @@ const render = (ctx: CanvasRenderingContext2D) => {
   }
 };
 
-// Performance tracking helpers
-const updatePerformanceMetrics = (frameTime: number, updateTime: number, renderTime: number) => {
-  // Track FPS
-  fpsHistory.push(1000 / frameTime);
-  if (fpsHistory.length > HISTORY_SIZE) {
-    fpsHistory.shift();
-  }
+// ============================================================================
+// Performance Tracking and Population Management
+// ============================================================================
 
-  // Track frame times
-  frameTimeHistory.push(frameTime);
-  if (frameTimeHistory.length > HISTORY_SIZE) {
-    frameTimeHistory.shift();
-  }
+/**
+ * Update performance metrics using PerformanceMonitor
+ */
+const updatePerformanceMetrics = (updateTime: number, renderTime: number) => {
+  // Record frame in PerformanceMonitor (handles FPS, trends, stability)
+  performanceMonitor.recordFrame();
 
-  // Track update times
+  // Track update/render times for profiling
   updateTimeHistory.push(updateTime);
   if (updateTimeHistory.length > HISTORY_SIZE) {
     updateTimeHistory.shift();
   }
 
-  // Track render times
   renderTimeHistory.push(renderTime);
   if (renderTimeHistory.length > HISTORY_SIZE) {
     renderTimeHistory.shift();
   }
 
-  // Update averages (every 10 frames to reduce overhead)
-  fpsUpdateCounter++;
-  if (fpsUpdateCounter >= 10) {
-    const avgFps = fpsHistory.reduce((a, b) => a + b, 0) / fpsHistory.length;
-    currentFps.value = Math.round(avgFps);
-    avgFrameTime.value = frameTimeHistory.reduce((a, b) => a + b, 0) / frameTimeHistory.length;
+  // Update UI metrics (every 10 frames to reduce overhead)
+  if (updateTimeHistory.length % 10 === 0) {
+    const metrics = performanceMonitor.getMetrics();
+
+    currentFps.value = Math.round(metrics.currentFps);
+    avgFrameTime.value = metrics.frameTimeMs;
+    performanceStability.value = metrics.stability;
+    performanceTrend.value = metrics.trend;
+    performanceHeadroom.value = metrics.headroom;
     avgUpdateTime.value = updateTimeHistory.reduce((a, b) => a + b, 0) / updateTimeHistory.length;
     avgRenderTime.value = renderTimeHistory.reduce((a, b) => a + b, 0) / renderTimeHistory.length;
-    fpsUpdateCounter = 0;
   }
 };
 
-// Calibrate FPS target based on initial performance
-const calibrateFpsTarget = () => {
-  if (fpsCalibrated) return;
-
-  const fps = currentFps.value;
-
-  // Set target to 90% of current FPS (10% under)
-  fpsTarget.value = Math.round(fps * 0.9);
-
-  // Set thresholds around the target
-  // Low threshold: 5 FPS below target
-  // High threshold: 3 FPS above target
-  fpsLowThreshold = fpsTarget.value - 5;
-  fpsHighThreshold = fpsTarget.value + 3;
-
-  fpsCalibrated = true;
-  console.log(`[Adaptive Pop] Calibrated! Baseline FPS: ${fps}, Target: ${fpsTarget.value}, Range: ${fpsLowThreshold}-${fpsHighThreshold}`);
-};
-
-// Adaptive population control
+/**
+ * Adjust population using PID-based PopulationController
+ * Uses multiple performance metrics for intelligent, stable adjustments
+ */
 const adjustPopulationSize = () => {
   if (!adaptivePopulation.value) return;
 
-  const fps = currentFps.value;
+  // Only adjust if we have calibrated performance data
+  if (!performanceMonitor.isCalibrated()) return;
 
-  // Log current state for debugging
-  console.log(`[Adaptive Pop] FPS: ${fps}, Target: ${fpsTarget.value}, Range: ${fpsLowThreshold}-${fpsHighThreshold}`);
+  // Get comprehensive performance metrics
+  const metrics = performanceMonitor.getMetrics();
 
-  // If FPS is too low, reduce population
-  if (fps < fpsLowThreshold && targetPopulation.value > ADAPTIVE_POPULATION_MIN) {
-    targetPopulation.value = Math.max(
-      ADAPTIVE_POPULATION_MIN,
-      targetPopulation.value - ADAPTIVE_POPULATION_STEP
+  // Calculate optimal population using PID controller
+  const adjustment = populationController.calculateOptimalPopulation(metrics);
+
+  // Update UI state
+  targetPopulation.value = adjustment.population;
+
+  // Log adjustment details
+  if (adjustment.delta !== 0) {
+    const carsPerType = Math.floor(adjustment.population / CAR_BRAIN_CONFIGS.length);
+    console.log(
+      `[PerfMgmt] ${adjustment.reason} | ` +
+      `Total: ${adjustment.population} (${carsPerType}/type) | ` +
+      `Stability: ${(adjustment.metrics.stability * 100).toFixed(0)}% | ` +
+      `Trend: ${adjustment.metrics.trend > 0 ? '↗' : adjustment.metrics.trend < 0 ? '↘' : '→'} ${(adjustment.metrics.trend * 100).toFixed(0)}% | ` +
+      `Headroom: ${(adjustment.metrics.headroom * 100).toFixed(0)}%`
     );
-    console.log(`[Adaptive Pop] FPS too low (${fps}), reducing target population to ${targetPopulation.value}`);
-  }
-  // If FPS is comfortably high, increase population
-  else if (fps > fpsHighThreshold && targetPopulation.value < ADAPTIVE_POPULATION_MAX) {
-    targetPopulation.value = Math.min(
-      ADAPTIVE_POPULATION_MAX,
-      targetPopulation.value + ADAPTIVE_POPULATION_STEP
-    );
-    console.log(`[Adaptive Pop] FPS good (${fps}), increasing target population to ${targetPopulation.value}`);
   }
 };
 
@@ -792,23 +823,11 @@ const animate = () => {
   const renderEndTime = performance.now();
   const renderTime = renderEndTime - renderStartTime;
 
-  // Calculate frame time
-  const frameEndTime = performance.now();
-  const frameTime = frameEndTime - lastFrameTime;
-  lastFrameTime = frameEndTime;
-
   // Update performance metrics
-  updatePerformanceMetrics(frameTime, updateTime, renderTime);
+  updatePerformanceMetrics(updateTime, renderTime);
 
-  // Calibrate FPS target after warmup period
-  if (!fpsCalibrated && frameCounter.value >= FPS_CALIBRATION_FRAMES) {
-    calibrateFpsTarget();
-  }
-
-  // Adjust population based on performance (every 3 seconds)
-  if (fpsCalibrated && frameCounter.value % ADAPTIVE_ADJUSTMENT_INTERVAL === 0) {
-    adjustPopulationSize();
-  }
+  // Adjust population using PID controller (runs at its own interval)
+  adjustPopulationSize();
 
   // Increment frame counter for Vue reactivity
   frameCounter.value++;
@@ -828,10 +847,14 @@ const reset = () => {
   // Reset GA state
   ga.value.reset();
 
-  // Re-initialize population with new random seed
+  // Re-initialize population with new random seed using current target population
   randomSeed = Date.now() + Math.random() * 1000000;
   ga.value = new GeneticAlgorithm(randomSeed);
-  population.value = ga.value.initializePopulation(track);
+
+  const carsPerType = Math.floor(targetPopulation.value / CAR_BRAIN_CONFIGS.length);
+  console.log(`[Reset] Re-creating ${targetPopulation.value} cars (${carsPerType} per type) | Target: ${fpsTarget.value} FPS`);
+
+  population.value = ga.value.initializePopulation(track, targetPopulation.value);
 
   // Clear generation times and markers for all configs
   for (const config of CAR_BRAIN_CONFIGS) {
@@ -839,12 +862,13 @@ const reset = () => {
     generationMarkersByConfigId.value.set(config.id, []);
   }
 
-  // Reset FPS calibration
-  fpsCalibrated = false;
+  // Reset performance management system
+  performanceMonitor.reset();
+  populationController.reset();
   frameCounter.value = 0;
 
   // Reset target population to initial value
-  targetPopulation.value = ADAPTIVE_POPULATION_INITIAL;
+  targetPopulation.value = POP_INITIAL;
 };
 
 // Toggle Kill Backwards mode
