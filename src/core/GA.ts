@@ -87,9 +87,10 @@ export class GeneticAlgorithm {
   }
 
   // Initialize first generation with cars from all configured types
-  initializePopulation(track: Track): Car[] {
+  initializePopulation(track: Track, populationSize?: number): Car[] {
     const population: Car[] = [];
-    const carsPerType = Math.floor(getPopulationSize() / CAR_BRAIN_CONFIGS.length);
+    const targetSize = populationSize ?? getPopulationSize();
+    const carsPerType = Math.floor(targetSize / CAR_BRAIN_CONFIGS.length);
 
     for (const config of CAR_BRAIN_CONFIGS) {
       // Create cars for this type
@@ -129,14 +130,16 @@ export class GeneticAlgorithm {
     track: Track,
     _generationTime: number,
     winnerCar?: Car,
-    mutationByDistance: boolean = true
+    mutationByDistance: boolean = true,
+    populationSize?: number
   ): Car[] {
     const state = this.stateByConfigId.get(config.id);
     if (!state) {
       throw new Error(`Unknown config ID: ${config.id}`);
     }
 
-    const carsPerType = Math.floor(getPopulationSize() / CAR_BRAIN_CONFIGS.length);
+    const targetSize = populationSize ?? getPopulationSize();
+    const carsPerType = Math.floor(targetSize / CAR_BRAIN_CONFIGS.length);
 
     // Sort by performance
     const sorted = [...cars].sort((a, b) => b.maxDistanceReached - a.maxDistanceReached);

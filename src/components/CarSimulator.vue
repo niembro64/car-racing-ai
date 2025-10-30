@@ -32,7 +32,7 @@
       <div class="hud">
         <div class="hud-content">
           <!-- Table View -->
-          <table v-if="!showGraph" class="stats-table" @click="showGraph = true">
+          <table v-if="viewMode === 'table'" class="stats-table" @click="cycleView">
           <thead>
             <tr>
               <th>Score</th>
@@ -92,8 +92,61 @@
           </table>
 
           <!-- Graph View -->
-          <div v-else class="graph-view" @click="showGraph = false">
+          <div v-else-if="viewMode === 'graph'" class="graph-view" @click="cycleView">
             <canvas ref="graphCanvasRef"></canvas>
+          </div>
+
+          <!-- Performance View -->
+          <div v-else class="performance-view" @click="cycleView">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th colspan="2">Performance Monitor</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-weight: bold">FPS</td>
+                  <td>{{ currentFps }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold">Frame Time</td>
+                  <td>{{ avgFrameTime.toFixed(2) }}ms</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold">Update Time</td>
+                  <td>{{ avgUpdateTime.toFixed(2) }}ms</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold">Render Time</td>
+                  <td>{{ avgRenderTime.toFixed(2) }}ms</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold">Total Cars</td>
+                  <td>{{ totalCars }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold">Alive Cars</td>
+                  <td>{{ aliveCars }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold">Dead Cars</td>
+                  <td>{{ deadCars }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold">Target Pop</td>
+                  <td>{{ targetPopulation }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold">Adaptive Mode</td>
+                  <td>{{ adaptivePopulation ? 'ON' : 'OFF' }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold">FPS Target</td>
+                  <td>{{ fpsTarget }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -140,8 +193,29 @@ const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
 const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
 const mutationByDistance = ref(DEFAULT_MUTATION_BY_DISTANCE);
 const frameCounter = ref(0);
-const showGraph = ref(false);
+const viewMode = ref<'table' | 'graph' | 'performance'>('table');
 const graphCanvasRef = ref<HTMLCanvasElement | null>(null);
+
+// Performance monitoring
+const currentFps = ref(60);
+const avgFrameTime = ref(16.67);
+const avgUpdateTime = ref(0);
+const avgRenderTime = ref(0);
+const fpsHistory: number[] = [];
+const frameTimeHistory: number[] = [];
+const updateTimeHistory: number[] = [];
+const renderTimeHistory: number[] = [];
+const HISTORY_SIZE = 60; // Track last 60 frames for averaging
+let lastFrameTime = performance.now();
+let fpsUpdateCounter = 0;
+
+// Adaptive population control
+const adaptivePopulation = ref(true);
+const targetPopulation = ref(120); // Dynamic target based on performance
+const fpsTarget = ref(50); // Target FPS for adaptive mode
+const FPS_LOW_THRESHOLD = 40; // Below this, reduce population
+const FPS_HIGH_THRESHOLD = 55; // Above this, can increase population
+const POPULATION_ADJUST_INTERVAL = 180; // Adjust every 3 seconds (at 60fps)
 
 // Dynamic generation tracking for all config types
 const generationTimeByConfigId = ref<Map<string, number>>(new Map());
@@ -181,6 +255,11 @@ const scoreByConfigId = computed(() => {
 
   return normalizedScores;
 });
+
+// Performance computed properties
+const totalCars = computed(() => population.value.length);
+const aliveCars = computed(() => population.value.filter(c => c.alive).length);
+const deadCars = computed(() => population.value.filter(c => !c.alive).length);
 
 // Computed property to sort car brain configs by score (descending)
 const sortedCarBrainConfigs = computed(() => {
@@ -313,9 +392,21 @@ const getScorePercent = (configId: string): string => {
   return formatPercentage(score);
 };
 
+// Cycle through views: table -> graph -> performance -> table
+const cycleView = () => {
+  if (viewMode.value === 'table') {
+    viewMode.value = 'graph';
+  } else if (viewMode.value === 'graph') {
+    viewMode.value = 'performance';
+  } else {
+    viewMode.value = 'table';
+  }
+};
+
 // Initialize simulation
 const init = () => {
-  population.value = ga.value.initializePopulation(track);
+  // Use adaptive target population
+  population.value = ga.value.initializePopulation(track, targetPopulation.value);
 
   // Reset generation times and markers for all configs
   for (const config of CAR_BRAIN_CONFIGS) {
@@ -370,7 +461,8 @@ const evolvePopulationByConfig = (
     track,
     generationTime,
     winnerCar,
-    mutationByDistance.value
+    mutationByDistance.value,
+    targetPopulation.value
   );
   generationTimeByConfigId.value.set(config.id, 0);
 
@@ -531,10 +623,69 @@ const render = (ctx: CanvasRenderingContext2D) => {
   }
 };
 
+// Performance tracking helpers
+const updatePerformanceMetrics = (frameTime: number, updateTime: number, renderTime: number) => {
+  // Track FPS
+  fpsHistory.push(1000 / frameTime);
+  if (fpsHistory.length > HISTORY_SIZE) {
+    fpsHistory.shift();
+  }
+
+  // Track frame times
+  frameTimeHistory.push(frameTime);
+  if (frameTimeHistory.length > HISTORY_SIZE) {
+    frameTimeHistory.shift();
+  }
+
+  // Track update times
+  updateTimeHistory.push(updateTime);
+  if (updateTimeHistory.length > HISTORY_SIZE) {
+    updateTimeHistory.shift();
+  }
+
+  // Track render times
+  renderTimeHistory.push(renderTime);
+  if (renderTimeHistory.length > HISTORY_SIZE) {
+    renderTimeHistory.shift();
+  }
+
+  // Update averages (every 10 frames to reduce overhead)
+  fpsUpdateCounter++;
+  if (fpsUpdateCounter >= 10) {
+    const avgFps = fpsHistory.reduce((a, b) => a + b, 0) / fpsHistory.length;
+    currentFps.value = Math.round(avgFps);
+    avgFrameTime.value = frameTimeHistory.reduce((a, b) => a + b, 0) / frameTimeHistory.length;
+    avgUpdateTime.value = updateTimeHistory.reduce((a, b) => a + b, 0) / updateTimeHistory.length;
+    avgRenderTime.value = renderTimeHistory.reduce((a, b) => a + b, 0) / renderTimeHistory.length;
+    fpsUpdateCounter = 0;
+  }
+};
+
+// Adaptive population control
+const adjustPopulationSize = () => {
+  if (!adaptivePopulation.value) return;
+
+  const fps = currentFps.value;
+
+  // If FPS is too low, reduce population
+  if (fps < FPS_LOW_THRESHOLD && targetPopulation.value > 30) {
+    targetPopulation.value = Math.max(30, targetPopulation.value - 12); // Reduce by 12 (2 per config)
+    console.log(`FPS too low (${fps}), reducing target population to ${targetPopulation.value}`);
+  }
+  // If FPS is comfortably high, increase population
+  else if (fps > FPS_HIGH_THRESHOLD && targetPopulation.value < 240) {
+    targetPopulation.value = Math.min(240, targetPopulation.value + 12); // Increase by 12 (2 per config)
+    console.log(`FPS good (${fps}), increasing target population to ${targetPopulation.value}`);
+  }
+};
+
 // Main animation loop
 const animate = () => {
   const ctx = canvasRef.value?.getContext('2d');
   if (!ctx) return;
+
+  // Track update time
+  const updateStartTime = performance.now();
 
   // Run multiple physics steps for fast-forward
   const steps =
@@ -550,8 +701,27 @@ const animate = () => {
     updatePhysics(FIXED_DT);
   }
 
-  // Render at normal rate
+  const updateEndTime = performance.now();
+  const updateTime = updateEndTime - updateStartTime;
+
+  // Track render time
+  const renderStartTime = performance.now();
   render(ctx);
+  const renderEndTime = performance.now();
+  const renderTime = renderEndTime - renderStartTime;
+
+  // Calculate frame time
+  const frameEndTime = performance.now();
+  const frameTime = frameEndTime - lastFrameTime;
+  lastFrameTime = frameEndTime;
+
+  // Update performance metrics
+  updatePerformanceMetrics(frameTime, updateTime, renderTime);
+
+  // Adjust population based on performance (every 3 seconds)
+  if (frameCounter.value % POPULATION_ADJUST_INTERVAL === 0) {
+    adjustPopulationSize();
+  }
 
   // Increment frame counter for Vue reactivity
   frameCounter.value++;
@@ -811,8 +981,8 @@ const renderGraph = () => {
 };
 
 // Watch for graph visibility and render when shown
-watch(showGraph, (isVisible) => {
-  if (isVisible) {
+watch(viewMode, (mode) => {
+  if (mode === 'graph') {
     // Use nextTick to ensure canvas is mounted
     nextTick(() => renderGraph());
   }
@@ -820,7 +990,7 @@ watch(showGraph, (isVisible) => {
 
 // Update graph in real-time when visible
 watch(frameCounter, () => {
-  if (showGraph.value) {
+  if (viewMode.value === 'graph') {
     renderGraph();
   }
 });
