@@ -11,7 +11,7 @@
     <div class="info-container">
       <div class="controls">
         <button @click="nextGeneration">SYNC</button>
-        <button @click="reset">RESET</button>
+        <button @click="reset">RESTART</button>
         <button
           @click="toggleDieOnBackwards"
           :class="{ active: dieOnBackwards }"
@@ -33,10 +33,7 @@
         >
           DELAY TURN
         </button>
-        <button
-          @click="toggleAllCarTypes"
-          :class="{ active: useAllCarTypes }"
-        >
+        <button @click="toggleAllCarTypes" :class="{ active: useAllCarTypes }">
           ALL TYPES
         </button>
         <button
@@ -50,91 +47,111 @@
       <div class="hud">
         <div class="hud-content">
           <!-- Table View -->
-          <table v-if="viewMode === 'table'" class="stats-table" @click="cycleView">
-          <thead>
-            <tr>
-              <th v-if="!isMobile">Score</th>
-              <th>Type</th>
-              <th>Gen</th>
-              <th>{{ isMobile ? 'MUT' : 'NEXT MUT' }}</th>
-              <th>Mean</th>
-              <th>Best</th>
-              <th>Lap</th>
-              <th>Hidden</th>
-              <th>{{ isMobile ? 'A' : 'Activ' }}</th>
-              <th>{{ isMobile ? 'I' : 'Input' }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="config in sortedCarBrainConfigs"
-              :key="config.id"
-              :style="{ backgroundColor: config.colors.dark }"
-            >
-              <td v-if="!isMobile">
-                <PercentageBar
-                  :percentage="scoreByConfigId.get(config.id) ?? 0"
-                  variant="white"
-                />
-              </td>
-              <td style="font-weight: bold">
-                {{ isMobile ? config.mobileDisplayName : config.displayName }}
-              </td>
-              <td>
-                {{ ga.getGeneration(config.id) }}
-              </td>
-              <td>
-                <PercentageBar
-                  :percentage="mutationRatePercentByConfigId.get(config.id) ?? 0"
-                  variant="white"
-                />
-              </td>
-              <td>
-                <PercentageBar
-                  :percentage="getMeanFitnessPercentRaw(config.id)"
-                  variant="white"
-                />
-              </td>
-              <td>
-                <PercentageBar
-                  :percentage="getBestFitnessPercentRaw(config.id)"
-                  variant="white"
-                />
-              </td>
-              <td>
-                {{ getBestLapTime(config.id) }}
-              </td>
-              <td>
-                {{ getHiddenLayers(config.nn.architecture) }}
-              </td>
-              <td
-                :style="{
-                  backgroundColor: getActivationColor(config.nn.activationType),
-                }"
+          <table
+            v-if="viewMode === 'table'"
+            class="stats-table"
+            @click="cycleView"
+          >
+            <thead>
+              <tr>
+                <th v-if="!isMobile">Score</th>
+                <th>Type</th>
+                <th>Gen</th>
+                <th>{{ isMobile ? 'MUT' : 'NEXT MUT' }}</th>
+                <th>Mean</th>
+                <th>Best</th>
+                <th>Lap</th>
+                <th>Hidden</th>
+                <th>{{ isMobile ? 'A' : 'Activ' }}</th>
+                <th>{{ isMobile ? 'I' : 'Input' }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="config in sortedCarBrainConfigs"
+                :key="config.id"
+                :style="{ backgroundColor: config.colors.dark }"
               >
-                {{ isMobile ? config.nn.activationType.charAt(0) : config.nn.activationType }}
-              </td>
-              <td
-                :style="{
-                  backgroundColor: getInputColor(config.nn.inputModification),
-                }"
-              >
-                {{ isMobile ? config.nn.inputModification.charAt(0) : config.nn.inputModification }}
-              </td>
-            </tr>
-          </tbody>
+                <td v-if="!isMobile">
+                  <PercentageBar
+                    :percentage="scoreByConfigId.get(config.id) ?? 0"
+                    variant="white"
+                  />
+                </td>
+                <td style="font-weight: bold">
+                  {{ isMobile ? config.mobileDisplayName : config.displayName }}
+                </td>
+                <td>
+                  {{ ga.getGeneration(config.id) }}
+                </td>
+                <td>
+                  <PercentageBar
+                    :percentage="
+                      mutationRatePercentByConfigId.get(config.id) ?? 0
+                    "
+                    variant="white"
+                  />
+                </td>
+                <td>
+                  <PercentageBar
+                    :percentage="getMeanFitnessPercentRaw(config.id)"
+                    variant="white"
+                  />
+                </td>
+                <td>
+                  <PercentageBar
+                    :percentage="getBestFitnessPercentRaw(config.id)"
+                    variant="white"
+                  />
+                </td>
+                <td>
+                  {{ getBestLapTime(config.id) }}
+                </td>
+                <td>
+                  {{ getHiddenLayers(config.nn.architecture) }}
+                </td>
+                <td
+                  :style="{
+                    backgroundColor: getActivationColor(
+                      config.nn.activationType
+                    ),
+                  }"
+                >
+                  {{
+                    isMobile
+                      ? config.nn.activationType.charAt(0)
+                      : config.nn.activationType
+                  }}
+                </td>
+                <td
+                  :style="{
+                    backgroundColor: getInputColor(config.nn.inputModification),
+                  }"
+                >
+                  {{
+                    isMobile
+                      ? config.nn.inputModification.charAt(0)
+                      : config.nn.inputModification
+                  }}
+                </td>
+              </tr>
+            </tbody>
           </table>
 
           <!-- Graph View -->
-          <div v-else-if="viewMode === 'graph'" class="graph-view" @click="cycleView">
+          <div
+            v-else-if="viewMode === 'graph'"
+            class="graph-view"
+            @click="cycleView"
+          >
             <canvas ref="graphCanvasRef"></canvas>
           </div>
 
           <!-- Performance View -->
           <div v-else class="performance-view" @click="cycleView">
-            <div style="display: flex; gap: 10px; width: 100%;">
+            <div style="display: flex; gap: 10px; width: 100%">
               <!-- Left Column -->
-              <table class="stats-table perf-table" style="flex: 1;">
+              <table class="stats-table perf-table" style="flex: 1">
                 <thead>
                   <tr>
                     <th colspan="2">Frame Rate</th>
@@ -177,7 +194,7 @@
               </table>
 
               <!-- Right Column -->
-              <table class="stats-table perf-table" style="flex: 1;">
+              <table class="stats-table perf-table" style="flex: 1">
                 <thead>
                   <tr>
                     <th colspan="2">System Status</th>
@@ -202,19 +219,35 @@
                   </tr>
                   <tr>
                     <td class="label-cell">Adaptive</td>
-                    <td class="value-cell">{{ adaptivePopulation ? 'PID' : 'OFF' }}</td>
+                    <td class="value-cell">
+                      {{ adaptivePopulation ? 'PID' : 'OFF' }}
+                    </td>
                   </tr>
                   <tr>
                     <td class="label-cell">Headroom</td>
-                    <td class="value-cell">{{ (performanceHeadroom * 100).toFixed(0) }}%</td>
+                    <td class="value-cell">
+                      {{ (performanceHeadroom * 100).toFixed(0) }}%
+                    </td>
                   </tr>
                   <tr>
                     <td class="label-cell">Stability</td>
-                    <td class="value-cell">{{ (performanceStability * 100).toFixed(0) }}%</td>
+                    <td class="value-cell">
+                      {{ (performanceStability * 100).toFixed(0) }}%
+                    </td>
                   </tr>
                   <tr>
                     <td class="label-cell">Trend</td>
-                    <td class="value-cell">{{ performanceTrend > 0 ? '↗' : performanceTrend < 0 ? '↘' : '→' }} {{ performanceTrend >= 0 ? '+' : '' }}{{ (performanceTrend * 100).toFixed(0) }}%</td>
+                    <td class="value-cell">
+                      {{
+                        performanceTrend > 0
+                          ? '↗'
+                          : performanceTrend < 0
+                          ? '↘'
+                          : '→'
+                      }}
+                      {{ performanceTrend >= 0 ? '+' : ''
+                      }}{{ (performanceTrend * 100).toFixed(0) }}%
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -227,14 +260,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, nextTick, type Ref } from 'vue';
+import {
+  ref,
+  computed,
+  onMounted,
+  onUnmounted,
+  watch,
+  nextTick,
+  type Ref,
+} from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
 import { PerformanceMonitor } from '@/core/PerformanceMonitor';
 import { PopulationController } from '@/core/PopulationController';
 import PercentageBar from './PercentageBar.vue';
-import type { CarBrainConfig, InputModificationType, ActivationType, SpeedMultiplier } from '@/types';
+import type {
+  CarBrainConfig,
+  InputModificationType,
+  ActivationType,
+  SpeedMultiplier,
+} from '@/types';
 import {
   TRACK_WIDTH_HALF,
   CAR_BRAIN_CONFIGS,
@@ -311,28 +357,38 @@ const activeCarConfigs = computed(() => {
 // Professional performance monitoring and adaptive population control
 
 // Performance Monitor: Tracks FPS, stability, trends, and other metrics
-const performanceMonitor = new PerformanceMonitor(PERF_TARGET_FPS, PERF_HISTORY_SIZE);
+const performanceMonitor = new PerformanceMonitor(
+  PERF_TARGET_FPS,
+  PERF_HISTORY_SIZE
+);
 
 // Population Controller: PID-based adaptive population management
-const populationController = new PopulationController({
-  targetFps: PERF_TARGET_FPS,
-  minPopulation: POP_MIN,
-  maxPopulation: POP_MAX,
-  initialPopulation: POP_INITIAL,
-  kProportional: PID_KP,
-  kIntegral: PID_KI,
-  kDerivative: PID_KD,
-  maxChangeRate: POP_MAX_CHANGE_RATE,
-  adjustmentInterval: POP_ADJUSTMENT_INTERVAL,
-  hysteresisThreshold: POP_HYSTERESIS_THRESHOLD,
-  emergencyFpsThreshold: PERF_EMERGENCY_FPS,
-  safeFpsThreshold: PERF_SAFE_FPS
-}, CAR_BRAIN_CONFIGS.length); // Initial setup uses default active configs
+const populationController = new PopulationController(
+  {
+    targetFps: PERF_TARGET_FPS,
+    minPopulation: POP_MIN,
+    maxPopulation: POP_MAX,
+    initialPopulation: POP_INITIAL,
+    kProportional: PID_KP,
+    kIntegral: PID_KI,
+    kDerivative: PID_KD,
+    maxChangeRate: POP_MAX_CHANGE_RATE,
+    adjustmentInterval: POP_ADJUSTMENT_INTERVAL,
+    hysteresisThreshold: POP_HYSTERESIS_THRESHOLD,
+    emergencyFpsThreshold: PERF_EMERGENCY_FPS,
+    safeFpsThreshold: PERF_SAFE_FPS,
+  },
+  CAR_BRAIN_CONFIGS.length
+); // Initial setup uses default active configs
 
 // UI state (for reactive display)
 const currentFps = ref(60);
-const targetPopulationPerType = ref(Math.floor(POP_INITIAL / CAR_BRAIN_CONFIGS.length));
-const targetPopulationTotal = computed(() => targetPopulationPerType.value * activeCarConfigs.value.length);
+const targetPopulationPerType = ref(
+  Math.floor(POP_INITIAL / CAR_BRAIN_CONFIGS.length)
+);
+const targetPopulationTotal = computed(
+  () => targetPopulationPerType.value * activeCarConfigs.value.length
+);
 const performanceStability = ref(1.0);
 const performanceTrend = ref(0);
 const performanceHeadroom = ref(1.0);
@@ -388,17 +444,17 @@ const FIXED_DT = 1 / 60; // 60 Hz physics
 const calculateComprehensiveScore = (configId: string): number => {
   // Component 1: Mean Performance (40% weight) - Most important: consistent track completion
   const meanCompletion = getMeanFitnessPercentRaw(configId); // 0-100
-  const meanScore = meanCompletion * 0.40;
+  const meanScore = meanCompletion * 0.4;
 
   // Component 2: Best Performance (20% weight) - Peak capability achieved
   const bestCompletion = getBestFitnessPercentRaw(configId); // 0-100
-  const bestScore = bestCompletion * 0.20;
+  const bestScore = bestCompletion * 0.2;
 
   // Component 3: Learning Efficiency (20% weight) - Fewer generations = better learner
   const generations = ga.value.getGeneration(configId);
   // Penalize 0.5 points per generation (200 generations = 0 efficiency score)
   const efficiencyRaw = Math.max(0, 100 - generations * 0.5);
-  const efficiencyScore = efficiencyRaw * 0.20;
+  const efficiencyScore = efficiencyRaw * 0.2;
 
   // Component 4: Lap Speed Bonus (10% weight) - Reward fast lap times
   const lapTime = bestLapTimeByConfigId.value.get(configId);
@@ -406,18 +462,20 @@ const calculateComprehensiveScore = (configId: string): number => {
   if (lapTime !== undefined && lapTime !== Infinity) {
     // 30 second lap = 100 points, 60 second lap = 50 points, etc.
     const speedRaw = Math.min(100, (30 / lapTime) * 100);
-    speedScore = speedRaw * 0.10;
+    speedScore = speedRaw * 0.1;
   }
 
   // Component 5: Consistency (10% weight) - How close mean is to best
   let consistencyScore = 0;
   if (bestCompletion > 0) {
     const consistencyRaw = (meanCompletion / bestCompletion) * 100;
-    consistencyScore = consistencyRaw * 0.10;
+    consistencyScore = consistencyRaw * 0.1;
   }
 
   // Total weighted score (0-100)
-  return meanScore + bestScore + efficiencyScore + speedScore + consistencyScore;
+  return (
+    meanScore + bestScore + efficiencyScore + speedScore + consistencyScore
+  );
 };
 
 const compareConfigs = (a: CarBrainConfig, b: CarBrainConfig): number => {
@@ -445,8 +503,12 @@ const scoreByConfigId = computed(() => {
 
 // Performance computed properties
 const totalCars = computed(() => population.value.length);
-const aliveCars = computed(() => population.value.filter(c => c.alive).length);
-const deadCars = computed(() => population.value.filter(c => !c.alive).length);
+const aliveCars = computed(
+  () => population.value.filter((c) => c.alive).length
+);
+const deadCars = computed(
+  () => population.value.filter((c) => !c.alive).length
+);
 
 // Computed property to sort car brain configs by hierarchical comparison
 const sortedCarBrainConfigs = computed(() => {
@@ -467,17 +529,24 @@ const mutationRateByConfigId = computed(() => {
       const trackLength = track.getTotalLength();
 
       // Get current generation's best distance (live updates)
-      const carsOfType = population.value.filter(car => car.configId === config.id);
-      const currentBest = carsOfType.length > 0
-        ? Math.max(...carsOfType.map(car => car.maxDistanceReached))
-        : 0;
+      const carsOfType = population.value.filter(
+        (car) => car.configId === config.id
+      );
+      const currentBest =
+        carsOfType.length > 0
+          ? Math.max(...carsOfType.map((car) => car.maxDistanceReached))
+          : 0;
 
       // Use ONLY current generation's best, not historical
       const bestDistance = currentBest;
 
       const progressPercentage = bestDistance / trackLength;
-      const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
-      const rate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
+      const mutationReduction =
+        progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
+      const rate = Math.max(
+        GA_MUTATION_MIN,
+        GA_MUTATION_BASE - mutationReduction
+      );
       rates.set(config.id, formatMutationRate(rate));
     } else {
       // When MUT DIST is OFF, use constant minimum mutation
@@ -499,16 +568,23 @@ const mutationRatePercentByConfigId = computed(() => {
     if (isMutationByDistance) {
       const trackLength = track.getTotalLength();
 
-      const carsOfType = population.value.filter(car => car.configId === config.id);
-      const currentBest = carsOfType.length > 0
-        ? Math.max(...carsOfType.map(car => car.maxDistanceReached))
-        : 0;
+      const carsOfType = population.value.filter(
+        (car) => car.configId === config.id
+      );
+      const currentBest =
+        carsOfType.length > 0
+          ? Math.max(...carsOfType.map((car) => car.maxDistanceReached))
+          : 0;
 
       const bestDistance = currentBest;
 
       const progressPercentage = bestDistance / trackLength;
-      const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
-      const rate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
+      const mutationReduction =
+        progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
+      const rate = Math.max(
+        GA_MUTATION_MIN,
+        GA_MUTATION_BASE - mutationReduction
+      );
 
       // Normalize to 0-100% range (GA_MUTATION_BASE is max)
       const normalizedPercent = (rate / GA_MUTATION_BASE) * 100;
@@ -534,6 +610,8 @@ const getActivationColor = (activationType: ActivationType): string => {
       return '#064'; // Purple
     case 'step':
       return '#342'; // Red
+    case '—':
+      return '#000'; // Red
     default:
       throw new Error(`Unknown activation type: ${activationType}`);
   }
@@ -654,9 +732,15 @@ const cycleView = () => {
 // Initialize simulation
 const init = () => {
   // Initialize with target population (PID controller will adapt based on performance)
-  print(`[Init] Starting with ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | PID-based adaptive control enabled`);
+  print(
+    `[Init] Starting with ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | PID-based adaptive control enabled`
+  );
 
-  population.value = ga.value.initializePopulation(track, targetPopulationTotal.value, activeCarConfigs.value);
+  population.value = ga.value.initializePopulation(
+    track,
+    targetPopulationTotal.value,
+    activeCarConfigs.value
+  );
 
   // Reset generation times, markers, and lap times for active configs
   for (const config of activeCarConfigs.value) {
@@ -707,7 +791,9 @@ const evolvePopulationByConfig = (
   // Evolve this population with per-type target population (based on current FPS)
   const generationTime = generationTimeByConfigId.value.get(config.id) ?? 0;
 
-  print(`[Evolution] ${config.displayName}: ${targetPopulationPerType.value} cars for this type | Total: ${targetPopulationTotal.value} | Target: ${fpsTarget.value} FPS`);
+  print(
+    `[Evolution] ${config.displayName}: ${targetPopulationPerType.value} cars for this type | Total: ${targetPopulationTotal.value} | Target: ${fpsTarget.value} FPS`
+  );
 
   const newCars = ga.value.evolvePopulation(
     configCars,
@@ -731,7 +817,14 @@ const updatePhysics = (dt: number) => {
 
   for (const car of population.value) {
     if (car.alive) {
-      car.update(dt, track.wallSegments, track, delayedSteering.value, CAR_STEERING_DELAY_SECONDS, carSpeedMultiplier.value);
+      car.update(
+        dt,
+        track.wallSegments,
+        track,
+        delayedSteering.value,
+        CAR_STEERING_DELAY_SECONDS,
+        carSpeedMultiplier.value
+      );
 
       // Update fitness and check for backwards movement
       const result = track.getClosestPointOnCenterline({ x: car.x, y: car.y });
@@ -743,24 +836,41 @@ const updatePhysics = (dt: number) => {
       // Cars may not land exactly at the finish line due to frame timing
       if (car.currentProgressRatio >= LAP_COMPLETION_THRESHOLD) {
         // Find the config for this car type by configId (check all defined configs)
-        const config = CAR_BRAIN_CONFIGS_DEFINED.find((c) => c.id === car.configId);
+        const config = CAR_BRAIN_CONFIGS_DEFINED.find(
+          (c) => c.id === car.configId
+        );
 
         if (config) {
           // Record lap completion time (only if not already recorded this generation)
-          const currentLapTime = lapCompletionTimeByConfigId.value.get(config.id) ?? Infinity;
+          const currentLapTime =
+            lapCompletionTimeByConfigId.value.get(config.id) ?? Infinity;
           if (currentLapTime === Infinity) {
-            const completionTime = generationTimeByConfigId.value.get(config.id) ?? 0;
+            const completionTime =
+              generationTimeByConfigId.value.get(config.id) ?? 0;
 
             // Record current generation lap time
             lapCompletionTimeByConfigId.value.set(config.id, completionTime);
 
             // Update best lap time if this is better
-            const bestLapTime = bestLapTimeByConfigId.value.get(config.id) ?? Infinity;
+            const bestLapTime =
+              bestLapTimeByConfigId.value.get(config.id) ?? Infinity;
             if (completionTime < bestLapTime) {
               bestLapTimeByConfigId.value.set(config.id, completionTime);
-              print(`[Lap Complete] 🏆 ${config.displayName} NEW BEST: ${completionTime.toFixed(2)}s (prev: ${bestLapTime === Infinity ? '—' : bestLapTime.toFixed(2) + 's'})`);
+              print(
+                `[Lap Complete] 🏆 ${
+                  config.displayName
+                } NEW BEST: ${completionTime.toFixed(2)}s (prev: ${
+                  bestLapTime === Infinity ? '—' : bestLapTime.toFixed(2) + 's'
+                })`
+              );
             } else {
-              print(`[Lap Complete] ${config.displayName} completed lap in ${completionTime.toFixed(2)}s (best: ${bestLapTime.toFixed(2)}s)`);
+              print(
+                `[Lap Complete] ${
+                  config.displayName
+                } completed lap in ${completionTime.toFixed(
+                  2
+                )}s (best: ${bestLapTime.toFixed(2)}s)`
+              );
             }
           }
 
@@ -931,8 +1041,10 @@ const updatePerformanceMetrics = (updateTime: number, renderTime: number) => {
     fps0_1PercentLow.value = Math.round(metrics.p0_1Fps);
     fps1PercentLow.value = Math.round(metrics.p1Fps);
     fps5PercentLow.value = Math.round(metrics.p5Fps);
-    avgUpdateTime.value = updateTimeHistory.reduce((a, b) => a + b, 0) / updateTimeHistory.length;
-    avgRenderTime.value = renderTimeHistory.reduce((a, b) => a + b, 0) / renderTimeHistory.length;
+    avgUpdateTime.value =
+      updateTimeHistory.reduce((a, b) => a + b, 0) / updateTimeHistory.length;
+    avgRenderTime.value =
+      renderTimeHistory.reduce((a, b) => a + b, 0) / renderTimeHistory.length;
   }
 };
 
@@ -959,10 +1071,16 @@ const adjustPopulationSize = () => {
   if (adjustment.delta !== 0) {
     print(
       `[PerfMgmt] ${adjustment.reason} | ` +
-      `Total: ${adjustment.totalPopulation} (${adjustment.populationPerType}/type × ${adjustment.numTypes} types) | ` +
-      `Stability: ${(adjustment.metrics.stability * 100).toFixed(0)}% | ` +
-      `Trend: ${adjustment.metrics.trend > 0 ? '↗' : adjustment.metrics.trend < 0 ? '↘' : '→'} ${(adjustment.metrics.trend * 100).toFixed(0)}% | ` +
-      `Headroom: ${(adjustment.metrics.headroom * 100).toFixed(0)}%`
+        `Total: ${adjustment.totalPopulation} (${adjustment.populationPerType}/type × ${adjustment.numTypes} types) | ` +
+        `Stability: ${(adjustment.metrics.stability * 100).toFixed(0)}% | ` +
+        `Trend: ${
+          adjustment.metrics.trend > 0
+            ? '↗'
+            : adjustment.metrics.trend < 0
+            ? '↘'
+            : '→'
+        } ${(adjustment.metrics.trend * 100).toFixed(0)}% | ` +
+        `Headroom: ${(adjustment.metrics.headroom * 100).toFixed(0)}%`
     );
   }
 };
@@ -1026,9 +1144,15 @@ const reset = () => {
   randomSeed = Date.now() + Math.random() * 1000000;
   ga.value = new GeneticAlgorithm(randomSeed);
 
-  print(`[Reset] Re-creating ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | Target: ${fpsTarget.value} FPS`);
+  print(
+    `[Reset] Re-creating ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | Target: ${fpsTarget.value} FPS`
+  );
 
-  population.value = ga.value.initializePopulation(track, targetPopulationTotal.value, activeCarConfigs.value);
+  population.value = ga.value.initializePopulation(
+    track,
+    targetPopulationTotal.value,
+    activeCarConfigs.value
+  );
 
   // Clear generation times, markers, and lap times for active configs
   for (const config of activeCarConfigs.value) {
@@ -1044,7 +1168,9 @@ const reset = () => {
   frameCounter.value = 0;
 
   // Reset target population to initial value
-  targetPopulationPerType.value = Math.floor(POP_INITIAL / activeCarConfigs.value.length);
+  targetPopulationPerType.value = Math.floor(
+    POP_INITIAL / activeCarConfigs.value.length
+  );
 };
 
 // Toggle Kill Backwards mode
@@ -1095,8 +1221,8 @@ const renderGraph = () => {
 
   // Container has 12px padding on all sides, so inner content area is smaller
   const containerPadding = 12;
-  const width = container.clientWidth - (containerPadding * 2);
-  const height = container.clientHeight - (containerPadding * 2);
+  const width = container.clientWidth - containerPadding * 2;
+  const height = container.clientHeight - containerPadding * 2;
 
   canvas.width = width;
   canvas.height = height;
@@ -1111,7 +1237,8 @@ const renderGraph = () => {
   ctx.fillRect(0, 0, width, height);
 
   // Calculate raw score history for each active config
-  const configHistories: Map<string, { generation: number; score: number }[]> = new Map();
+  const configHistories: Map<string, { generation: number; score: number }[]> =
+    new Map();
 
   for (const config of activeCarConfigs.value) {
     const markers = generationMarkersByConfigId.value.get(config.id) ?? [];
@@ -1125,12 +1252,15 @@ const renderGraph = () => {
       const markersUpToNow = markers.slice(0, i + 1);
 
       // Calculate mean (average of all fitness values up to now)
-      const totalFitness = markersUpToNow.reduce((sum, m) => sum + m.fitness, 0);
+      const totalFitness = markersUpToNow.reduce(
+        (sum, m) => sum + m.fitness,
+        0
+      );
       const meanFitness = totalFitness / markersUpToNow.length;
       const meanPercent = (meanFitness / trackLength) * 100;
 
       // Calculate best (max fitness up to now)
-      const bestFitness = Math.max(...markersUpToNow.map(m => m.fitness));
+      const bestFitness = Math.max(...markersUpToNow.map((m) => m.fitness));
       const bestPercent = (bestFitness / trackLength) * 100;
 
       // Score is average of mean and best
@@ -1155,7 +1285,9 @@ const renderGraph = () => {
 
   // Truncate all histories to only show up to minimum generation
   for (const history of configHistories.values()) {
-    const truncatedLength = history.findIndex(point => point.generation > minGeneration);
+    const truncatedLength = history.findIndex(
+      (point) => point.generation > minGeneration
+    );
     if (truncatedLength !== -1) {
       history.splice(truncatedLength);
     }
@@ -1213,7 +1345,7 @@ const renderGraph = () => {
 
   // Y-axis grid (0-100%)
   for (let i = 0; i <= 10; i++) {
-    const y = height - padding - (i * graphHeight / 10);
+    const y = height - padding - (i * graphHeight) / 10;
     ctx.beginPath();
     ctx.moveTo(padding, y);
     ctx.lineTo(width - padding, y);
@@ -1336,7 +1468,13 @@ watch(frameCounter, () => {
 
 // Watch for toggle of all car types - reset and reinitialize
 watch(useAllCarTypes, () => {
-  print(`[Toggle] ${useAllCarTypes.value ? 'Enabling all car types' : 'Using active car types only'}`);
+  print(
+    `[Toggle] ${
+      useAllCarTypes.value
+        ? 'Enabling all car types'
+        : 'Using active car types only'
+    }`
+  );
 
   // Update population controller with new car type count
   populationController.setPopulation(POP_INITIAL);

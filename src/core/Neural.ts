@@ -114,6 +114,9 @@ export class NeuralNetwork {
           next.push(this.step(sum)); // Step for hidden layers
         } else if (this.activationType === 'linear') {
           next.push(this.linear(sum)); // Linear for hidden layers
+        } else if (this.activationType === '-') {
+          // No hidden layers - this code path should never execute
+          next.push(this.linear(sum));
         } else {
           throw new Error('Unknown activation type: ' + this.activationType);
         }

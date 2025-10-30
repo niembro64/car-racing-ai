@@ -110,11 +110,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     id: 'diffsmall',
     shortName: 'SP',
     description:
-      'Small: 5 differential inputs (1 fwd + 4 L-R pairs) with Linear activation, no hidden layers',
+      'Small: 5 differential inputs (1 fwd + 4 L-R pairs), no hidden layers',
     nn: {
       architecture: NN_ARCH_DIFF_SMALL,
       inputModification: 'pair',
-      activationType: 'linear',
+      activationType: '—',
     },
     colors: {
       light: '#dd5533',
@@ -177,11 +177,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     id: 'dirgelusmall',
     shortName: 'RP',
     description:
-      'Small: 9 raw sensor inputs with GELU activation, no hidden layers',
+      'Small: 9 raw sensor inputs, no hidden layers',
     nn: {
       architecture: NN_ARCH_SMALL,
       inputModification: 'dir',
-      activationType: 'gelu',
+      activationType: '—',
     },
     colors: {
       light: '#33aacc',
