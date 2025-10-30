@@ -63,6 +63,7 @@ export interface GenomeData {
 // ============================================================================
 
 export interface CarBrainConfig {
+  useCar: boolean; // Whether to use this config for cars
   // Identification
   id: string; // Unique identifier (e.g., 'normgelu', 'difflinear')
   displayName: string; // Full name for desktop (e.g., 'Smoothie', 'Diffbot')

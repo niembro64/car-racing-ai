@@ -122,9 +122,10 @@ export class GeneticAlgorithm {
           track.startPosition.y,
           startAngle,
           brain,
-          config.colors.light,
+          config.colors.dark,
           config.nn.inputModification,
-          config.id
+          config.id,
+          1.0  // Normal size for initial population
         );
         population.push(car);
       }
@@ -160,8 +161,8 @@ export class GeneticAlgorithm {
     if (winnerCar) {
       bestCar = winnerCar;
     } else {
-      // Filter out elite cars (those with dark color) to find best non-elite
-      const nonElite = sorted.filter(car => car.color !== config.colors.dark);
+      // Filter out elite cars (those with sizeMultiplier > 1.0) to find best non-elite
+      const nonElite = sorted.filter(car => car.sizeMultiplier === 1.0);
       bestCar = nonElite[0] || sorted[0];
     }
 
@@ -209,7 +210,7 @@ export class GeneticAlgorithm {
       const startAngle = track.startAngle + angleWiggle;
 
       if (i === 0) {
-        // Elite car (exact copy of best brain)
+        // Elite car (exact copy of best brain, larger size)
         nextGeneration.push(
           new Car(
             track.startPosition.x,
@@ -218,7 +219,8 @@ export class GeneticAlgorithm {
             eliteBrain,
             config.colors.dark,
             config.nn.inputModification,
-            config.id
+            config.id,
+            1.5  // Elite cars are 1.5x larger
           )
         );
       } else {
@@ -239,9 +241,10 @@ export class GeneticAlgorithm {
             track.startPosition.y,
             startAngle,
             mutatedBrain,
-            config.colors.light,
+            config.colors.dark,
             config.nn.inputModification,
-            config.id
+            config.id,
+            1.0  // Normal size for mutated cars
           )
         );
       }

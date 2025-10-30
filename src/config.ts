@@ -96,31 +96,28 @@ export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 4, 1];
 export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 6, 3, 1];
 export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 1];
 export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 4, 1];
-
-// export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 4, 1];
-// export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 8, 1];
-// export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 12, 8, 1];
-// export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 6, 1];
-// export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 3, 1];
+export const NN_ARCH_DIFF_LARGE = [1 + SENSOR_RAY_PAIRS.length, 6, 3, 1];
 
 export const NEURAL_NETWORK_ARCHITECTURE = NN_ARCH_DIFF_MEDIUM;
 
-export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
+export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
+  // === ACTIVE CARS - Diff/Linear (Fiery Theme) ===
   {
-    displayName: 'DiffBot',
-    mobileDisplayName: 'Diff',
-    id: 'difflinear',
-    shortName: 'DB',
+    useCar: true,
+    displayName: 'Spark',
+    mobileDisplayName: 'Spark',
+    id: 'diffsmall',
+    shortName: 'SP',
     description:
-      '5 differential sensor inputs (1 forward + 4 L-R pairs) with Linear activation in hidden layer of size 6',
+      'Small: 5 differential inputs (1 fwd + 4 L-R pairs) with Linear activation, no hidden layers',
     nn: {
-      architecture: NN_ARCH_DIFF_MEDIUM,
+      architecture: NN_ARCH_DIFF_SMALL,
       inputModification: 'pair',
       activationType: 'linear',
     },
     colors: {
-      light: '#880000',
-      dark: '#660000',
+      light: '#dd5533',
+      dark: '#dd5533',
     },
     rayVisualization: {
       width: 0.5,
@@ -128,19 +125,131 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
+    useCar: true,
+    displayName: 'Flame',
+    mobileDisplayName: 'Flame',
+    id: 'diffmedium',
+    shortName: 'FL',
+    description:
+      'Medium: 5 differential inputs with Linear activation, hidden layer size 4',
+    nn: {
+      architecture: NN_ARCH_DIFF_MEDIUM,
+      inputModification: 'pair',
+      activationType: 'linear',
+    },
+    colors: {
+      light: '#cc3311',
+      dark: '#cc3311',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    useCar: false,
+    displayName: 'Inferno',
+    mobileDisplayName: 'Inferno',
+    id: 'difflarge',
+    shortName: 'IF',
+    description:
+      'Large: 5 differential inputs with Linear activation, two hidden layers (6, 3)',
+    nn: {
+      architecture: NN_ARCH_DIFF_LARGE,
+      inputModification: 'pair',
+      activationType: 'linear',
+    },
+    colors: {
+      light: '#991100',
+      dark: '#991100',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  // === ACTIVE CARS - Dir/GELU (Aquatic Theme) ===
+  {
+    useCar: true,
+    displayName: 'Ripple',
+    mobileDisplayName: 'Ripple',
+    id: 'dirgelusmall',
+    shortName: 'RP',
+    description:
+      'Small: 9 raw sensor inputs with GELU activation, no hidden layers',
+    nn: {
+      architecture: NN_ARCH_SMALL,
+      inputModification: 'dir',
+      activationType: 'gelu',
+    },
+    colors: {
+      light: '#33aacc',
+      dark: '#33aacc',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    useCar: true,
+    displayName: 'Wave',
+    mobileDisplayName: 'Wave',
+    id: 'dirgelumedium',
+    shortName: 'WV',
+    description:
+      'Medium: 9 raw sensor inputs with GELU activation, hidden layer size 4',
+    nn: {
+      architecture: NN_ARCH_MEDIUM,
+      inputModification: 'dir',
+      activationType: 'gelu',
+    },
+    colors: {
+      light: '#1166cc',
+      dark: '#1166cc',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    useCar: false,
+    displayName: 'Tsunami',
+    mobileDisplayName: 'Tsunami',
+    id: 'dirgelularge',
+    shortName: 'TS',
+    description:
+      'Large: 9 raw sensor inputs with GELU activation, two hidden layers (6, 3)',
+    nn: {
+      architecture: NN_ARCH_LARGE,
+      inputModification: 'dir',
+      activationType: 'gelu',
+    },
+    colors: {
+      light: '#0044aa',
+      dark: '#0044aa',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  // === INACTIVE CARS - Keep for reference ===
+  {
+    useCar: false,
     displayName: 'Flatty',
     mobileDisplayName: 'Flat',
     id: 'normlinear',
     shortName: 'FL',
-    description:
-      '9 raw sensor inputs with Linear activation in hidden layer of size 8',
+    description: '9 raw sensor inputs with Linear activation in hidden layer',
     nn: {
       architecture: NN_ARCH_MEDIUM,
       inputModification: 'dir',
       activationType: 'linear',
     },
     colors: {
-      light: '#226699',
+      light: '#1a4d73',
       dark: '#1a4d73',
     },
     rayVisualization: {
@@ -149,40 +258,20 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    displayName: 'Smoothie',
-    mobileDisplayName: 'Smooth',
-    id: 'normgelu',
-    shortName: 'SM',
-    description:
-      '9 raw sensor inputs with GELU activation in hidden layer of size 8',
-    nn: {
-      architecture: NN_ARCH_MEDIUM,
-      inputModification: 'dir',
-      activationType: 'gelu',
-    },
-    colors: {
-      light: '#aaaa33',
-      dark: '#7a7a00',
-    },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
-  },
-  {
+    useCar: false,
     displayName: 'BigBrain',
     mobileDisplayName: 'BigB',
     id: 'relularge',
     shortName: 'BB',
     description:
-      '9 raw sensor inputs with ReLU activation in two hidden layers of size 10 each',
+      '9 raw sensor inputs with ReLU activation in two hidden layers',
     nn: {
       architecture: NN_ARCH_LARGE,
       inputModification: 'dir',
       activationType: 'relu',
     },
     colors: {
-      light: '#229922',
+      light: '#1a731a',
       dark: '#1a731a',
     },
     rayVisualization: {
@@ -191,19 +280,19 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
+    useCar: false,
     displayName: 'WiggleBot',
     mobileDisplayName: 'Wiggle',
     id: 'normstep',
-    shortName: 'SB',
-    description:
-      '9 raw sensor inputs with Step activation in hidden layer of size 6 (expected to perform poorly)',
+    shortName: 'WB',
+    description: '9 raw sensor inputs with Step activation (performs poorly)',
     nn: {
       architecture: NN_ARCH_MEDIUM,
       inputModification: 'dir',
       activationType: 'step',
     },
     colors: {
-      light: '#cc6600',
+      light: '#994d00',
       dark: '#994d00',
     },
     rayVisualization: {
@@ -211,28 +300,11 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
       hitRadius: 3,
     },
   },
-  {
-    displayName: 'SmolDiff',
-    mobileDisplayName: 'Smol',
-    id: 'diffsmall',
-    shortName: 'SB2',
-    description:
-      '5 differential sensor inputs (1 forward + 4 L-R pairs) with Linear activation in hidden layer of size 6',
-    nn: {
-      architecture: NN_ARCH_DIFF_SMALL,
-      inputModification: 'pair',
-      activationType: 'linear',
-    },
-    colors: {
-      light: '#8844aa',
-      dark: '#663380',
-    },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
-  },
 ];
+
+export const CAR_BRAIN_CONFIGS = CAR_BRAIN_CONFIGS_DEFINED.filter(
+  (config) => config.useCar
+);
 
 export const GA_POPULATION_SIZE_DESKTOP = CAR_BRAIN_CONFIGS.length * 20;
 export const GA_POPULATION_SIZE_MOBILE = CAR_BRAIN_CONFIGS.length * 10;
@@ -290,6 +362,15 @@ export const DEFAULT_KILL_SLOW_CARS = true;
 export const DEFAULT_MUTATION_BY_DISTANCE = true;
 export const DEFAULT_DELAYED_STEERING = true;
 export const CAR_STEERING_DELAY_SECONDS = 0.2;
+
+export const ENABLE_CONSOLE_LOGS = true;
+
+// Console logging utility
+export function print(...args: any[]): void {
+  if (ENABLE_CONSOLE_LOGS) {
+    console.log(...args);
+  }
+}
 
 export const CANVAS_BACKGROUND_COLOR = '#4a7c4e';
 

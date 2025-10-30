@@ -41,6 +41,7 @@ export class Car {
   // Dimensions
   width: number = CAR_WIDTH;
   height: number = CAR_HEIGHT;
+  sizeMultiplier: number = 1.0; // Scale factor for elite cars
 
   // Neural network
   brain: NeuralNetwork;
@@ -69,7 +70,8 @@ export class Car {
     brain: NeuralNetwork,
     color: string,
     inputModification: InputModificationType,
-    configId: string = 'unknown'
+    configId: string = 'unknown',
+    sizeMultiplier: number = 1.0
   ) {
     this.x = x;
     this.y = y;
@@ -85,6 +87,7 @@ export class Car {
     this.previousProgressRatio = -1;
     this.frameCount = 0;
     this.elapsedTime = 0;
+    this.sizeMultiplier = sizeMultiplier;
     this.inputModification = inputModification;
     this.configId = configId;
     this.brain = brain;
@@ -244,8 +247,8 @@ export class Car {
       this.x,
       this.y,
       this.angle - Math.PI / 2, // Match visual orientation
-      this.width,
-      this.height
+      this.width * this.sizeMultiplier,
+      this.height * this.sizeMultiplier
     );
 
     if (polygonIntersectsSegments(polygon, wallSegments)) {
@@ -330,7 +333,7 @@ export class Car {
       ctx.fillText(
         `${sign}${formatted}%`,
         this.x,
-        this.y - this.height / 2 - 6
+        this.y - (this.height * this.sizeMultiplier) / 2 - 6
       );
       ctx.restore();
     }
@@ -352,12 +355,14 @@ export class Car {
     }
 
     ctx.lineWidth = 1;
-    ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
-    ctx.strokeRect(-this.width / 2, -this.height / 2, this.width, this.height);
+    const scaledWidth = this.width * this.sizeMultiplier;
+    const scaledHeight = this.height * this.sizeMultiplier;
+    ctx.fillRect(-scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
+    ctx.strokeRect(-scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
 
     // Draw direction indicator (white stripe at front)
     ctx.fillStyle = this.alive ? '#ffffff' : '#d1d5db';
-    ctx.fillRect(-this.width / 4, this.height / 2 - 4, this.width / 2, 4);
+    ctx.fillRect(-scaledWidth / 4, scaledHeight / 2 - 4, scaledWidth / 2, 4);
 
     ctx.restore();
   }
@@ -368,8 +373,8 @@ export class Car {
       this.x,
       this.y,
       this.angle - Math.PI / 2, // Match visual orientation
-      this.width,
-      this.height
+      this.width * this.sizeMultiplier,
+      this.height * this.sizeMultiplier
     );
   }
 

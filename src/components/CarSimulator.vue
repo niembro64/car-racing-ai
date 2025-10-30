@@ -245,6 +245,7 @@ import {
   PERF_EMERGENCY_FPS,
   PERF_SAFE_FPS,
   GRAPH_GENERATION_USE_LOG_SCALE,
+  print,
   wp,
 } from '@/config';
 
@@ -349,47 +350,65 @@ const FIXED_DT = 1 / 60; // 60 Hz physics
  *
  * Returns: negative if a < b, positive if a > b, 0 if equal
  */
+/**
+ * Calculate comprehensive score for a car configuration
+ * Combines multiple factors: performance, learning efficiency, speed, consistency
+ * Returns a 0-100 score
+ */
+const calculateComprehensiveScore = (configId: string): number => {
+  // Component 1: Mean Performance (40% weight) - Most important: consistent track completion
+  const meanCompletion = getMeanFitnessPercentRaw(configId); // 0-100
+  const meanScore = meanCompletion * 0.40;
+
+  // Component 2: Best Performance (20% weight) - Peak capability achieved
+  const bestCompletion = getBestFitnessPercentRaw(configId); // 0-100
+  const bestScore = bestCompletion * 0.20;
+
+  // Component 3: Learning Efficiency (20% weight) - Fewer generations = better learner
+  const generations = ga.value.getGeneration(configId);
+  // Penalize 0.5 points per generation (200 generations = 0 efficiency score)
+  const efficiencyRaw = Math.max(0, 100 - generations * 0.5);
+  const efficiencyScore = efficiencyRaw * 0.20;
+
+  // Component 4: Lap Speed Bonus (10% weight) - Reward fast lap times
+  const lapTime = bestLapTimeByConfigId.value.get(configId);
+  let speedScore = 0;
+  if (lapTime !== undefined && lapTime !== Infinity) {
+    // 30 second lap = 100 points, 60 second lap = 50 points, etc.
+    const speedRaw = Math.min(100, (30 / lapTime) * 100);
+    speedScore = speedRaw * 0.10;
+  }
+
+  // Component 5: Consistency (10% weight) - How close mean is to best
+  let consistencyScore = 0;
+  if (bestCompletion > 0) {
+    const consistencyRaw = (meanCompletion / bestCompletion) * 100;
+    consistencyScore = consistencyRaw * 0.10;
+  }
+
+  // Total weighted score (0-100)
+  return meanScore + bestScore + efficiencyScore + speedScore + consistencyScore;
+};
+
 const compareConfigs = (a: CarBrainConfig, b: CarBrainConfig): number => {
-  // Priority 1: Best lap time ever (lower is better)
-  const bestLapA = bestLapTimeByConfigId.value.get(a.id) ?? Infinity;
-  const bestLapB = bestLapTimeByConfigId.value.get(b.id) ?? Infinity;
-
-  if (bestLapA !== bestLapB) {
-    return bestLapA - bestLapB; // Lower lap time wins
-  }
-
-  // Priority 2: Best fitness (higher is better)
-  const bestA = getBestFitnessPercentRaw(a.id);
-  const bestB = getBestFitnessPercentRaw(b.id);
-
-  if (Math.abs(bestA - bestB) > 0.01) { // Tolerance for floating point
-    return bestB - bestA; // Higher best fitness wins
-  }
-
-  // Priority 3: Mean fitness (higher is better)
-  const meanA = getMeanFitnessPercentRaw(a.id);
-  const meanB = getMeanFitnessPercentRaw(b.id);
-
-  return meanB - meanA; // Higher mean fitness wins
+  // Compare by comprehensive score (higher is better)
+  const scoreA = calculateComprehensiveScore(a.id);
+  const scoreB = calculateComprehensiveScore(b.id);
+  return scoreB - scoreA;
 };
 
 /**
  * Computed score for display purposes
- * Converts hierarchical ranking to a normalized percentage score
+ * Uses comprehensive scoring: performance, efficiency, speed, consistency
  */
 const scoreByConfigId = computed(() => {
   const scores = new Map<string, number>();
 
-  // Sort configs by hierarchical comparison
-  const sorted = [...CAR_BRAIN_CONFIGS].sort(compareConfigs);
-
-  // Assign scores based on rank (100% for 1st, scaling down)
-  const numConfigs = sorted.length;
-  sorted.forEach((config, index) => {
-    // Score based on rank: 1st = 100%, 2nd = 83%, 3rd = 67%, etc.
-    const rankScore = ((numConfigs - index) / numConfigs) * 100;
-    scores.set(config.id, rankScore);
-  });
+  // Calculate comprehensive score for each config
+  for (const config of CAR_BRAIN_CONFIGS) {
+    const score = calculateComprehensiveScore(config.id);
+    scores.set(config.id, score);
+  }
 
   return scores;
 });
@@ -575,7 +594,7 @@ const cycleView = () => {
 // Initialize simulation
 const init = () => {
   // Initialize with target population (PID controller will adapt based on performance)
-  console.log(`[Init] Starting with ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | PID-based adaptive control enabled`);
+  print(`[Init] Starting with ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | PID-based adaptive control enabled`);
 
   population.value = ga.value.initializePopulation(track, targetPopulationTotal.value);
 
@@ -628,7 +647,7 @@ const evolvePopulationByConfig = (
   // Evolve this population with per-type target population (based on current FPS)
   const generationTime = generationTimeByConfigId.value.get(config.id) ?? 0;
 
-  console.log(`[Evolution] ${config.displayName}: ${targetPopulationPerType.value} cars for this type | Total: ${targetPopulationTotal.value} | Target: ${fpsTarget.value} FPS`);
+  print(`[Evolution] ${config.displayName}: ${targetPopulationPerType.value} cars for this type | Total: ${targetPopulationTotal.value} | Target: ${fpsTarget.value} FPS`);
 
   const newCars = ga.value.evolvePopulation(
     configCars,
@@ -679,9 +698,9 @@ const updatePhysics = (dt: number) => {
             const bestLapTime = bestLapTimeByConfigId.value.get(config.id) ?? Infinity;
             if (completionTime < bestLapTime) {
               bestLapTimeByConfigId.value.set(config.id, completionTime);
-              console.log(`[Lap Complete] 🏆 ${config.displayName} NEW BEST: ${completionTime.toFixed(2)}s (prev: ${bestLapTime === Infinity ? '—' : bestLapTime.toFixed(2) + 's'})`);
+              print(`[Lap Complete] 🏆 ${config.displayName} NEW BEST: ${completionTime.toFixed(2)}s (prev: ${bestLapTime === Infinity ? '—' : bestLapTime.toFixed(2) + 's'})`);
             } else {
-              console.log(`[Lap Complete] ${config.displayName} completed lap in ${completionTime.toFixed(2)}s (best: ${bestLapTime.toFixed(2)}s)`);
+              print(`[Lap Complete] ${config.displayName} completed lap in ${completionTime.toFixed(2)}s (best: ${bestLapTime.toFixed(2)}s)`);
             }
           }
 
@@ -879,7 +898,7 @@ const adjustPopulationSize = () => {
 
   // Log adjustment details
   if (adjustment.delta !== 0) {
-    console.log(
+    print(
       `[PerfMgmt] ${adjustment.reason} | ` +
       `Total: ${adjustment.totalPopulation} (${adjustment.populationPerType}/type × ${adjustment.numTypes} types) | ` +
       `Stability: ${(adjustment.metrics.stability * 100).toFixed(0)}% | ` +
@@ -948,7 +967,7 @@ const reset = () => {
   randomSeed = Date.now() + Math.random() * 1000000;
   ga.value = new GeneticAlgorithm(randomSeed);
 
-  console.log(`[Reset] Re-creating ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | Target: ${fpsTarget.value} FPS`);
+  print(`[Reset] Re-creating ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | Target: ${fpsTarget.value} FPS`);
 
   population.value = ga.value.initializePopulation(track, targetPopulationTotal.value);
 
