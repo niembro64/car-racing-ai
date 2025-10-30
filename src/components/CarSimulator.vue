@@ -791,14 +791,16 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
-  padding: 0;
+  padding: 8px;
   margin: 0;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background: #4a7c4e; /* Grass green background */
+  background: #4a7c4e;
+  box-sizing: border-box;
 }
 
 .canvas-container {
@@ -806,38 +808,21 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 100vw;
-  flex-shrink: 1;
-  padding: 8px;
-  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 canvas {
   display: block;
   max-width: 100%;
-  max-height: calc(
-    100vh - 280px
-  ); /* Reserve more space for controls and table */
+  max-height: 100%;
   width: auto;
   height: auto;
   object-fit: contain;
-  margin: 0;
-  padding: 0;
-  /* Use CSS to scale the canvas display size while keeping internal resolution at 800x600 */
   image-rendering: auto;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
-}
-
-/* Desktop: ensure canvas fits within viewport */
-@media (min-width: 769px) {
-  .canvas-container {
-    max-height: calc(100vh - 220px);
-  }
-
-  canvas {
-    max-height: calc(100vh - 240px);
-  }
 }
 
 .info-container {
@@ -845,9 +830,10 @@ canvas {
   gap: 24px;
   align-items: flex-start;
   justify-content: center;
-  padding: 8px 16px;
+  padding: 0 8px 8px 8px;
   width: 100%;
   max-width: 1200px;
+  flex-shrink: 0;
 }
 
 .controls {
@@ -866,15 +852,16 @@ canvas {
 
 .hud-content {
   width: 800px;
+  max-width: calc(100vw - 32px);
   height: 280px;
   overflow: hidden;
   position: relative;
+  flex-shrink: 0;
 }
 
 @media (max-width: 850px) {
   .hud-content {
-    width: calc(100vw - 32px);
-    max-width: 800px;
+    width: 100%;
   }
 }
 
