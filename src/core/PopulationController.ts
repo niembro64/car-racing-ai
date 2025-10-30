@@ -89,8 +89,15 @@ export class PopulationController {
     }
 
     // Emergency handling: Severe performance degradation
-    if (metrics.currentFps < this.config.emergencyFpsThreshold) {
-      return this.emergencyReduction(metrics, fpsError);
+    // Check both current FPS and 0.1% low FPS to prevent extreme frame drops
+    const emergencyThreshold = this.config.emergencyFpsThreshold;
+    const extremeLowThreshold = this.config.targetFps / 2; // 0.1% low should never go below half target
+
+    if (metrics.currentFps < emergencyThreshold || metrics.p0_1Fps < extremeLowThreshold) {
+      const reason = metrics.p0_1Fps < extremeLowThreshold
+        ? '0.1% low FPS critically low'
+        : 'current FPS critically low';
+      return this.emergencyReduction(metrics, fpsError, reason);
     }
 
     // Calculate PID components
@@ -148,7 +155,20 @@ export class PopulationController {
   private calculateProportional(fpsError: number, metrics: PerformanceMetrics): number {
     // Scale by stability - more aggressive when unstable
     const stabilityFactor = 1.0 + (1.0 - metrics.stability) * 0.5;
-    return this.config.kProportional * fpsError * stabilityFactor;
+
+    // Additional factor based on 0.1% low FPS
+    // If 0.1% low is getting close to half target FPS, be more aggressive
+    const extremeLowThreshold = this.config.targetFps / 2;
+    const extremeLowMargin = metrics.p0_1Fps - extremeLowThreshold;
+    const extremeLowBuffer = this.config.targetFps * 0.3; // React when within 30% FPS of threshold
+
+    let extremeLowFactor = 1.0;
+    if (extremeLowMargin < extremeLowBuffer) {
+      // Scale from 1.0 to 2.0 as we approach threshold
+      extremeLowFactor = 1.0 + (1.0 - extremeLowMargin / extremeLowBuffer) * 1.0;
+    }
+
+    return this.config.kProportional * fpsError * stabilityFactor * extremeLowFactor;
   }
 
   /**
@@ -202,7 +222,7 @@ export class PopulationController {
   /**
    * Emergency reduction when performance is critical
    */
-  private emergencyReduction(metrics: PerformanceMetrics, fpsError: number): PopulationAdjustment {
+  private emergencyReduction(metrics: PerformanceMetrics, fpsError: number, triggerReason: string = 'current FPS critically low'): PopulationAdjustment {
     // Aggressive reduction: 20-40% depending on severity
     const severity = Math.min(1, fpsError / this.config.emergencyFpsThreshold);
     const reductionFactor = 0.2 + severity * 0.2;
@@ -219,7 +239,7 @@ export class PopulationController {
     return {
       population: newPopulation,
       delta,
-      reason: `🚨 EMERGENCY: FPS critically low (${metrics.currentFps.toFixed(1)}), reducing ${Math.abs(delta)} cars`,
+      reason: `🚨 EMERGENCY: ${triggerReason} (curr: ${metrics.currentFps.toFixed(1)}, 0.1%: ${metrics.p0_1Fps.toFixed(1)}), reducing ${Math.abs(delta)} cars`,
       metrics: {
         fps: metrics.currentFps,
         error: fpsError / this.config.targetFps,
