@@ -10,13 +10,13 @@
 
     <div class="info-container">
       <div class="controls">
-        <button @click="nextGeneration">RACE</button>
+        <button @click="nextGeneration">SYNC</button>
         <button @click="reset">RESET</button>
         <button @click="toggleDieOnBackwards" :class="{ active: dieOnBackwards }">
-          KILL BACK: {{ dieOnBackwards ? 'ON' : 'OFF' }}
+          DIE REV
         </button>
         <button @click="toggleKillSlowCars" :class="{ active: killSlowCars }">
-          KILL SLOW: {{ killSlowCars ? 'ON' : 'OFF' }}
+          DIE SLOW
         </button>
       </div>
 
@@ -415,7 +415,7 @@ onUnmounted(() => {
 canvas {
   display: block;
   max-width: 100%;
-  max-height: calc(100vh - 200px); /* Reserve space for controls and table */
+  max-height: calc(100vh - 280px); /* Reserve more space for controls and table */
   width: auto;
   height: auto;
   object-fit: contain;
@@ -430,11 +430,11 @@ canvas {
 /* Desktop: ensure canvas fits within viewport */
 @media (min-width: 769px) {
   .canvas-container {
-    max-height: calc(100vh - 150px);
+    max-height: calc(100vh - 220px);
   }
 
   canvas {
-    max-height: calc(100vh - 170px);
+    max-height: calc(100vh - 240px);
   }
 }
 
@@ -475,17 +475,17 @@ canvas {
 .stats-table th {
   background: rgba(0, 0, 0, 0.8);
   color: #ffffff;
-  padding: 10px 20px;
+  padding: 4px 6px;
   text-align: left;
   font-weight: 700;
   text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: 0.5px;
+  font-size: 10px;
+  letter-spacing: 0.3px;
   border-bottom: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .stats-table td {
-  padding: 10px 20px;
+  padding: 4px 6px;
   color: #ffffff;
   text-align: left;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -525,11 +525,12 @@ canvas {
 
   .stats-table th,
   .stats-table td {
-    padding: 8px 12px;
+    padding: 3px 5px;
   }
 
   .stats-table th {
-    font-size: 10px;
+    font-size: 8px;
+    letter-spacing: 0.2px;
   }
 
   .simulator {
@@ -563,12 +564,17 @@ button:hover {
   border-color: #6b7280;
 }
 
-button:active {
+/* SYNC and RESET buttons (first two) - flash green when pressed */
+button:nth-child(1):active,
+button:nth-child(2):active {
   transform: translateY(0);
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  background: #c0c4c9;
+  background: #10b981;
+  color: #ffffff;
+  border-color: #059669;
 }
 
+/* Toggle buttons - active state (green) */
 button.active {
   background: #10b981;
   color: #ffffff;
@@ -582,5 +588,24 @@ button.active:hover {
 
 button.active:active {
   background: #047857;
+}
+
+/* Toggle buttons - inactive state (red) */
+button:nth-child(3):not(.active),
+button:nth-child(4):not(.active) {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+button:not(.active):nth-child(3):hover,
+button:not(.active):nth-child(4):hover {
+  background: #dc2626;
+  border-color: #b91c1c;
+}
+
+button:not(.active):nth-child(3):active,
+button:not(.active):nth-child(4):active {
+  background: #b91c1c;
 }
 </style>

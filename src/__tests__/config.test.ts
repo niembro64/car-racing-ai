@@ -76,14 +76,18 @@ describe('Configuration', () => {
 
   it('should have valid neural network architectures for both modes', () => {
     // Standard mode uses all raw sensor rays
-    expect(config.NEURAL_NETWORK_ARCHITECTURE_STANDARD[0]).toBe(config.SENSOR_RAY_ANGLES.length);
+    expect(config.NN_ARCH_MEDIUM[0]).toBe(config.SENSOR_RAY_ANGLES.length);
 
     // Differential mode uses 1 forward ray + 4 differential pairs
-    expect(config.NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL[0]).toBe(1 + config.SENSOR_RAY_PAIRS.length);
+    expect(config.NN_ARCH_DIFF_MEDIUM[0]).toBe(
+      1 + config.SENSOR_RAY_PAIRS.length
+    );
 
     // Both should have output layer of size 1 (steering)
-    expect(config.NEURAL_NETWORK_ARCHITECTURE_STANDARD[config.NEURAL_NETWORK_ARCHITECTURE_STANDARD.length - 1]).toBe(1);
-    expect(config.NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL[config.NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL.length - 1]).toBe(1);
+    expect(config.NN_ARCH_MEDIUM[config.NN_ARCH_MEDIUM.length - 1]).toBe(1);
+    expect(
+      config.NN_ARCH_DIFF_MEDIUM[config.NN_ARCH_DIFF_MEDIUM.length - 1]
+    ).toBe(1);
   });
 
   it('should have valid hex colors', () => {
@@ -100,17 +104,34 @@ describe('Configuration', () => {
       config.CAR_LABEL_COLOR_DEAD,
     ];
 
-    colors.forEach(color => {
-      expect(hexColorRegex.test(color) || rgbaColorRegex.test(color)).toBe(true);
+    colors.forEach((color) => {
+      expect(hexColorRegex.test(color) || rgbaColorRegex.test(color)).toBe(
+        true
+      );
     });
 
     // Check CAR_BRAIN_CONFIGS colors
     for (const carConfig of config.CAR_BRAIN_CONFIGS) {
-      expect(hexColorRegex.test(carConfig.colors.normal) || rgbaColorRegex.test(carConfig.colors.normal)).toBe(true);
-      expect(hexColorRegex.test(carConfig.colors.elite) || rgbaColorRegex.test(carConfig.colors.elite)).toBe(true);
-      expect(hexColorRegex.test(carConfig.colors.ray) || rgbaColorRegex.test(carConfig.colors.ray)).toBe(true);
-      expect(hexColorRegex.test(carConfig.colors.rayHit) || rgbaColorRegex.test(carConfig.colors.rayHit)).toBe(true);
-      expect(hexColorRegex.test(carConfig.colors.marker) || rgbaColorRegex.test(carConfig.colors.marker)).toBe(true);
+      expect(
+        hexColorRegex.test(carConfig.colors.normal) ||
+          rgbaColorRegex.test(carConfig.colors.normal)
+      ).toBe(true);
+      expect(
+        hexColorRegex.test(carConfig.colors.elite) ||
+          rgbaColorRegex.test(carConfig.colors.elite)
+      ).toBe(true);
+      expect(
+        hexColorRegex.test(carConfig.colors.ray) ||
+          rgbaColorRegex.test(carConfig.colors.ray)
+      ).toBe(true);
+      expect(
+        hexColorRegex.test(carConfig.colors.rayHit) ||
+          rgbaColorRegex.test(carConfig.colors.rayHit)
+      ).toBe(true);
+      expect(
+        hexColorRegex.test(carConfig.colors.marker) ||
+          rgbaColorRegex.test(carConfig.colors.marker)
+      ).toBe(true);
     }
   });
 });

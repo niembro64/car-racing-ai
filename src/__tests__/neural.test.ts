@@ -1,19 +1,25 @@
 import { describe, it, expect } from 'vitest';
 import { NeuralNetwork } from '../core/Neural';
 import type { NeuralInput } from '../types/neural';
-import { NEURAL_NETWORK_ARCHITECTURE_STANDARD, SENSOR_RAY_ANGLES } from '../config';
+import { NN_ARCH_MEDIUM, SENSOR_RAY_ANGLES } from '../config';
 
 // Use STANDARD architecture for tests (9 inputs matching raw sensor data)
-const TEST_ARCHITECTURE = NEURAL_NETWORK_ARCHITECTURE_STANDARD;
+const TEST_ARCHITECTURE = NN_ARCH_MEDIUM;
 
 // Helper function to create test input with correct number of rays
 const createTestInput = (values?: number[]): NeuralInput => {
   const rayCount = SENSOR_RAY_ANGLES.length;
   if (values && values.length !== rayCount) {
-    throw new Error(`Test input must have ${rayCount} rays, got ${values.length}`);
+    throw new Error(
+      `Test input must have ${rayCount} rays, got ${values.length}`
+    );
   }
   return {
-    rays: values || Array(rayCount).fill(0).map((_, i) => (i + 1) / (rayCount + 1))
+    rays:
+      values ||
+      Array(rayCount)
+        .fill(0)
+        .map((_, i) => (i + 1) / (rayCount + 1)),
   };
 };
 
@@ -51,12 +57,24 @@ describe('NeuralNetwork', () => {
 
     const rayCount = SENSOR_RAY_ANGLES.length;
     const inputs: NeuralInput[] = [
-      createTestInput(Array(rayCount).fill(0).map((_, i) => 0.1 * (i + 1))),
-      createTestInput(Array(rayCount).fill(0).map((_, i) => 0.9 - 0.1 * i)),
-      createTestInput(Array(rayCount).fill(0).map((_, i) => (i % 2 === 0) ? 1.0 : 0.0))
+      createTestInput(
+        Array(rayCount)
+          .fill(0)
+          .map((_, i) => 0.1 * (i + 1))
+      ),
+      createTestInput(
+        Array(rayCount)
+          .fill(0)
+          .map((_, i) => 0.9 - 0.1 * i)
+      ),
+      createTestInput(
+        Array(rayCount)
+          .fill(0)
+          .map((_, i) => (i % 2 === 0 ? 1.0 : 0.0))
+      ),
     ];
 
-    inputs.forEach(input => {
+    inputs.forEach((input) => {
       const output = brain.run(input);
       expect(output.direction).toBeGreaterThanOrEqual(-1);
       expect(output.direction).toBeLessThanOrEqual(1);
@@ -66,7 +84,12 @@ describe('NeuralNetwork', () => {
   it('should export and import weights correctly', () => {
     const brain1 = NeuralNetwork.createRandom(12345, TEST_ARCHITECTURE, 'relu');
     const weights = brain1.toJSON();
-    const brain2 = NeuralNetwork.fromJSON(weights, 54321, TEST_ARCHITECTURE, 'relu');
+    const brain2 = NeuralNetwork.fromJSON(
+      weights,
+      54321,
+      TEST_ARCHITECTURE,
+      'relu'
+    );
 
     const input = createTestInput();
 
@@ -93,7 +116,7 @@ describe('NeuralNetwork', () => {
     const brain = NeuralNetwork.createRandom(12345, TEST_ARCHITECTURE, 'relu');
 
     const invalidInput: NeuralInput = {
-      rays: [0.5, 0.3] // Wrong size
+      rays: [0.5, 0.3], // Wrong size
     };
 
     expect(() => brain.run(invalidInput)).toThrow();
@@ -158,7 +181,11 @@ describe('NeuralNetwork', () => {
     expect(mutationRate).toBeGreaterThan(0.9);
 
     // Log for visibility
-    console.log(`Mutated ${mutatedParams}/${totalParams} parameters (${(mutationRate * 100).toFixed(1)}%)`);
+    console.log(
+      `Mutated ${mutatedParams}/${totalParams} parameters (${(
+        mutationRate * 100
+      ).toFixed(1)}%)`
+    );
   });
 
   it('should initialize all parameters for any architecture', () => {
@@ -187,7 +214,7 @@ describe('NeuralNetwork', () => {
     for (let i = 0; i < expectedLayers; i++) {
       const inputSize = TEST_ARCHITECTURE[i];
       const outputSize = TEST_ARCHITECTURE[i + 1];
-      expectedParams += (inputSize * outputSize) + outputSize; // weights + biases
+      expectedParams += inputSize * outputSize + outputSize; // weights + biases
     }
 
     // Verify all parameters
@@ -209,6 +236,10 @@ describe('NeuralNetwork', () => {
     }
 
     expect(paramCount).toBe(expectedParams);
-    console.log(`Verified all ${paramCount} parameters are properly initialized for architecture [${TEST_ARCHITECTURE.join(', ')}]`);
+    console.log(
+      `Verified all ${paramCount} parameters are properly initialized for architecture [${TEST_ARCHITECTURE.join(
+        ', '
+      )}]`
+    );
   });
 });

@@ -6,6 +6,8 @@ export interface NeuralOutput {
   direction: number;  // Steering direction (negative = left, positive = right)
 }
 
+export type ActivationType = 'relu' | 'linear' | 'gelu' | 'step';
+
 export interface NetworkWeights {
   layers: {
     weights: number[][];

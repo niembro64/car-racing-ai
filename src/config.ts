@@ -47,7 +47,7 @@ export interface CarBrainConfig {
   // Neural network configuration
   architecture: number[]; // Layer sizes [input, hidden..., output]
   useDifferentialInputs: boolean; // true = differential pairs, false = raw sensors
-  activationType: 'relu' | 'linear' | 'gelu'; // Hidden layer activation function
+  activationType: 'relu' | 'linear' | 'gelu' | 'step'; // Hidden layer activation function
 
   // Visual appearance
   colors: {
@@ -190,41 +190,22 @@ export const SENSOR_RAY_PAIRS = [
 // - Input layer: 9 distance sensors (raw values)
 // - Hidden layer: 6 neurons (pattern recognition)
 // - Output layer: 1 neuron (steering: -1 = full left, +1 = full right)
-export const NEURAL_NETWORK_ARCHITECTURE_STANDARD = [
-  SENSOR_RAY_ANGLES.length,
-  6,
-  1,
-];
+export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 1];
+export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 6, 1];
+export const NN_ARCH_NORMAL_LARGE = [SENSOR_RAY_ANGLES.length, 10, 10, 1];
+export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 6, 1];
+export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 6, 1];
 
-export const NEURAL_NETWORK_ARCHITECTURE_LARGE = [
-  SENSOR_RAY_ANGLES.length,
-  10,
-  10,
-  1,
-];
-
-// Differential mode: [5 inputs] → [4 hidden] → [1 output]
-// - Input layer: 1 forward sensor + 4 differential pairs (left - right)
-// - Hidden layer: 4 neurons (smaller network for fewer inputs)
-// - Output layer: 1 neuron (steering: -1 = full left, +1 = full right)
-export const NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL = [
-  1 + SENSOR_RAY_PAIRS.length,
-  4,
-  1,
-];
-
-// Default architecture (can be changed at runtime)
-export const NEURAL_NETWORK_ARCHITECTURE =
-  NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL;
+export const NEURAL_NETWORK_ARCHITECTURE = NN_ARCH_DIFF_MEDIUM;
 
 export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
   {
-    id: 'difflinear',
     displayName: 'DIFF_LINEAR',
+    id: 'difflinear',
     shortName: 'DL',
     description:
       '5 differential sensor inputs (1 forward + 4 L-R pairs) with Linear activation in hidden layer of size 4',
-    architecture: NEURAL_NETWORK_ARCHITECTURE_DIFFERENTIAL,
+    architecture: NN_ARCH_DIFF_MEDIUM,
     useDifferentialInputs: true,
     activationType: 'linear',
     colors: {
@@ -240,12 +221,12 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    id: 'normlinear',
     displayName: 'NORM_LINEAR',
+    id: 'normlinear',
     shortName: 'NL',
     description:
       '9 raw sensor inputs with Linear activation in hidden layer of size 6',
-    architecture: NEURAL_NETWORK_ARCHITECTURE_STANDARD,
+    architecture: NN_ARCH_MEDIUM,
     useDifferentialInputs: false,
     activationType: 'linear',
     colors: {
@@ -261,12 +242,12 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    id: 'normgelu',
     displayName: 'NORM_GELU',
+    id: 'normgelu',
     shortName: 'NG',
     description:
       '9 raw sensor inputs with GELU activation in hidden layer of size 6',
-    architecture: NEURAL_NETWORK_ARCHITECTURE_STANDARD,
+    architecture: NN_ARCH_MEDIUM,
     useDifferentialInputs: false,
     activationType: 'gelu',
 
@@ -283,12 +264,12 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    id: 'relularge',
     displayName: 'RELU_LARGE',
+    id: 'relularge',
     shortName: 'RL',
     description:
       '9 raw sensor inputs with ReLU activation in two hidden layers of size 10 each',
-    architecture: NEURAL_NETWORK_ARCHITECTURE_LARGE,
+    architecture: NN_ARCH_NORMAL_LARGE,
     useDifferentialInputs: false,
     activationType: 'relu',
     // green
@@ -298,6 +279,50 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
       ray: '#229922',
       rayHit: '#229922',
       marker: '#229922',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    displayName: 'NORM_STEP',
+    id: 'normstep',
+    shortName: 'NS',
+    description:
+      '9 raw sensor inputs with Step activation in hidden layer of size 6 (expected to perform poorly)',
+    architecture: NN_ARCH_MEDIUM,
+    useDifferentialInputs: false,
+    activationType: 'step',
+    // orange
+    colors: {
+      normal: '#cc6600',
+      elite: '#ff9933',
+      ray: '#cc6600',
+      rayHit: '#cc6600',
+      marker: '#cc6600',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    displayName: 'DIFF_SMALL',
+    id: 'diffsmall',
+    shortName: 'DS',
+    description:
+      '5 differential sensor inputs (1 forward + 4 L-R pairs) with Linear activation in hidden layer of size 6',
+    architecture: NN_ARCH_DIFF_SMALL,
+    useDifferentialInputs: true,
+    activationType: 'linear',
+    // purple
+    colors: {
+      normal: '#8844aa',
+      elite: '#bb77ff',
+      ray: '#8844aa',
+      rayHit: '#8844aa',
+      marker: '#8844aa',
     },
     rayVisualization: {
       width: 0.5,

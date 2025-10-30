@@ -1,7 +1,6 @@
 import type { NeuralInput, NeuralOutput } from '@/types/neural';
 import { clamp } from './math/geom';
 import { SeededRandom } from './math/geom';
-import { NEURAL_NETWORK_ARCHITECTURE } from '@/config';
 
 // Simple feed-forward neural network implementation
 interface Layer {
@@ -17,16 +16,16 @@ export class NeuralNetwork {
   private structure: NetworkStructure;
   private rng: SeededRandom;
   private layerSizes: number[];
-  private activationType: 'relu' | 'linear' | 'gelu';
+  private activationType: 'relu' | 'linear' | 'gelu' | 'step';
 
   constructor(
     weights: NetworkStructure | undefined,
     seed: number,
-    architecture?: number[],
-    activationType: 'relu' | 'linear' | 'gelu' = 'relu'
+    architecture: number[],
+    activationType: 'relu' | 'linear' | 'gelu' | 'step' = 'relu'
   ) {
     this.rng = new SeededRandom(seed);
-    this.layerSizes = architecture || NEURAL_NETWORK_ARCHITECTURE;
+    this.layerSizes = architecture;
     this.activationType = activationType;
 
     if (weights) {
@@ -84,6 +83,12 @@ export class NeuralNetwork {
     return 0.5 * x * (1.0 + Math.tanh(inner));
   }
 
+  // Step activation (Heaviside step function)
+  // Returns 0 for x < 0, 1 for x >= 0
+  private step(x: number): number {
+    return x >= 0 ? 1 : 0;
+  }
+
   // Forward pass through network
   private forward(input: number[]): number[] {
     let current = input;
@@ -107,6 +112,8 @@ export class NeuralNetwork {
           next.push(this.relu(sum)); // ReLU for hidden layers
         } else if (this.activationType === 'gelu') {
           next.push(this.gelu(sum)); // GELU for hidden layers
+        } else if (this.activationType === 'step') {
+          next.push(this.step(sum)); // Step for hidden layers
         } else {
           next.push(sum); // Linear (identity) for hidden layers
         }
@@ -203,7 +210,7 @@ export class NeuralNetwork {
   static createRandom(
     seed: number,
     architecture: number[],
-    activationType: 'relu' | 'linear' | 'gelu'
+    activationType: 'relu' | 'linear' | 'gelu' | 'step'
   ): NeuralNetwork {
     return new NeuralNetwork(undefined, seed, architecture, activationType);
   }
@@ -213,7 +220,7 @@ export class NeuralNetwork {
     weights: NetworkStructure,
     seed: number,
     architecture: number[],
-    activationType: 'relu' | 'linear' | 'gelu'
+    activationType: 'relu' | 'linear' | 'gelu' | 'step'
   ): NeuralNetwork {
     return new NeuralNetwork(weights, seed, architecture, activationType);
   }
