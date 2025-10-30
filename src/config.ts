@@ -102,23 +102,22 @@ export const NN_ARCH_DIFF_LARGE = [1 + SENSOR_RAY_PAIRS.length, 3, 2, 1];
 export const NEURAL_NETWORK_ARCHITECTURE = NN_ARCH_DIFF_MEDIUM;
 
 export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
-  // === ACTIVE CARS - Diff/Linear (Fiery Theme) ===
+  // === None/Raw (no hidden layers, no activation function) ===
   {
     useCar: true,
-    displayName: 'Spark',
-    mobileDisplayName: 'Spark',
-    id: 'diffsmall',
-    shortName: 'SP',
-    description:
-      'Small: 5 differential inputs (1 fwd + 4 L-R pairs), no hidden layers',
+    displayName: 'None Pair',
+    mobileDisplayName: 'NonP',
+    id: 'none-pair-s',
+    shortName: 'NP',
+    description: 'No hidden layers, differential inputs (1 fwd + 4 L-R pairs)',
     nn: {
       architecture: NN_ARCH_DIFF_SMALL,
       inputModification: 'pair',
-      activationType: '—',
+      activationType: '-',
     },
     colors: {
-      light: '#dd5533',
-      dark: '#dd5533',
+      light: '#cccccc',
+      dark: '#999999',
     },
     rayVisualization: {
       width: 0.5,
@@ -127,20 +126,42 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   },
   {
     useCar: true,
-    displayName: 'Flame',
-    mobileDisplayName: 'Flame',
-    id: 'diffmedium',
-    shortName: 'FL',
-    description:
-      'Medium: 5 differential inputs with Linear activation, hidden layer size 4',
+    displayName: 'None Dir',
+    mobileDisplayName: 'NonD',
+    id: 'none-dir-s',
+    shortName: 'ND',
+    description: 'No hidden layers, direct raw sensor inputs (9 rays)',
+    nn: {
+      architecture: NN_ARCH_SMALL,
+      inputModification: 'dir',
+      activationType: '-',
+    },
+    colors: {
+      light: '#aaaaaa',
+      dark: '#777777',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+
+  // === Linear activation (orange/yellow family) ===
+  {
+    useCar: true,
+    displayName: 'Linear Pair M',
+    mobileDisplayName: 'LinP-M',
+    id: 'linear-pair-m',
+    shortName: 'LP2',
+    description: 'Linear activation, differential inputs, 1 hidden layer (3)',
     nn: {
       architecture: NN_ARCH_DIFF_MEDIUM,
       inputModification: 'pair',
       activationType: 'linear',
     },
     colors: {
-      light: '#cc3311',
-      dark: '#cc3311',
+      light: '#cc8833',
+      dark: '#995522',
     },
     rayVisualization: {
       width: 0.5,
@@ -149,42 +170,19 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   },
   {
     useCar: false,
-    displayName: 'Inferno',
-    mobileDisplayName: 'Inferno',
-    id: 'difflarge',
-    shortName: 'IF',
-    description:
-      'Large: 5 differential inputs with Linear activation, two hidden layers (6, 3)',
+    displayName: 'Linear Pair L',
+    mobileDisplayName: 'LinP-L',
+    id: 'linear-pair-l',
+    shortName: 'LP3',
+    description: 'Linear activation, differential inputs, 2 hidden layers (3, 2)',
     nn: {
       architecture: NN_ARCH_DIFF_LARGE,
       inputModification: 'pair',
       activationType: 'linear',
     },
     colors: {
-      light: '#991100',
-      dark: '#991100',
-    },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
-  },
-  // === ACTIVE CARS - Dir/GELU (Aquatic Theme) ===
-  {
-    useCar: true,
-    displayName: 'Ripple',
-    mobileDisplayName: 'Ripple',
-    id: 'dirgelusmall',
-    shortName: 'RP',
-    description: 'Small: 9 raw sensor inputs, no hidden layers',
-    nn: {
-      architecture: NN_ARCH_SMALL,
-      inputModification: 'dir',
-      activationType: '—',
-    },
-    colors: {
-      light: '#33aacc',
-      dark: '#33aacc',
+      light: '#aa6611',
+      dark: '#774400',
     },
     rayVisualization: {
       width: 0.5,
@@ -193,64 +191,19 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   },
   {
     useCar: true,
-    displayName: 'Wave',
-    mobileDisplayName: 'Wave',
-    id: 'dirgelumedium',
-    shortName: 'WV',
-    description:
-      'Medium: 9 raw sensor inputs with RELU activation, hidden layer size 4',
-    nn: {
-      architecture: NN_ARCH_MEDIUM,
-      inputModification: 'dir',
-      activationType: 'relu',
-    },
-    colors: {
-      light: '#1166cc',
-      dark: '#1166cc',
-    },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
-  },
-  {
-    useCar: false,
-    displayName: 'Tsunami',
-    mobileDisplayName: 'Tsunami',
-    id: 'dirgelularge',
-    shortName: 'TS',
-    description:
-      'Large: 9 raw sensor inputs with RELU activation, two hidden layers (6, 3)',
-    nn: {
-      architecture: NN_ARCH_LARGE,
-      inputModification: 'dir',
-      activationType: 'relu',
-    },
-    colors: {
-      light: '#0044aa',
-      dark: '#0044aa',
-    },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
-  },
-  // === INACTIVE CARS - Keep for reference ===
-  {
-    useCar: false,
-    displayName: 'Flatty',
-    mobileDisplayName: 'Flat',
-    id: 'normlinear',
-    shortName: 'FL',
-    description: '9 raw sensor inputs with Linear activation in hidden layer',
+    displayName: 'Linear Dir M',
+    mobileDisplayName: 'LinD-M',
+    id: 'linear-dir-m',
+    shortName: 'LD2',
+    description: 'Linear activation, direct inputs, 1 hidden layer (3)',
     nn: {
       architecture: NN_ARCH_MEDIUM,
       inputModification: 'dir',
       activationType: 'linear',
     },
     colors: {
-      light: '#1a4d73',
-      dark: '#1a4d73',
+      light: '#ccaa33',
+      dark: '#997722',
     },
     rayVisualization: {
       width: 0.5,
@@ -259,20 +212,128 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   },
   {
     useCar: false,
-    displayName: 'BigBrain',
-    mobileDisplayName: 'BigB',
-    id: 'relularge',
-    shortName: 'BB',
-    description:
-      '9 raw sensor inputs with ReLU activation in two hidden layers',
+    displayName: 'Linear Dir L',
+    mobileDisplayName: 'LinD-L',
+    id: 'linear-dir-l',
+    shortName: 'LD3',
+    description: 'Linear activation, direct inputs, 2 hidden layers (3, 2)',
+    nn: {
+      architecture: NN_ARCH_LARGE,
+      inputModification: 'dir',
+      activationType: 'linear',
+    },
+    colors: {
+      light: '#aa8811',
+      dark: '#775500',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+
+  // === ReLU activation (blue family) ===
+  {
+    useCar: false,
+    displayName: 'ReLU Pair M',
+    mobileDisplayName: 'RelP-M',
+    id: 'relu-pair-m',
+    shortName: 'RP2',
+    description: 'ReLU activation, differential inputs, 1 hidden layer (3)',
+    nn: {
+      architecture: NN_ARCH_DIFF_MEDIUM,
+      inputModification: 'pair',
+      activationType: 'relu',
+    },
+    colors: {
+      light: '#5588cc',
+      dark: '#336699',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    useCar: false,
+    displayName: 'ReLU Pair L',
+    mobileDisplayName: 'RelP-L',
+    id: 'relu-pair-l',
+    shortName: 'RP3',
+    description: 'ReLU activation, differential inputs, 2 hidden layers (3, 2)',
+    nn: {
+      architecture: NN_ARCH_DIFF_LARGE,
+      inputModification: 'pair',
+      activationType: 'relu',
+    },
+    colors: {
+      light: '#3366aa',
+      dark: '#224477',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    useCar: false,
+    displayName: 'ReLU Dir M',
+    mobileDisplayName: 'RelD-M',
+    id: 'relu-dir-m',
+    shortName: 'RD2',
+    description: 'ReLU activation, direct inputs, 1 hidden layer (3)',
+    nn: {
+      architecture: NN_ARCH_MEDIUM,
+      inputModification: 'dir',
+      activationType: 'relu',
+    },
+    colors: {
+      light: '#55aacc',
+      dark: '#338899',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    useCar: false,
+    displayName: 'ReLU Dir L',
+    mobileDisplayName: 'RelD-L',
+    id: 'relu-dir-l',
+    shortName: 'RD3',
+    description: 'ReLU activation, direct inputs, 2 hidden layers (3, 2)',
     nn: {
       architecture: NN_ARCH_LARGE,
       inputModification: 'dir',
       activationType: 'relu',
     },
     colors: {
-      light: '#1a731a',
-      dark: '#1a731a',
+      light: '#3388aa',
+      dark: '#226677',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+
+  // === GELU activation (green/cyan family) ===
+  {
+    useCar: true,
+    displayName: 'GELU Pair M',
+    mobileDisplayName: 'GelP-M',
+    id: 'gelu-pair-m',
+    shortName: 'GP2',
+    description: 'GELU activation, differential inputs, 1 hidden layer (3)',
+    nn: {
+      architecture: NN_ARCH_DIFF_MEDIUM,
+      inputModification: 'pair',
+      activationType: 'gelu',
+    },
+    colors: {
+      light: '#44cc88',
+      dark: '#229955',
     },
     rayVisualization: {
       width: 0.5,
@@ -281,19 +342,147 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   },
   {
     useCar: false,
-    displayName: 'WiggleBot',
-    mobileDisplayName: 'Wiggle',
-    id: 'normstep',
-    shortName: 'WB',
-    description: '9 raw sensor inputs with Step activation (performs poorly)',
+    displayName: 'GELU Pair L',
+    mobileDisplayName: 'GelP-L',
+    id: 'gelu-pair-l',
+    shortName: 'GP3',
+    description: 'GELU activation, differential inputs, 2 hidden layers (3, 2)',
+    nn: {
+      architecture: NN_ARCH_DIFF_LARGE,
+      inputModification: 'pair',
+      activationType: 'gelu',
+    },
+    colors: {
+      light: '#22aa66',
+      dark: '#117733',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    useCar: true,
+    displayName: 'GELU Dir M',
+    mobileDisplayName: 'GelD-M',
+    id: 'gelu-dir-m',
+    shortName: 'GD2',
+    description: 'GELU activation, direct inputs, 1 hidden layer (3)',
+    nn: {
+      architecture: NN_ARCH_MEDIUM,
+      inputModification: 'dir',
+      activationType: 'gelu',
+    },
+    colors: {
+      light: '#44ccaa',
+      dark: '#229977',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    useCar: false,
+    displayName: 'GELU Dir L',
+    mobileDisplayName: 'GelD-L',
+    id: 'gelu-dir-l',
+    shortName: 'GD3',
+    description: 'GELU activation, direct inputs, 2 hidden layers (3, 2)',
+    nn: {
+      architecture: NN_ARCH_LARGE,
+      inputModification: 'dir',
+      activationType: 'gelu',
+    },
+    colors: {
+      light: '#22aa88',
+      dark: '#117755',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+
+  // === Step activation (purple/magenta family) ===
+  {
+    useCar: false,
+    displayName: 'Step Pair M',
+    mobileDisplayName: 'StpP-M',
+    id: 'step-pair-m',
+    shortName: 'SP2',
+    description: 'Step activation, differential inputs, 1 hidden layer (3)',
+    nn: {
+      architecture: NN_ARCH_DIFF_MEDIUM,
+      inputModification: 'pair',
+      activationType: 'step',
+    },
+    colors: {
+      light: '#cc55cc',
+      dark: '#993399',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    useCar: false,
+    displayName: 'Step Pair L',
+    mobileDisplayName: 'StpP-L',
+    id: 'step-pair-l',
+    shortName: 'SP3',
+    description: 'Step activation, differential inputs, 2 hidden layers (3, 2)',
+    nn: {
+      architecture: NN_ARCH_DIFF_LARGE,
+      inputModification: 'pair',
+      activationType: 'step',
+    },
+    colors: {
+      light: '#aa33aa',
+      dark: '#771177',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    useCar: false,
+    displayName: 'Step Dir M',
+    mobileDisplayName: 'StpD-M',
+    id: 'step-dir-m',
+    shortName: 'SD2',
+    description: 'Step activation, direct inputs, 1 hidden layer (3)',
     nn: {
       architecture: NN_ARCH_MEDIUM,
       inputModification: 'dir',
       activationType: 'step',
     },
     colors: {
-      light: '#994d00',
-      dark: '#994d00',
+      light: '#9955cc',
+      dark: '#663399',
+    },
+    rayVisualization: {
+      width: 0.5,
+      hitRadius: 3,
+    },
+  },
+  {
+    useCar: false,
+    displayName: 'Step Dir L',
+    mobileDisplayName: 'StpD-L',
+    id: 'step-dir-l',
+    shortName: 'SD3',
+    description: 'Step activation, direct inputs, 2 hidden layers (3, 2)',
+    nn: {
+      architecture: NN_ARCH_LARGE,
+      inputModification: 'dir',
+      activationType: 'step',
+    },
+    colors: {
+      light: '#7733aa',
+      dark: '#551177',
     },
     rayVisualization: {
       width: 0.5,

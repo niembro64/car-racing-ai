@@ -62,10 +62,6 @@ export class NeuralNetwork {
     return x;
   }
 
-  private tanh(x: number): number {
-    return Math.tanh(x);
-  }
-
   // ReLU activation (max(0, x))
   private relu(x: number): number {
     return Math.max(0, x);
@@ -114,7 +110,7 @@ export class NeuralNetwork {
           next.push(this.step(sum)); // Step for hidden layers
         } else if (this.activationType === 'linear') {
           next.push(this.linear(sum)); // Linear for hidden layers
-        } else if (this.activationType === '—') {
+        } else if (this.activationType === '-') {
           // No hidden layers - this code path should never execute
           next.push(this.linear(sum));
         } else {

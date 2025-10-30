@@ -516,47 +516,6 @@ const sortedCarBrainConfigs = computed(() => {
   return [...activeCarConfigs.value].sort(compareConfigs);
 });
 
-// Computed property for mutation rates (updates every frame)
-const mutationRateByConfigId = computed(() => {
-  // Explicitly access reactive dependencies to ensure Vue tracks them
-  void frameCounter.value; // Trigger on every frame
-  const isMutationByDistance = mutationByDistance.value; // Trigger on toggle
-
-  const rates = new Map<string, string>();
-
-  for (const config of activeCarConfigs.value) {
-    if (isMutationByDistance) {
-      const trackLength = track.getTotalLength();
-
-      // Get current generation's best distance (live updates)
-      const carsOfType = population.value.filter(
-        (car) => car.configId === config.id
-      );
-      const currentBest =
-        carsOfType.length > 0
-          ? Math.max(...carsOfType.map((car) => car.maxDistanceReached))
-          : 0;
-
-      // Use ONLY current generation's best, not historical
-      const bestDistance = currentBest;
-
-      const progressPercentage = bestDistance / trackLength;
-      const mutationReduction =
-        progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
-      const rate = Math.max(
-        GA_MUTATION_MIN,
-        GA_MUTATION_BASE - mutationReduction
-      );
-      rates.set(config.id, formatMutationRate(rate));
-    } else {
-      // When MUT DIST is OFF, use constant minimum mutation
-      rates.set(config.id, formatMutationRate(GA_MUTATION_MIN));
-    }
-  }
-
-  return rates;
-});
-
 // Computed property for mutation rates as raw percentages (for bars)
 const mutationRatePercentByConfigId = computed(() => {
   void frameCounter.value; // Trigger on every frame
@@ -602,16 +561,16 @@ const mutationRatePercentByConfigId = computed(() => {
 // Get background color for activation type
 const getActivationColor = (activationType: ActivationType): string => {
   switch (activationType) {
-    case 'relu':
-      return '#202'; // Blue
-    case 'gelu':
-      return '#220'; // Green
+    case '-':
+      return '#888'; // Gray (no activation)
     case 'linear':
-      return '#064'; // Purple
+      return '#b85'; // Orange-yellow family
+    case 'relu':
+      return '#58c'; // Blue family
+    case 'gelu':
+      return '#4a8'; // Green-cyan family
     case 'step':
-      return '#342'; // Red
-    case '—':
-      return '#000'; // Red
+      return '#c5c'; // Purple-magenta family
     default:
       throw new Error(`Unknown activation type: ${activationType}`);
   }
@@ -620,47 +579,13 @@ const getActivationColor = (activationType: ActivationType): string => {
 // Get background color for input modification type
 const getInputColor = (inputModification: InputModificationType): string => {
   switch (inputModification) {
-    case 'dir':
-      return '#403'; // Blue
     case 'pair':
-      return '#330'; // Purple
+      return '#843'; // Warmer (reddish-brown)
+    case 'dir':
+      return '#368'; // Cooler (blue)
     default:
       throw new Error(`Unknown input modification type: ${inputModification}`);
   }
-};
-
-// Format percentage to always be 5 characters: "100.%", "99.3%", "1.34%", "0.34%"
-const formatPercentage = (value: number): string => {
-  if (isMobile.value) {
-    // Mobile: Always use 4 characters with leading zeros
-    // "001%", "015%", "100%"
-    const intValue = Math.round(value);
-    const paddedValue = intValue.toString().padStart(3, '0');
-    return `${paddedValue}%`;
-  }
-
-  // Desktop: Use existing formatting logic
-  if (value >= 100) {
-    return '100.%';
-  } else if (value >= 10) {
-    return `${value.toFixed(1)}%`;
-  } else if (value >= 1) {
-    return `${value.toFixed(2)}%`;
-  } else {
-    return `${value.toFixed(2)}%`;
-  }
-};
-
-// Format mutation rate (0-1 range) to be compact
-const formatMutationRate = (rate: number): string => {
-  if (isMobile.value) {
-    // Mobile: Use 3 characters, drop leading 0 and decimal point
-    // 0.250 → "250", 0.010 → "010"
-    return (rate * 1000).toFixed(0).padStart(3, '0');
-  }
-
-  // Desktop: Use 4 decimal places
-  return rate.toFixed(4);
 };
 
 const getHiddenLayers = (architecture: number[]): string => {
@@ -697,25 +622,12 @@ const getBestFitnessPercentRaw = (configId: string): number => {
   return (bestFitness / trackLength) * 100;
 };
 
-const getMeanFitnessPercent = (configId: string): string => {
-  return formatPercentage(getMeanFitnessPercentRaw(configId));
-};
-
-const getBestFitnessPercent = (configId: string): string => {
-  return formatPercentage(getBestFitnessPercentRaw(configId));
-};
-
 const getBestLapTime = (configId: string): string => {
   const lapTime = bestLapTimeByConfigId.value.get(configId) ?? Infinity;
   if (lapTime === Infinity) {
     return '—'; // Em dash for no lap completed
   }
   return lapTime.toFixed(3) + 's';
-};
-
-const getScorePercent = (configId: string): string => {
-  const score = scoreByConfigId.value.get(configId) ?? 0;
-  return formatPercentage(score);
 };
 
 // Cycle through views: table -> graph -> performance -> table
