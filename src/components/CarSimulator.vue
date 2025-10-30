@@ -72,8 +72,8 @@
               <td>
                 {{ getBestFitnessPercent(config.id) }}
               </td>
-              <td style="font-weight: bold">
-                {{ getLapTime(config.id) }}
+              <td>
+                {{ getBestLapTime(config.id) }}
               </td>
               <td>
                 {{ getSecondsToBest(config.id) }}
@@ -188,6 +188,7 @@ import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
   GENERATION_MARKER_RADIUS,
+  LAP_COMPLETION_THRESHOLD,
   DEFAULT_DIE_ON_BACKWARDS,
   DEFAULT_KILL_SLOW_CARS,
   DEFAULT_MUTATION_BY_DISTANCE,
@@ -285,13 +286,15 @@ const generationTimeByConfigId = ref<Map<string, number>>(new Map());
 const generationMarkersByConfigId = ref<
   Map<string, { x: number; y: number; generation: number; fitness: number }[]>
 >(new Map());
-const lapCompletionTimeByConfigId = ref<Map<string, number>>(new Map());
+const lapCompletionTimeByConfigId = ref<Map<string, number>>(new Map()); // Current generation lap time
+const bestLapTimeByConfigId = ref<Map<string, number>>(new Map()); // Best lap time ever (across all generations)
 
 // Initialize tracking maps for all configs
 for (const config of CAR_BRAIN_CONFIGS) {
   generationTimeByConfigId.value.set(config.id, 0);
   generationMarkersByConfigId.value.set(config.id, []);
-  lapCompletionTimeByConfigId.value.set(config.id, Infinity); // Start at infinity (no lap completed)
+  lapCompletionTimeByConfigId.value.set(config.id, Infinity); // Current gen: Start at infinity
+  bestLapTimeByConfigId.value.set(config.id, Infinity); // Best ever: Start at infinity
 }
 
 let animationFrameId: number | null = null;
@@ -300,19 +303,19 @@ const FIXED_DT = 1 / 60; // 60 Hz physics
 /**
  * Hierarchical comparison function for car brain configs
  * Priority order:
- * 1. Lap completion time (lower is better) - Infinity if not completed
+ * 1. Best lap time ever (lower is better) - Infinity if never completed
  * 2. Best fitness (higher is better)
  * 3. Mean fitness (higher is better)
  *
  * Returns: negative if a < b, positive if a > b, 0 if equal
  */
 const compareConfigs = (a: CarBrainConfig, b: CarBrainConfig): number => {
-  // Priority 1: Lap completion time (lower is better)
-  const lapTimeA = lapCompletionTimeByConfigId.value.get(a.id) ?? Infinity;
-  const lapTimeB = lapCompletionTimeByConfigId.value.get(b.id) ?? Infinity;
+  // Priority 1: Best lap time ever (lower is better)
+  const bestLapA = bestLapTimeByConfigId.value.get(a.id) ?? Infinity;
+  const bestLapB = bestLapTimeByConfigId.value.get(b.id) ?? Infinity;
 
-  if (lapTimeA !== lapTimeB) {
-    return lapTimeA - lapTimeB; // Lower lap time wins
+  if (bestLapA !== bestLapB) {
+    return bestLapA - bestLapB; // Lower lap time wins
   }
 
   // Priority 2: Best fitness (higher is better)
@@ -505,8 +508,8 @@ const getSecondsToBest = (configId: string): string => {
   return seconds.toFixed(1) + 's';
 };
 
-const getLapTime = (configId: string): string => {
-  const lapTime = lapCompletionTimeByConfigId.value.get(configId) ?? Infinity;
+const getBestLapTime = (configId: string): string => {
+  const lapTime = bestLapTimeByConfigId.value.get(configId) ?? Infinity;
   if (lapTime === Infinity) {
     return '—'; // Em dash for no lap completed
   }
@@ -618,8 +621,10 @@ const updatePhysics = (dt: number) => {
       car.fitness = result.distance;
       car.updateSignedFitness(result.distance, trackLength);
 
-      // Check if car completed a lap (reached 100% progress)
-      if (car.currentProgressRatio >= 1.0) {
+      // Check if car completed a lap (reached ~99.5% progress)
+      // Use threshold < 1.0 to account for discrete physics updates
+      // Cars may not land exactly at the finish line due to frame timing
+      if (car.currentProgressRatio >= LAP_COMPLETION_THRESHOLD) {
         // Find the config for this car type by configId
         const config = CAR_BRAIN_CONFIGS.find((c) => c.id === car.configId);
 
@@ -628,8 +633,18 @@ const updatePhysics = (dt: number) => {
           const currentLapTime = lapCompletionTimeByConfigId.value.get(config.id) ?? Infinity;
           if (currentLapTime === Infinity) {
             const completionTime = generationTimeByConfigId.value.get(config.id) ?? 0;
+
+            // Record current generation lap time
             lapCompletionTimeByConfigId.value.set(config.id, completionTime);
-            console.log(`[Lap Complete] ${config.displayName} completed lap in ${completionTime.toFixed(2)}s`);
+
+            // Update best lap time if this is better
+            const bestLapTime = bestLapTimeByConfigId.value.get(config.id) ?? Infinity;
+            if (completionTime < bestLapTime) {
+              bestLapTimeByConfigId.value.set(config.id, completionTime);
+              console.log(`[Lap Complete] 🏆 ${config.displayName} NEW BEST: ${completionTime.toFixed(2)}s (prev: ${bestLapTime === Infinity ? '—' : bestLapTime.toFixed(2) + 's'})`);
+            } else {
+              console.log(`[Lap Complete] ${config.displayName} completed lap in ${completionTime.toFixed(2)}s (best: ${bestLapTime.toFixed(2)}s)`);
+            }
           }
 
           // Kill all cars of same type immediately
@@ -903,6 +918,7 @@ const reset = () => {
     generationTimeByConfigId.value.set(config.id, 0);
     generationMarkersByConfigId.value.set(config.id, []);
     lapCompletionTimeByConfigId.value.set(config.id, Infinity);
+    bestLapTimeByConfigId.value.set(config.id, Infinity); // Reset best lap times on manual reset
   }
 
   // Reset performance management system
