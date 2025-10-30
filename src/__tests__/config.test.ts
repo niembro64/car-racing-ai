@@ -4,7 +4,9 @@ import * as config from '../config';
 describe('Configuration', () => {
   it('should have all genetic algorithm settings', () => {
     expect(config.GA_POPULATION_SIZE).toBeDefined();
-    expect(config.GA_MUTATION_RATE).toBeDefined();
+    expect(config.GA_MUTATION_BASE).toBeDefined();
+    expect(config.GA_MUTATION_PROGRESS_FACTOR).toBeDefined();
+    expect(config.GA_MUTATION_MIN).toBeDefined();
     expect(config.GA_MUTATION_MIN_MULTIPLIER).toBeDefined();
     expect(config.GA_MUTATION_MAX_MULTIPLIER).toBeDefined();
     expect(config.GA_MUTATION_CURVE_POWER).toBeDefined();
@@ -67,7 +69,8 @@ describe('Configuration', () => {
 
   it('should have valid numeric values', () => {
     expect(config.GA_POPULATION_SIZE).toBeGreaterThan(0);
-    expect(config.GA_MUTATION_RATE).toBeGreaterThan(0);
+    expect(config.GA_MUTATION_BASE).toBeGreaterThan(0);
+    expect(config.GA_MUTATION_MIN).toBeGreaterThan(0);
     expect(config.CAR_FORWARD_SPEED).toBeGreaterThan(0);
     expect(config.CAR_STEERING_SENSITIVITY).toBeGreaterThan(0);
     expect(config.CAR_WIDTH).toBeGreaterThan(0);

@@ -165,7 +165,8 @@ export class GeneticAlgorithm {
     let baseMutationRate: number;
     if (mutationByDistance) {
       const trackLength = track.getTotalLength();
-      const progressPercentage = state.bestFitness / trackLength;
+      // Use CURRENT generation's best, not all-time best
+      const progressPercentage = bestCar.maxDistanceReached / trackLength;
       const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
       baseMutationRate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
     } else {
@@ -230,14 +231,14 @@ export class GeneticAlgorithm {
     return nextGeneration;
   }
 
-  getCurrentMutationRate(configId: string, mutationByDistance: boolean, track: Track): number {
+  getCurrentMutationRate(configId: string, mutationByDistance: boolean, track: Track, currentBestDistance: number): number {
     const state = this.stateByConfigId.get(configId);
     if (!state) return 0;
 
     if (mutationByDistance) {
-      const bestFitness = state.bestFitness || 0;
       const trackLength = track.getTotalLength();
-      const progressPercentage = bestFitness / trackLength;
+      // Use CURRENT generation's best, not all-time best
+      const progressPercentage = currentBestDistance / trackLength;
       const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
       return Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
     } else {

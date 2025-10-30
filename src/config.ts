@@ -20,10 +20,9 @@ export function appendMirroredWaypoints(
   return [...waypoints, ...mirroredTail];
 }
 
-export const GA_MUTATION_BASE = 0.005;
-export const GA_MUTATION_PROGRESS_FACTOR = 0.29;
+export const GA_MUTATION_BASE = 0.25;
+export const GA_MUTATION_PROGRESS_FACTOR = 0.24;
 export const GA_MUTATION_MIN = 0.01;
-export const GA_MUTATION_RATE = 0.1;
 
 export function getPopulationSize(): number {
   if (typeof window === 'undefined') {
@@ -34,14 +33,14 @@ export function getPopulationSize(): number {
     : GA_POPULATION_SIZE_DESKTOP;
 }
 
-export const GA_MUTATION_MIN_MULTIPLIER = 0.5;
-export const GA_MUTATION_MAX_MULTIPLIER = 5.0;
-export const GA_MUTATION_CURVE_POWER = 1.5;
+export const GA_MUTATION_MIN_MULTIPLIER = 0.3;
+export const GA_MUTATION_MAX_MULTIPLIER = 4.0;
+export const GA_MUTATION_CURVE_POWER = 2.0;
 
 export const CANVAS_WIDTH = 800;
 export const CANVAS_HEIGHT = 600;
-export const TRACK_WIDTH_HALF = 42;
-export const SEGMENTS_PER_CURVE = 12;
+export const TRACK_WIDTH_HALF = 40;
+export const SEGMENTS_PER_CURVE = 20;
 
 export const SHOW_CAR_PERCENTAGES = false;
 export const DEBUG_SHOW_WAYPOINTS = true;
@@ -63,11 +62,11 @@ export const wp: Point[] = [
 ];
 export const WAYPOINTS: Point[] = appendMirroredWaypoints(wp, CANVAS_WIDTH);
 
-export const CAR_FORWARD_SPEED = 100;
-export const CAR_STEERING_SENSITIVITY = 0.6;
+export const CAR_FORWARD_SPEED = 250;
+export const CAR_STEERING_SENSITIVITY = 0.4;
 export const CAR_WIDTH = 10;
 export const CAR_HEIGHT = 20;
-export const CAR_START_ANGLE_WIGGLE = Math.PI / 16;
+export const CAR_START_ANGLE_WIGGLE = Math.PI / 6;
 
 export const SENSOR_RAY_ANGLES = [
   0,
@@ -88,11 +87,11 @@ export const SENSOR_RAY_PAIRS = [
   [7, 8],
 ];
 
-export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 1];
-export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 4, 1];
-export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 4, 4, 1];
-export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 4, 1];
-export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 1];
+export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 6, 1];
+export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 8, 1];
+export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 12, 6, 1];
+export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 6, 1];
+export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 4, 1];
 
 // export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 4, 1];
 // export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 8, 1];
@@ -108,7 +107,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     id: 'difflinear',
     shortName: 'DB',
     description:
-      '5 differential sensor inputs (1 forward + 4 L-R pairs) with Linear activation in hidden layer of size 4',
+      '5 differential sensor inputs (1 forward + 4 L-R pairs) with Linear activation in hidden layer of size 6',
     nn: {
       architecture: NN_ARCH_DIFF_MEDIUM,
       inputModification: 'pair',
@@ -131,7 +130,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     id: 'normlinear',
     shortName: 'FL',
     description:
-      '9 raw sensor inputs with Linear activation in hidden layer of size 6',
+      '9 raw sensor inputs with Linear activation in hidden layer of size 8',
     nn: {
       architecture: NN_ARCH_MEDIUM,
       inputModification: 'dir',
@@ -154,7 +153,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     id: 'normgelu',
     shortName: 'SM',
     description:
-      '9 raw sensor inputs with GELU activation in hidden layer of size 6',
+      '9 raw sensor inputs with GELU activation in hidden layer of size 8',
     nn: {
       architecture: NN_ARCH_MEDIUM,
       inputModification: 'dir',
@@ -243,8 +242,8 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
   },
 ];
 
-export const GA_POPULATION_SIZE_DESKTOP = CAR_BRAIN_CONFIGS.length * 8;
-export const GA_POPULATION_SIZE_MOBILE = CAR_BRAIN_CONFIGS.length * 4;
+export const GA_POPULATION_SIZE_DESKTOP = CAR_BRAIN_CONFIGS.length * 20;
+export const GA_POPULATION_SIZE_MOBILE = CAR_BRAIN_CONFIGS.length * 10;
 
 export const GA_POPULATION_SIZE = GA_POPULATION_SIZE_DESKTOP;
 

@@ -209,9 +209,8 @@ const mutationRateByConfigId = computed(() => {
         ? Math.max(...carsOfType.map(car => car.maxDistanceReached))
         : 0;
 
-      // Use the better of current or historical best
-      const historicalBest = ga.value.getBestFitness(config.id);
-      const bestDistance = Math.max(currentBest, historicalBest);
+      // Use ONLY current generation's best, not historical
+      const bestDistance = currentBest;
 
       const progressPercentage = bestDistance / trackLength;
       const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
