@@ -16,7 +16,8 @@ import CarSimulator from './components/CarSimulator.vue';
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+  font-family: 'Courier New', 'Courier', monospace;
+  font-weight: bold;
   background: #4a7c4e; /* Grass green background */
   color: #2c3e50;
 }

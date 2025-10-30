@@ -17,8 +17,8 @@ import {
   CENTERLINE_RAY_HIT_COLOR,
   SENSOR_RAY_PAIRS,
   SHOW_CAR_PERCENTAGES,
-  DEFAULT_DIFFERENTIAL_INPUTS,
   CAR_BRAIN_CONFIGS,
+  type InputModificationType,
 } from '@/config';
 
 export class Car {
@@ -58,7 +58,7 @@ export class Car {
   color: string;
 
   // Input mode
-  useDifferentialInputs: boolean;
+  inputModification: InputModificationType;
 
   // Config identifier (which brain config this car belongs to)
   configId: string;
@@ -69,7 +69,7 @@ export class Car {
     angle: number,
     brain: NeuralNetwork,
     color: string,
-    useDifferentialInputs: boolean = DEFAULT_DIFFERENTIAL_INPUTS,
+    inputModification: InputModificationType,
     configId: string = 'unknown'
   ) {
     this.x = x;
@@ -85,7 +85,7 @@ export class Car {
     this.currentProgressRatio = 0;
     this.previousProgressRatio = -1;
     this.frameCount = 0;
-    this.useDifferentialInputs = useDifferentialInputs;
+    this.inputModification = inputModification;
     this.configId = configId;
     this.brain = brain;
     this.rayCaster = new RayCaster();
@@ -120,7 +120,7 @@ export class Car {
     // Prepare neural network input based on mode
     let inputRays: number[];
 
-    if (this.useDifferentialInputs) {
+    if (this.inputModification === 'pair') {
       // Differential mode: forward ray + (left - right) pairs
       inputRays = [distances[0]]; // Forward ray (index 0)
 
@@ -130,7 +130,7 @@ export class Car {
         inputRays.push(differential);
       }
     } else {
-      // Standard mode: all raw ray distances
+      // Direct mode: all raw ray distances
       inputRays = distances;
     }
 
@@ -250,7 +250,7 @@ export class Car {
   // Render car on canvas
   render(ctx: CanvasRenderingContext2D, showRays: boolean = false): void {
     // Find the config for this car type by configId
-    const config = CAR_BRAIN_CONFIGS.find(c => c.id === this.configId);
+    const config = CAR_BRAIN_CONFIGS.find((c) => c.id === this.configId);
 
     if (!config) {
       console.error('No config found for car with configId =', this.configId);
@@ -320,7 +320,11 @@ export class Car {
       ctx.font = 'bold 16px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(`${sign}${formatted}%`, this.x, this.y - this.height / 2 - 6);
+      ctx.fillText(
+        `${sign}${formatted}%`,
+        this.x,
+        this.y - this.height / 2 - 6
+      );
       ctx.restore();
     }
 
@@ -364,6 +368,14 @@ export class Car {
 
   // Clone with a new brain
   clone(newBrain: NeuralNetwork): Car {
-    return new Car(this.x, this.y, this.angle, newBrain, this.color);
+    return new Car(
+      this.x,
+      this.y,
+      this.angle,
+      newBrain,
+      this.color,
+      this.inputModification,
+      this.configId
+    );
   }
 }

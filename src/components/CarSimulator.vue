@@ -12,11 +12,20 @@
       <div class="controls">
         <button @click="nextGeneration">SYNC</button>
         <button @click="reset">RESET</button>
-        <button @click="toggleDieOnBackwards" :class="{ active: dieOnBackwards }">
+        <button
+          @click="toggleDieOnBackwards"
+          :class="{ active: dieOnBackwards }"
+        >
           DIE REV
         </button>
         <button @click="toggleKillSlowCars" :class="{ active: killSlowCars }">
           DIE SLOW
+        </button>
+        <button
+          @click="toggleMutationByDistance"
+          :class="{ active: mutationByDistance }"
+        >
+          MUT DIST
         </button>
       </div>
 
@@ -29,24 +38,44 @@
               <th>Mutation</th>
               <th>Mean</th>
               <th>Best</th>
+              <th>Act</th>
+              <th>Input</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="config in CAR_BRAIN_CONFIGS" :key="config.id">
-              <td :style="{ color: config.colors.elite, fontWeight: 'bold' }">
+            <tr
+              v-for="config in sortedCarBrainConfigs"
+              :key="config.id"
+              :style="{ backgroundColor: config.colors.elite }"
+            >
+              <td style="font-weight: bold">
                 {{ config.displayName }}
               </td>
-              <td :style="{ color: config.colors.elite }">
+              <td>
                 {{ ga.getGeneration(config.id) }}
               </td>
               <td>
                 {{ getAdaptiveMutationRate(config.id) }}
               </td>
-              <td :style="{ color: config.colors.elite }">
-                {{ getMeanFitnessPercent(config.id) }}%
+              <td>
+                {{ getMeanFitnessPercent(config.id) }}
               </td>
-              <td :style="{ color: config.colors.elite }">
-                {{ getBestFitnessPercent(config.id) }}%
+              <td>
+                {{ getBestFitnessPercent(config.id) }}
+              </td>
+              <td
+                :style="{
+                  backgroundColor: getActivationColor(config.nn.activationType),
+                }"
+              >
+                {{ config.nn.activationType }}
+              </td>
+              <td
+                :style="{
+                  backgroundColor: getInputColor(config.nn.inputModification),
+                }"
+              >
+                {{ config.nn.inputModification }}
               </td>
             </tr>
           </tbody>
@@ -57,20 +86,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, type Ref } from 'vue';
+import { ref, computed, onMounted, onUnmounted, type Ref } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
 import {
   TRACK_WIDTH_HALF,
-  GA_MUTATION_RATE,
   CAR_BRAIN_CONFIGS,
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
   GENERATION_MARKER_RADIUS,
   DEFAULT_DIE_ON_BACKWARDS,
   DEFAULT_KILL_SLOW_CARS,
+  DEFAULT_MUTATION_BY_DISTANCE,
   type CarBrainConfig,
+  InputModificationType,
+  ActivationType,
 } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -88,6 +119,7 @@ const showRays = ref(true);
 const speedMultiplier = ref(1);
 const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
 const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
+const mutationByDistance = ref(DEFAULT_MUTATION_BY_DISTANCE);
 
 // Dynamic generation tracking for all config types
 const generationTimeByConfigId = ref<Map<string, number>>(new Map());
@@ -104,17 +136,62 @@ for (const config of CAR_BRAIN_CONFIGS) {
 let animationFrameId: number | null = null;
 const FIXED_DT = 1 / 60; // 60 Hz physics
 
-// Generic helper to compute adaptive mutation rate for a config
-const getAdaptiveMutationRate = (configId: string): string => {
-  const config = CAR_BRAIN_CONFIGS.find((c) => c.id === configId);
-  if (!config) return 'N/A';
+// Computed property to sort car brain configs by generation (ascending)
+const sortedCarBrainConfigs = computed(() => {
+  return [...CAR_BRAIN_CONFIGS].sort((a, b) => {
+    const genA = ga.value.getGeneration(a.id);
+    const genB = ga.value.getGeneration(b.id);
+    return genA - genB;
+  });
+});
 
-  const minGenerationTime = 1.0;
-  const effectiveTime = Math.max(
-    generationTimeByConfigId.value.get(configId) ?? 0,
-    minGenerationTime
+// Get background color for activation type
+const getActivationColor = (activationType: ActivationType): string => {
+  switch (activationType) {
+    case 'relu':
+      return '#202'; // Blue
+    case 'gelu':
+      return '#220'; // Green
+    case 'linear':
+      return '#064'; // Purple
+    case 'step':
+      return '#342'; // Red
+    default:
+      throw new Error(`Unknown activation type: ${activationType}`);
+  }
+};
+
+// Get background color for input modification type
+const getInputColor = (inputModification: InputModificationType): string => {
+  switch (inputModification) {
+    case 'dir':
+      return '#403'; // Blue
+    case 'pair':
+      return '#330'; // Purple
+    default:
+      throw new Error(`Unknown input modification type: ${inputModification}`);
+  }
+};
+
+// Format percentage to always be 5 characters: "100.%", "99.3%", "1.34%", "0.34%"
+const formatPercentage = (value: number): string => {
+  if (value >= 100) {
+    return '100.%';
+  } else if (value >= 10) {
+    return `${value.toFixed(1)}%`;
+  } else if (value >= 1) {
+    return `${value.toFixed(2)}%`;
+  } else {
+    return `${value.toFixed(2)}%`;
+  }
+};
+
+// Generic helper to compute current mutation rate for a config
+const getAdaptiveMutationRate = (configId: string): string => {
+  const rate = ga.value.getCurrentMutationRate(
+    configId,
+    mutationByDistance.value
   );
-  const rate = GA_MUTATION_RATE / effectiveTime;
   return rate.toFixed(4); // Just the number for table display
 };
 
@@ -123,14 +200,14 @@ const getMeanFitnessPercent = (configId: string): string => {
   const markers = generationMarkersByConfigId.value.get(configId) ?? [];
 
   if (markers.length === 0) {
-    return '0.0';
+    return formatPercentage(0);
   }
 
   const trackLength = track.getTotalLength();
   const totalFitness = markers.reduce((sum, marker) => sum + marker.fitness, 0);
   const meanFitness = totalFitness / markers.length;
 
-  return ((meanFitness / trackLength) * 100).toFixed(1);
+  return formatPercentage((meanFitness / trackLength) * 100);
 };
 
 // Generic helper to compute best fitness percentage for a config (max of all generation markers)
@@ -138,13 +215,13 @@ const getBestFitnessPercent = (configId: string): string => {
   const markers = generationMarkersByConfigId.value.get(configId) ?? [];
 
   if (markers.length === 0) {
-    return '0.0';
+    return formatPercentage(0);
   }
 
   const trackLength = track.getTotalLength();
-  const bestFitness = Math.max(...markers.map(marker => marker.fitness));
+  const bestFitness = Math.max(...markers.map((marker) => marker.fitness));
 
-  return ((bestFitness / trackLength) * 100).toFixed(1);
+  return formatPercentage((bestFitness / trackLength) * 100);
 };
 
 // Initialize simulation
@@ -197,7 +274,8 @@ const evolvePopulationByConfig = (
     config,
     track,
     generationTime,
-    winnerCar
+    winnerCar,
+    mutationByDistance.value
   );
   generationTimeByConfigId.value.set(config.id, 0);
 
@@ -358,9 +436,21 @@ const nextGeneration = () => {
   }
 };
 
-// Reset the simulation by reloading the page
+// Reset the simulation (but keep toggle button states)
 const reset = () => {
-  window.location.reload();
+  // Reset GA state
+  ga.value.reset();
+
+  // Re-initialize population with new random seed
+  randomSeed = Date.now() + Math.random() * 1000000;
+  ga.value = new GeneticAlgorithm(randomSeed);
+  population.value = ga.value.initializePopulation(track);
+
+  // Clear generation times and markers for all configs
+  for (const config of CAR_BRAIN_CONFIGS) {
+    generationTimeByConfigId.value.set(config.id, 0);
+    generationMarkersByConfigId.value.set(config.id, []);
+  }
 };
 
 // Toggle Kill Backwards mode
@@ -371,6 +461,11 @@ const toggleDieOnBackwards = () => {
 // Toggle Kill Slow mode
 const toggleKillSlowCars = () => {
   killSlowCars.value = !killSlowCars.value;
+};
+
+// Toggle Mutation by Distance mode
+const toggleMutationByDistance = () => {
+  mutationByDistance.value = !mutationByDistance.value;
 };
 
 // Lifecycle
@@ -415,7 +510,9 @@ onUnmounted(() => {
 canvas {
   display: block;
   max-width: 100%;
-  max-height: calc(100vh - 280px); /* Reserve more space for controls and table */
+  max-height: calc(
+    100vh - 280px
+  ); /* Reserve more space for controls and table */
   width: auto;
   height: auto;
   object-fit: contain;
@@ -451,7 +548,7 @@ canvas {
 .controls {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 8px;
   margin: 0;
   padding: 0;
 }
@@ -464,8 +561,9 @@ canvas {
 
 .stats-table {
   border-collapse: collapse;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'Courier New', 'Courier', monospace;
   font-size: 14px;
+  font-weight: bold;
   background: rgba(0, 0, 0, 0.7);
   border-radius: 6px;
   overflow: hidden;
@@ -489,6 +587,10 @@ canvas {
   color: #ffffff;
   text-align: left;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stats-table tbody tr {
+  color: #ffffff;
 }
 
 .stats-table tbody tr:last-child td {
@@ -542,9 +644,9 @@ button {
   padding: 10px 20px;
   border-radius: 4px;
   cursor: pointer;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'Courier New', 'Courier', monospace;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: bold;
   transition: all 0.2s ease;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   touch-action: manipulation;
@@ -592,20 +694,23 @@ button.active:active {
 
 /* Toggle buttons - inactive state (red) */
 button:nth-child(3):not(.active),
-button:nth-child(4):not(.active) {
+button:nth-child(4):not(.active),
+button:nth-child(5):not(.active) {
   background: #ef4444;
   color: #ffffff;
   border-color: #dc2626;
 }
 
 button:not(.active):nth-child(3):hover,
-button:not(.active):nth-child(4):hover {
+button:not(.active):nth-child(4):hover,
+button:not(.active):nth-child(5):hover {
   background: #dc2626;
   border-color: #b91c1c;
 }
 
 button:not(.active):nth-child(3):active,
-button:not(.active):nth-child(4):active {
+button:not(.active):nth-child(4):active,
+button:not(.active):nth-child(5):active {
   background: #b91c1c;
 }
 </style>

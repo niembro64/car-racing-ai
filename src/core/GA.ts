@@ -4,7 +4,9 @@ import { Track } from './Track';
 import { SeededRandom } from './math/geom';
 import {
   getPopulationSize,
-  GA_MUTATION_RATE,
+  GA_MUTATION_BASE,
+  GA_MUTATION_DISTANCE_FACTOR,
+  GA_MUTATION_DISTANCE_DENOMINATOR,
   GA_MUTATION_MIN_MULTIPLIER,
   GA_MUTATION_MAX_MULTIPLIER,
   GA_MUTATION_CURVE_POWER,
@@ -103,8 +105,8 @@ export class GeneticAlgorithm {
 
         const brain = NeuralNetwork.createRandom(
           brainSeed,
-          config.architecture,
-          config.activationType
+          config.nn.architecture,
+          config.nn.activationType
         );
 
         const angleWiggle = (Math.random() - 0.5) * (Math.PI / 2);
@@ -116,7 +118,7 @@ export class GeneticAlgorithm {
           startAngle,
           brain,
           config.colors.normal,
-          config.useDifferentialInputs,
+          config.nn.inputModification,
           config.id
         );
         population.push(car);
@@ -131,8 +133,9 @@ export class GeneticAlgorithm {
     cars: Car[],
     config: CarBrainConfig,
     track: Track,
-    generationTime: number,
-    winnerCar?: Car
+    _generationTime: number,
+    winnerCar?: Car,
+    mutationByDistance: boolean = true
   ): Car[] {
     const state = this.stateByConfigId.get(config.id);
     if (!state) {
@@ -165,10 +168,19 @@ export class GeneticAlgorithm {
     // Increment generation
     state.generation++;
 
-    // Calculate adaptive mutation rate
-    const minGenerationTime = 1.0;
-    const effectiveTime = Math.max(generationTime, minGenerationTime);
-    const adaptiveMutationRate = GA_MUTATION_RATE / effectiveTime;
+    // Calculate mutation rate
+    let baseMutationRate: number;
+    if (mutationByDistance) {
+      // Base mutation + distance-based mutation
+      // Formula: base + factor / (distance + denominator)
+      // This naturally limits max mutation to base + factor/denominator
+      const distanceMutation = GA_MUTATION_DISTANCE_FACTOR /
+        (bestCar.maxDistanceReached + GA_MUTATION_DISTANCE_DENOMINATOR);
+      baseMutationRate = GA_MUTATION_BASE + distanceMutation;
+    } else {
+      // Fixed mutation rate when distance-based is disabled
+      baseMutationRate = 0.01;
+    }
 
     // Create next generation
     const nextGeneration: Car[] = [];
@@ -177,8 +189,8 @@ export class GeneticAlgorithm {
     const eliteBrain = NeuralNetwork.fromJSON(
       state.bestWeights,
       this.rng.next() * 1000000,
-      config.architecture,
-      config.activationType
+      config.nn.architecture,
+      config.nn.activationType
     );
 
     // Create cars: 1 elite + (carsPerType - 1) mutations
@@ -195,15 +207,20 @@ export class GeneticAlgorithm {
             startAngle,
             eliteBrain,
             config.colors.elite,
-            config.useDifferentialInputs,
+            config.nn.inputModification,
             config.id
           )
         );
       } else {
         // Mutated car
         const mutationSeed = this.rng.next() * 1000000 + i + state.generation * 10000;
-        const multiplier = this.getMutationMultiplier(i, carsPerType);
-        const sigma = adaptiveMutationRate * multiplier;
+
+        // Apply mutation curve only when NOT using distance-based mutation
+        // Distance-based mutation already provides enough variation
+        const sigma = mutationByDistance
+          ? baseMutationRate
+          : baseMutationRate * this.getMutationMultiplier(i, carsPerType);
+
         const mutatedBrain = eliteBrain.mutate(sigma, mutationSeed);
 
         nextGeneration.push(
@@ -213,7 +230,7 @@ export class GeneticAlgorithm {
             startAngle,
             mutatedBrain,
             config.colors.normal,
-            config.useDifferentialInputs,
+            config.nn.inputModification,
             config.id
           )
         );
@@ -221,6 +238,22 @@ export class GeneticAlgorithm {
     }
 
     return nextGeneration;
+  }
+
+  // Helper to calculate current mutation rate for display
+  getCurrentMutationRate(configId: string, mutationByDistance: boolean): number {
+    const state = this.stateByConfigId.get(configId);
+    if (!state) return 0;
+
+    if (mutationByDistance) {
+      // Get the last best fitness for this config
+      const bestFitness = state.bestFitness || 0;
+      const distanceMutation = GA_MUTATION_DISTANCE_FACTOR /
+        (bestFitness + GA_MUTATION_DISTANCE_DENOMINATOR);
+      return GA_MUTATION_BASE + distanceMutation;
+    } else {
+      return 0.01;
+    }
   }
 
   // Backward compatibility wrappers

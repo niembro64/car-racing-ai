@@ -31,12 +31,12 @@ describe('GeneticAlgorithm', () => {
 
   it('should create all cars alive initially', () => {
     const population = ga.initializePopulation(track);
-    expect(population.every(car => car.alive)).toBe(true);
+    expect(population.every((car) => car.alive)).toBe(true);
   });
 
   it('should create cars at track start position', () => {
     const population = ga.initializePopulation(track);
-    population.forEach(car => {
+    population.forEach((car) => {
       expect(car.x).toBeCloseTo(track.startPosition.x, 1);
       expect(car.y).toBeCloseTo(track.startPosition.y, 1);
       // Cars spawn with ±45° angle wiggle, so check they're within that range
@@ -56,11 +56,19 @@ describe('GeneticAlgorithm', () => {
     });
 
     // Separate and evolve each population
-    const normReLUCars = population.filter(car => !car.useDifferentialInputs);
-    const diffLinearCars = population.filter(car => car.useDifferentialInputs);
+    const normReLUCars = population.filter(
+      (car) => car.inputModification === 'dir'
+    );
+    const diffLinearCars = population.filter(
+      (car) => car.inputModification === 'pair'
+    );
 
     const nextNormReLU = ga.evolveNormReLUPopulation(normReLUCars, track, 5.0);
-    const nextDiffLinear = ga.evolveDiffLinearPopulation(diffLinearCars, track, 5.0);
+    const nextDiffLinear = ga.evolveDiffLinearPopulation(
+      diffLinearCars,
+      track,
+      5.0
+    );
 
     expect(ga.generationNormReLU).toBe(initialGenerationNormReLU + 1);
     expect(ga.generationDiffLinear).toBe(initialGenerationDiffLinear + 1);
@@ -76,8 +84,12 @@ describe('GeneticAlgorithm', () => {
     const population = ga.initializePopulation(track);
 
     // Find specific car types by configId
-    const normReLUCars = population.filter(car => car.configId === 'normgelu');
-    const diffLinearCars = population.filter(car => car.configId === 'difflinear');
+    const normReLUCars = population.filter(
+      (car) => car.configId === 'normgelu'
+    );
+    const diffLinearCars = population.filter(
+      (car) => car.configId === 'difflinear'
+    );
 
     // Set fitness for first generation
     if (normReLUCars.length > 0) normReLUCars[0].maxDistanceReached = 100;
@@ -90,11 +102,19 @@ describe('GeneticAlgorithm', () => {
 
     // Second generation with worse fitness for both types
     const population2 = ga.initializePopulation(track);
-    const normReLUCars2 = population2.filter(car => car.configId === 'normgelu');
-    const diffLinearCars2 = population2.filter(car => car.configId === 'difflinear');
+    const normReLUCars2 = population2.filter(
+      (car) => car.configId === 'normgelu'
+    );
+    const diffLinearCars2 = population2.filter(
+      (car) => car.configId === 'difflinear'
+    );
 
-    normReLUCars2.forEach(car => { car.maxDistanceReached = 30; });
-    diffLinearCars2.forEach(car => { car.maxDistanceReached = 30; });
+    normReLUCars2.forEach((car) => {
+      car.maxDistanceReached = 30;
+    });
+    diffLinearCars2.forEach((car) => {
+      car.maxDistanceReached = 30;
+    });
 
     ga.evolveNormReLUPopulation(normReLUCars2, track, 5.0);
     ga.evolveDiffLinearPopulation(diffLinearCars2, track, 5.0);
@@ -109,11 +129,19 @@ describe('GeneticAlgorithm', () => {
       car.maxDistanceReached = i * 10;
     });
 
-    const normReLUCars = population.filter(car => !car.useDifferentialInputs);
-    const diffLinearCars = population.filter(car => car.useDifferentialInputs);
+    const normReLUCars = population.filter(
+      (car) => car.inputModification === 'dir'
+    );
+    const diffLinearCars = population.filter(
+      (car) => car.inputModification === 'pair'
+    );
 
     const nextNormReLU = ga.evolveNormReLUPopulation(normReLUCars, track, 5.0);
-    const nextDiffLinear = ga.evolveDiffLinearPopulation(diffLinearCars, track, 5.0);
+    const nextDiffLinear = ga.evolveDiffLinearPopulation(
+      diffLinearCars,
+      track,
+      5.0
+    );
 
     // First car of each type should be elite
     expect(nextNormReLU[0]).toBeDefined();
@@ -124,8 +152,12 @@ describe('GeneticAlgorithm', () => {
     const population = ga.initializePopulation(track);
 
     // Find specific car types by configId
-    const normReLUCars = population.filter(car => car.configId === 'normgelu');
-    const diffLinearCars = population.filter(car => car.configId === 'difflinear');
+    const normReLUCars = population.filter(
+      (car) => car.configId === 'normgelu'
+    );
+    const diffLinearCars = population.filter(
+      (car) => car.configId === 'difflinear'
+    );
 
     if (normReLUCars.length > 0) normReLUCars[0].maxDistanceReached = 100;
     if (diffLinearCars.length > 0) diffLinearCars[0].maxDistanceReached = 80;
@@ -150,8 +182,12 @@ describe('GeneticAlgorithm', () => {
     const population = ga.initializePopulation(track);
 
     // Find specific car types by configId
-    const normReLUCars = population.filter(car => car.configId === 'normgelu');
-    const diffLinearCars = population.filter(car => car.configId === 'difflinear');
+    const normReLUCars = population.filter(
+      (car) => car.configId === 'normgelu'
+    );
+    const diffLinearCars = population.filter(
+      (car) => car.configId === 'difflinear'
+    );
 
     if (normReLUCars.length > 0) normReLUCars[0].maxDistanceReached = 100;
     if (diffLinearCars.length > 0) diffLinearCars[0].maxDistanceReached = 80;

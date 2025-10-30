@@ -1,34 +1,3 @@
-/**
- * ============================================================================
- * GENETIC RACING AI - CONFIGURATION
- * ============================================================================
- *
- * This file contains all tunable parameters for the genetic algorithm-based
- * racing simulation. The AI learns to drive using:
- *
- * 1. NEURAL NETWORK: Processes sensor data → outputs steering
- *    - 9 distance sensors (raycasts) detect track boundaries
- *    - 6 hidden neurons learn racing patterns
- *    - 1 output neuron controls steering (-1 to +1)
- *
- * 2. GENETIC ALGORITHM: Evolves neural network weights
- *    - Population of 100 cars per generation
- *    - Elite selection: best car's brain is preserved
- *    - Mutation: progressive mutation rates create diversity
- *    - Adaptive: mutation increases with selection pressure
- *
- * 3. FITNESS FUNCTION: Distance traveled along track centerline
- *    - Rewards forward progress
- *    - Penalizes crashes and backwards movement
- *    - Allows multiple laps (unbounded progress)
- *
- * KEY TUNING TIPS:
- * - Increase GA_MUTATION_RATE for faster exploration (risk: instability)
- * - Increase NEURAL_NETWORK_ARCHITECTURE[1] for complex track learning
- * - Increase GA_POPULATION_SIZE for more diversity (slower per generation)
- * - Decrease GA_MUTATION_CURVE_POWER to give more cars high mutation
- */
-
 import { Point } from './core/math/geom';
 
 // ============================================================================
@@ -36,6 +5,10 @@ import { Point } from './core/math/geom';
 // ============================================================================
 // Defines all car types with their neural network architectures, colors,
 // and visualization settings in a centralized, extensible structure.
+
+export type InputModificationType = 'dir' | 'pair';
+
+export type ActivationType = 'relu' | 'linear' | 'gelu' | 'step';
 
 export interface CarBrainConfig {
   // Identification
@@ -45,9 +18,11 @@ export interface CarBrainConfig {
   description: string; // Human-readable description of the approach
 
   // Neural network configuration
-  architecture: number[]; // Layer sizes [input, hidden..., output]
-  useDifferentialInputs: boolean; // true = differential pairs, false = raw sensors
-  activationType: 'relu' | 'linear' | 'gelu' | 'step'; // Hidden layer activation function
+  nn: {
+    architecture: number[]; // Layer sizes [input, hidden..., output]
+    inputModification: InputModificationType; // 'direct' = raw sensors, 'pair_diff' = differential pairs
+    activationType: ActivationType; // Hidden layer activation function
+  };
 
   // Visual appearance
   colors: {
@@ -83,8 +58,16 @@ export function appendMirroredWaypoints(
 // ============================================================================
 // These control the evolution process and how the neural networks improve
 
-// Base mutation rate (σ) - controls how much weights change per generation
-// Adaptive: automatically increases when generations die quickly (fast selection pressure)
+// Base mutation rate - always applied to all mutations
+export const GA_MUTATION_BASE = 0.01;
+
+// Distance-based mutation configuration
+// Formula: mutation = base + factor / (distance + denominator)
+// This naturally limits mutation: max = base + factor/denominator, approaches base as distance increases
+export const GA_MUTATION_DISTANCE_FACTOR = 100.0;
+export const GA_MUTATION_DISTANCE_DENOMINATOR = 100.0;
+
+// Legacy mutation rate for backward compatibility
 export const GA_MUTATION_RATE = 0.08;
 
 // Population size - number of cars per generation
@@ -194,23 +177,25 @@ export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 1];
 export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 6, 1];
 export const NN_ARCH_NORMAL_LARGE = [SENSOR_RAY_ANGLES.length, 10, 10, 1];
 export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 6, 1];
-export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 6, 1];
+export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 1];
 
 export const NEURAL_NETWORK_ARCHITECTURE = NN_ARCH_DIFF_MEDIUM;
 
 export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
   {
-    displayName: 'DIFF_LINEAR',
+    displayName: 'Diffbot',
     id: 'difflinear',
-    shortName: 'DL',
+    shortName: 'DB',
     description:
       '5 differential sensor inputs (1 forward + 4 L-R pairs) with Linear activation in hidden layer of size 4',
-    architecture: NN_ARCH_DIFF_MEDIUM,
-    useDifferentialInputs: true,
-    activationType: 'linear',
+    nn: {
+      architecture: NN_ARCH_DIFF_MEDIUM,
+      inputModification: 'pair',
+      activationType: 'linear',
+    },
     colors: {
       normal: '#880000', // Dark muted red
-      elite: '#ff5555', // Bright red
+      elite: '#660000', // Darkest red
       ray: '#880000',
       rayHit: '#880000',
       marker: '#880000',
@@ -221,17 +206,19 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    displayName: 'NORM_LINEAR',
+    displayName: 'Flatty',
     id: 'normlinear',
-    shortName: 'NL',
+    shortName: 'FL',
     description:
       '9 raw sensor inputs with Linear activation in hidden layer of size 6',
-    architecture: NN_ARCH_MEDIUM,
-    useDifferentialInputs: false,
-    activationType: 'linear',
+    nn: {
+      architecture: NN_ARCH_MEDIUM,
+      inputModification: 'dir',
+      activationType: 'linear',
+    },
     colors: {
       normal: '#226699', // Dark muted blue
-      elite: '#33aaff', // Bright blue
+      elite: '#1a4d73', // Darkest blue
       ray: '#226699',
       rayHit: '#226699',
       marker: '#226699',
@@ -242,18 +229,19 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    displayName: 'NORM_GELU',
+    displayName: 'Smoothie',
     id: 'normgelu',
-    shortName: 'NG',
+    shortName: 'SM',
     description:
       '9 raw sensor inputs with GELU activation in hidden layer of size 6',
-    architecture: NN_ARCH_MEDIUM,
-    useDifferentialInputs: false,
-    activationType: 'gelu',
-
+    nn: {
+      architecture: NN_ARCH_MEDIUM,
+      inputModification: 'dir',
+      activationType: 'gelu',
+    },
     colors: {
       normal: '#aaaa33',
-      elite: '#fcd34d',
+      elite: '#7a7a00', // Darkest yellow/gold
       ray: '#aaaa33',
       rayHit: '#aaaa33',
       marker: '#aaaa33',
@@ -264,18 +252,20 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    displayName: 'RELU_LARGE',
+    displayName: 'Bigbrain',
     id: 'relularge',
-    shortName: 'RL',
+    shortName: 'BB',
     description:
       '9 raw sensor inputs with ReLU activation in two hidden layers of size 10 each',
-    architecture: NN_ARCH_NORMAL_LARGE,
-    useDifferentialInputs: false,
-    activationType: 'relu',
+    nn: {
+      architecture: NN_ARCH_NORMAL_LARGE,
+      inputModification: 'dir',
+      activationType: 'relu',
+    },
     // green
     colors: {
       normal: '#229922',
-      elite: '#6ee66e',
+      elite: '#1a731a', // Darkest green
       ray: '#229922',
       rayHit: '#229922',
       marker: '#229922',
@@ -286,18 +276,20 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    displayName: 'NORM_STEP',
+    displayName: 'Stairbot',
     id: 'normstep',
-    shortName: 'NS',
+    shortName: 'SB',
     description:
       '9 raw sensor inputs with Step activation in hidden layer of size 6 (expected to perform poorly)',
-    architecture: NN_ARCH_MEDIUM,
-    useDifferentialInputs: false,
-    activationType: 'step',
+    nn: {
+      architecture: NN_ARCH_MEDIUM,
+      inputModification: 'dir',
+      activationType: 'step',
+    },
     // orange
     colors: {
       normal: '#cc6600',
-      elite: '#ff9933',
+      elite: '#994d00', // Darkest orange
       ray: '#cc6600',
       rayHit: '#cc6600',
       marker: '#cc6600',
@@ -308,18 +300,20 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    displayName: 'DIFF_SMALL',
+    displayName: 'Smolbrain',
     id: 'diffsmall',
-    shortName: 'DS',
+    shortName: 'SB2',
     description:
       '5 differential sensor inputs (1 forward + 4 L-R pairs) with Linear activation in hidden layer of size 6',
-    architecture: NN_ARCH_DIFF_SMALL,
-    useDifferentialInputs: true,
-    activationType: 'linear',
+    nn: {
+      architecture: NN_ARCH_DIFF_SMALL,
+      inputModification: 'pair',
+      activationType: 'linear',
+    },
     // purple
     colors: {
       normal: '#8844aa',
-      elite: '#bb77ff',
+      elite: '#663380', // Darkest purple
       ray: '#8844aa',
       rayHit: '#8844aa',
       marker: '#8844aa',
@@ -340,9 +334,9 @@ export function getCarBrainConfig(id: string): CarBrainConfig | undefined {
 // SIMULATION DEFAULTS
 // ============================================================================
 
-export const DEFAULT_DIFFERENTIAL_INPUTS = true; // Default input mode for Car constructor
 export const DEFAULT_DIE_ON_BACKWARDS = true; // Kill cars that go backwards
 export const DEFAULT_KILL_SLOW_CARS = true; // Kill cars that don't reach 1% in 1 second
+export const DEFAULT_MUTATION_BY_DISTANCE = true; // Enable distance-based mutation
 
 // ============================================================================
 // RENDERING CONFIGURATION
