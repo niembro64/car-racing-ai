@@ -30,7 +30,9 @@
       </div>
 
       <div class="hud">
-        <table class="stats-table">
+        <div class="hud-content">
+          <!-- Table View -->
+          <table v-if="!showGraph" class="stats-table" @click="showGraph = true">
           <thead>
             <tr>
               <th>Score</th>
@@ -87,14 +89,20 @@
               </td>
             </tr>
           </tbody>
-        </table>
+          </table>
+
+          <!-- Graph View -->
+          <div v-else class="graph-view" @click="showGraph = false">
+            <canvas ref="graphCanvasRef"></canvas>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, type Ref } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick, type Ref } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
 import { GeneticAlgorithm } from '@/core/GA';
@@ -132,6 +140,8 @@ const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
 const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
 const mutationByDistance = ref(DEFAULT_MUTATION_BY_DISTANCE);
 const frameCounter = ref(0);
+const showGraph = ref(false);
+const graphCanvasRef = ref<HTMLCanvasElement | null>(null);
 
 // Dynamic generation tracking for all config types
 const generationTimeByConfigId = ref<Map<string, number>>(new Map());
@@ -183,13 +193,14 @@ const sortedCarBrainConfigs = computed(() => {
 
 // Computed property for mutation rates (updates every frame)
 const mutationRateByConfigId = computed(() => {
-  // Reference frameCounter to trigger re-computation every frame
+  // Reference frameCounter and mutationByDistance to trigger re-computation
   frameCounter.value;
+  const useMutationByDistance = mutationByDistance.value;
 
   const rates = new Map<string, string>();
 
   for (const config of CAR_BRAIN_CONFIGS) {
-    if (mutationByDistance.value) {
+    if (useMutationByDistance) {
       const trackLength = track.getTotalLength();
 
       // Get current generation's best distance (live updates)
@@ -571,6 +582,194 @@ const toggleMutationByDistance = () => {
   mutationByDistance.value = !mutationByDistance.value;
 };
 
+// Render graph
+const renderGraph = () => {
+  const canvas = graphCanvasRef.value;
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // Get actual rendered size of the graph-view container (accounting for padding)
+  const container = canvas.parentElement;
+  if (!container) return;
+
+  // Container has 12px padding on all sides, so inner content area is smaller
+  const containerPadding = 12;
+  const width = container.clientWidth - (containerPadding * 2);
+  const height = container.clientHeight - (containerPadding * 2);
+
+  canvas.width = width;
+  canvas.height = height;
+
+  const padding = 50;
+  const graphWidth = width - padding * 2;
+  const graphHeight = height - padding * 2;
+
+  // Clear canvas
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0, 0, width, height);
+
+  // Calculate score history for each config
+  const configHistories: Map<string, { generation: number; score: number }[]> = new Map();
+  let maxGeneration = 0;
+
+  for (const config of CAR_BRAIN_CONFIGS) {
+    const markers = generationMarkersByConfigId.value.get(config.id) ?? [];
+    if (markers.length === 0) continue;
+
+    const history: { generation: number; score: number }[] = [];
+    const trackLength = track.getTotalLength();
+
+    // For each generation, calculate score up to that point
+    for (let i = 0; i < markers.length; i++) {
+      const markersUpToNow = markers.slice(0, i + 1);
+
+      // Calculate mean (average of all fitness values up to now)
+      const totalFitness = markersUpToNow.reduce((sum, m) => sum + m.fitness, 0);
+      const meanFitness = totalFitness / markersUpToNow.length;
+      const meanPercent = (meanFitness / trackLength) * 100;
+
+      // Calculate best (max fitness up to now)
+      const bestFitness = Math.max(...markersUpToNow.map(m => m.fitness));
+      const bestPercent = (bestFitness / trackLength) * 100;
+
+      // Score is average of mean and best
+      const score = (meanPercent + bestPercent) / 2;
+
+      history.push({ generation: markers[i].generation, score });
+      maxGeneration = Math.max(maxGeneration, markers[i].generation);
+    }
+
+    configHistories.set(config.id, history);
+  }
+
+  if (maxGeneration === 0) maxGeneration = 1;
+
+  // Logarithmic scale helper: map generation to log position
+  const maxLog = Math.log10(maxGeneration + 1);
+  const genToX = (gen: number): number => {
+    const logPos = Math.log10(gen + 1) / maxLog;
+    return padding + logPos * graphWidth;
+  };
+
+  // Draw axes
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, height - padding);
+  ctx.lineTo(width - padding, height - padding);
+  ctx.stroke();
+
+  // Draw grid lines and labels
+  ctx.strokeStyle = '#333333';
+  ctx.lineWidth = 1;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+
+  // Y-axis grid (0-100%)
+  for (let i = 0; i <= 10; i++) {
+    const y = height - padding - (i * graphHeight / 10);
+    ctx.beginPath();
+    ctx.moveTo(padding, y);
+    ctx.lineTo(width - padding, y);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${i * 10}%`, padding - 5, y + 3);
+  }
+
+  // X-axis grid (logarithmic generations: 1, 10, 100, 1000, etc.)
+  let power = 0;
+  while (Math.pow(10, power) - 1 <= maxGeneration) {
+    const gen = Math.pow(10, power) - 1;
+    const x = genToX(gen);
+
+    ctx.strokeStyle = '#333333';
+    ctx.beginPath();
+    ctx.moveTo(x, padding);
+    ctx.lineTo(x, height - padding);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    const label = gen === 0 ? '0' : `${Math.pow(10, power)}`;
+    ctx.fillText(label, x, height - padding + 15);
+
+    power++;
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Generation', width / 2, height - 5);
+
+  ctx.save();
+  ctx.translate(12, height / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Score (%)', 0, 0);
+  ctx.restore();
+
+  // Draw lines for each config
+  for (const config of CAR_BRAIN_CONFIGS) {
+    const history = configHistories.get(config.id);
+    if (!history || history.length === 0) continue;
+
+    ctx.strokeStyle = config.colors.elite;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    let started = false;
+    for (const point of history) {
+      const x = genToX(point.generation);
+      const y = height - padding - (point.score / 100) * graphHeight;
+
+      if (!started) {
+        ctx.moveTo(x, y);
+        started = true;
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+
+    ctx.stroke();
+
+    // Draw label at the end of the line
+    const lastPoint = history[history.length - 1];
+    const lastX = genToX(lastPoint.generation);
+    const lastY = height - padding - (lastPoint.score / 100) * graphHeight;
+
+    ctx.fillStyle = config.colors.elite;
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(config.shortName, lastX + 6, lastY + 3);
+
+    // Draw dot at end
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+};
+
+// Watch for graph visibility and render when shown
+watch(showGraph, (isVisible) => {
+  if (isVisible) {
+    // Use nextTick to ensure canvas is mounted
+    nextTick(() => renderGraph());
+  }
+});
+
+// Update graph in real-time when visible
+watch(frameCounter, () => {
+  if (showGraph.value) {
+    renderGraph();
+  }
+});
+
 // Lifecycle
 onMounted(() => {
   init();
@@ -662,7 +861,22 @@ canvas {
   margin: 0;
 }
 
+.hud-content {
+  width: 800px;
+  height: 280px;
+  overflow: hidden;
+  position: relative;
+}
+
+@media (max-width: 850px) {
+  .hud-content {
+    width: calc(100vw - 32px);
+    max-width: 800px;
+  }
+}
+
 .stats-table {
+  width: 100%;
   border-collapse: collapse;
   font-family: 'Courier New', 'Courier', monospace;
   font-size: 14px;
@@ -671,6 +885,7 @@ canvas {
   border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
 }
 
 .stats-table th {
@@ -762,9 +977,6 @@ button {
 }
 
 button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
   background: #e5e7eb;
   border-color: #6b7280;
 }
@@ -815,5 +1027,28 @@ button:not(.active):nth-child(3):active,
 button:not(.active):nth-child(4):active,
 button:not(.active):nth-child(5):active {
   background: #b91c1c;
+}
+
+/* Graph View */
+.graph-view {
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.graph-view canvas {
+  display: block;
+  border-radius: 4px;
+  background: #1a1a1a;
+  width: 100%;
+  height: 100%;
 }
 </style>

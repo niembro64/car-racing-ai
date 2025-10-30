@@ -196,7 +196,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    displayName: 'StairBot',
+    displayName: 'WiggleBot',
     id: 'normstep',
     shortName: 'SB',
     description:
@@ -219,7 +219,7 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
   {
-    displayName: 'SmolBrain',
+    displayName: 'SmolDiff',
     id: 'diffsmall',
     shortName: 'SB2',
     description:
