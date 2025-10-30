@@ -47,8 +47,8 @@ describe('Configuration', () => {
 
     // Check that CAR_BRAIN_CONFIGS have proper color definitions
     for (const carConfig of config.CAR_BRAIN_CONFIGS) {
-      expect(carConfig.colors.normal).toBeDefined();
-      expect(carConfig.colors.elite).toBeDefined();
+      expect(carConfig.colors.light).toBeDefined();
+      expect(carConfig.colors.dark).toBeDefined();
     }
   });
 
@@ -60,8 +60,8 @@ describe('Configuration', () => {
 
   it('should have car ray visualization settings in CAR_BRAIN_CONFIGS', () => {
     for (const carConfig of config.CAR_BRAIN_CONFIGS) {
-      expect(carConfig.colors.ray).toBeDefined();
-      expect(carConfig.colors.rayHit).toBeDefined();
+      expect(carConfig.colors.light).toBeDefined();
+      expect(carConfig.colors.dark).toBeDefined();
       expect(carConfig.rayVisualization.width).toBeDefined();
       expect(carConfig.rayVisualization.hitRadius).toBeDefined();
     }
@@ -116,24 +116,12 @@ describe('Configuration', () => {
     // Check CAR_BRAIN_CONFIGS colors
     for (const carConfig of config.CAR_BRAIN_CONFIGS) {
       expect(
-        hexColorRegex.test(carConfig.colors.normal) ||
-          rgbaColorRegex.test(carConfig.colors.normal)
+        hexColorRegex.test(carConfig.colors.light) ||
+          rgbaColorRegex.test(carConfig.colors.light)
       ).toBe(true);
       expect(
-        hexColorRegex.test(carConfig.colors.elite) ||
-          rgbaColorRegex.test(carConfig.colors.elite)
-      ).toBe(true);
-      expect(
-        hexColorRegex.test(carConfig.colors.ray) ||
-          rgbaColorRegex.test(carConfig.colors.ray)
-      ).toBe(true);
-      expect(
-        hexColorRegex.test(carConfig.colors.rayHit) ||
-          rgbaColorRegex.test(carConfig.colors.rayHit)
-      ).toBe(true);
-      expect(
-        hexColorRegex.test(carConfig.colors.marker) ||
-          rgbaColorRegex.test(carConfig.colors.marker)
+        hexColorRegex.test(carConfig.colors.dark) ||
+          rgbaColorRegex.test(carConfig.colors.dark)
       ).toBe(true);
     }
   });

@@ -78,11 +78,8 @@ export interface CarBrainConfig {
 
   // Visual appearance
   colors: {
-    normal: string; // Color for standard (mutated) cars
-    elite: string; // Color for elite (best) car
-    ray: string; // Color for sensor rays
-    rayHit: string; // Color for ray hit points
-    marker: string; // Color for generation markers on track
+    dark: string; // Darker shade for elite cars and markers
+    light: string; // Lighter shade for normal cars and rays
   };
 
   // Ray visualization settings

@@ -259,7 +259,7 @@ export class Car {
     if (showRays && this.alive) {
       // Render centerline ray (showing distance from car to track center)
       if (this.lastCenterlinePoint) {
-        const rayColor = config.colors.ray;
+        const rayColor = config.colors.light;
         const hitColor = CENTERLINE_RAY_HIT_COLOR;
         const lineWidth = config.rayVisualization.width;
         const hitRadius = config.rayVisualization.hitRadius;
@@ -290,8 +290,8 @@ export class Car {
       }
 
       // Use colors and settings from config
-      const rayColor = config.colors.ray;
-      const hitColor = config.colors.rayHit;
+      const rayColor = config.colors.light;
+      const hitColor = config.colors.light;
       const lineWidth = config.rayVisualization.width;
       const hitRadius = config.rayVisualization.hitRadius;
 

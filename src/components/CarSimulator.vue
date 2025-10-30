@@ -50,7 +50,7 @@
             <tr
               v-for="config in sortedCarBrainConfigs"
               :key="config.id"
-              :style="{ backgroundColor: config.colors.elite }"
+              :style="{ backgroundColor: config.colors.dark }"
             >
               <td style="font-weight: bold">
                 {{ getScorePercent(config.id) }}
@@ -590,7 +590,7 @@ const render = (ctx: CanvasRenderingContext2D) => {
 
   for (const config of CAR_BRAIN_CONFIGS) {
     const markers = generationMarkersByConfigId.value.get(config.id) ?? [];
-    ctx.fillStyle = config.colors.marker;
+    ctx.fillStyle = config.colors.dark;
 
     for (const marker of markers) {
       ctx.beginPath();
@@ -608,8 +608,8 @@ const render = (ctx: CanvasRenderingContext2D) => {
   const deadCars = population.value.filter((car) => !car.alive);
   const aliveCars = population.value.filter((car) => car.alive);
 
-  // Separate elites (check against all config elite colors)
-  const eliteColors = CAR_BRAIN_CONFIGS.map((c) => c.colors.elite);
+  // Separate elites (check against all config dark colors for elite identification)
+  const eliteColors = CAR_BRAIN_CONFIGS.map((c) => c.colors.dark);
   const elites = aliveCars.filter((car) => eliteColors.includes(car.color));
   const others = aliveCars.filter((car) => !eliteColors.includes(car.color));
 
@@ -955,7 +955,7 @@ const renderGraph = () => {
     const history = configHistories.get(config.id);
     if (!history || history.length === 0) continue;
 
-    ctx.strokeStyle = config.colors.elite;
+    ctx.strokeStyle = config.colors.dark;
     ctx.lineWidth = 4;
     ctx.beginPath();
 
@@ -980,7 +980,7 @@ const renderGraph = () => {
     const lastY = height - padding - (lastPoint.score / 100) * graphHeight;
 
     // Draw dot at end (larger)
-    ctx.fillStyle = config.colors.elite;
+    ctx.fillStyle = config.colors.dark;
     ctx.beginPath();
     ctx.arc(lastX, lastY, 7, 0, Math.PI * 2);
     ctx.fill();

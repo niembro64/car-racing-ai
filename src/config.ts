@@ -114,11 +114,8 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      normal: '#880000',
-      elite: '#660000',
-      ray: '#880000',
-      rayHit: '#880000',
-      marker: '#880000',
+      light: '#880000',
+      dark: '#660000',
     },
     rayVisualization: {
       width: 0.5,
@@ -137,11 +134,8 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      normal: '#226699',
-      elite: '#1a4d73',
-      ray: '#226699',
-      rayHit: '#226699',
-      marker: '#226699',
+      light: '#226699',
+      dark: '#1a4d73',
     },
     rayVisualization: {
       width: 0.5,
@@ -160,11 +154,8 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
       activationType: 'gelu',
     },
     colors: {
-      normal: '#aaaa33',
-      elite: '#7a7a00',
-      ray: '#aaaa33',
-      rayHit: '#aaaa33',
-      marker: '#aaaa33',
+      light: '#aaaa33',
+      dark: '#7a7a00',
     },
     rayVisualization: {
       width: 0.5,
@@ -183,11 +174,8 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
       activationType: 'relu',
     },
     colors: {
-      normal: '#229922',
-      elite: '#1a731a',
-      ray: '#229922',
-      rayHit: '#229922',
-      marker: '#229922',
+      light: '#229922',
+      dark: '#1a731a',
     },
     rayVisualization: {
       width: 0.5,
@@ -206,11 +194,8 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
       activationType: 'step',
     },
     colors: {
-      normal: '#cc6600',
-      elite: '#994d00',
-      ray: '#cc6600',
-      rayHit: '#cc6600',
-      marker: '#cc6600',
+      light: '#cc6600',
+      dark: '#994d00',
     },
     rayVisualization: {
       width: 0.5,
@@ -229,11 +214,8 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      normal: '#8844aa',
-      elite: '#663380',
-      ray: '#8844aa',
-      rayHit: '#8844aa',
-      marker: '#8844aa',
+      light: '#8844aa',
+      dark: '#663380',
     },
     rayVisualization: {
       width: 0.5,

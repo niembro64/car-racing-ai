@@ -112,7 +112,7 @@ export class GeneticAlgorithm {
           track.startPosition.y,
           startAngle,
           brain,
-          config.colors.normal,
+          config.colors.light,
           config.nn.inputModification,
           config.id
         );
@@ -149,8 +149,8 @@ export class GeneticAlgorithm {
     if (winnerCar) {
       bestCar = winnerCar;
     } else {
-      // Filter out elite cars (those with elite color) to find best non-elite
-      const nonElite = sorted.filter(car => car.color !== config.colors.elite);
+      // Filter out elite cars (those with dark color) to find best non-elite
+      const nonElite = sorted.filter(car => car.color !== config.colors.dark);
       bestCar = nonElite[0] || sorted[0];
     }
 
@@ -200,7 +200,7 @@ export class GeneticAlgorithm {
             track.startPosition.y,
             startAngle,
             eliteBrain,
-            config.colors.elite,
+            config.colors.dark,
             config.nn.inputModification,
             config.id
           )
@@ -223,7 +223,7 @@ export class GeneticAlgorithm {
             track.startPosition.y,
             startAngle,
             mutatedBrain,
-            config.colors.normal,
+            config.colors.light,
             config.nn.inputModification,
             config.id
           )
