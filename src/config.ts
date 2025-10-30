@@ -40,7 +40,7 @@ export const GA_MUTATION_CURVE_POWER = 2.0;
 export const CANVAS_WIDTH = 800;
 export const CANVAS_HEIGHT = 600;
 export const TRACK_WIDTH_HALF = 40;
-export const SEGMENTS_PER_CURVE = 20;
+export const SEGMENTS_PER_CURVE = 10;
 
 // Lap completion threshold (0.995 = 99.5%)
 // Lower than 1.0 to account for discrete physics updates
