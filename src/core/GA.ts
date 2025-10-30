@@ -29,6 +29,8 @@ export class GeneticAlgorithm {
         generation: 0,
         bestFitness: 0,
         bestWeights: null,
+        secondsToBest: 0,
+        totalTime: 0,
       });
     }
   }
@@ -69,6 +71,14 @@ export class GeneticAlgorithm {
 
   getBestWeights(configId: string): any {
     return this.stateByConfigId.get(configId)?.bestWeights ?? null;
+  }
+
+  getSecondsToBest(configId: string): number {
+    return this.stateByConfigId.get(configId)?.secondsToBest ?? 0;
+  }
+
+  getTotalTime(configId: string): number {
+    return this.stateByConfigId.get(configId)?.totalTime ?? 0;
   }
 
   // Calculate mutation multiplier for a given brain index within a subpopulation
@@ -128,7 +138,7 @@ export class GeneticAlgorithm {
     cars: Car[],
     config: CarBrainConfig,
     track: Track,
-    _generationTime: number,
+    generationTime: number,
     winnerCar?: Car,
     mutationByDistance: boolean = true,
     populationSize?: number
@@ -157,9 +167,14 @@ export class GeneticAlgorithm {
     // Save best weights
     state.bestWeights = bestCar.brain.toJSON();
 
-    // Track fitness improvements
+    // Update total time (accumulate generation time)
+    state.totalTime += generationTime;
+
+    // Track fitness improvements and time to reach them
     if (bestCar.maxDistanceReached > state.bestFitness) {
       state.bestFitness = bestCar.maxDistanceReached;
+      // Update secondsToBest when we reach a new best
+      state.secondsToBest = state.totalTime;
     }
 
     // Increment generation
@@ -335,6 +350,8 @@ export class GeneticAlgorithm {
       state.generation = 0;
       state.bestFitness = 0;
       state.bestWeights = null;
+      state.secondsToBest = 0;
+      state.totalTime = 0;
     }
   }
 }

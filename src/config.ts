@@ -235,9 +235,9 @@ export function getCarBrainConfig(id: string): CarBrainConfig | undefined {
 
 // Adaptive Population Control Settings
 export const ADAPTIVE_POPULATION_ENABLED = true;
-export const ADAPTIVE_POPULATION_INITIAL = CAR_BRAIN_CONFIGS.length * 10; // 60 cars (10 per type)
+export const ADAPTIVE_POPULATION_INITIAL = CAR_BRAIN_CONFIGS.length * 30; // 60 cars (10 per type)
 export const ADAPTIVE_POPULATION_MIN = CAR_BRAIN_CONFIGS.length * 5; // 30 cars (5 per type)
-export const ADAPTIVE_POPULATION_MAX = CAR_BRAIN_CONFIGS.length * 15; // 90 cars (15 per type)
+export const ADAPTIVE_POPULATION_MAX = CAR_BRAIN_CONFIGS.length * 200; // 90 cars (15 per type)
 export const ADAPTIVE_POPULATION_STEP = CAR_BRAIN_CONFIGS.length * 1; // Adjust by 6 cars (1 per type)
 export const ADAPTIVE_FPS_TARGET = 55; // Target FPS to maintain
 export const ADAPTIVE_FPS_LOW_THRESHOLD = 50; // Below this, reduce population

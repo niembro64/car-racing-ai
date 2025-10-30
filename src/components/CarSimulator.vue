@@ -38,12 +38,13 @@
               <th>Score</th>
               <th>Type</th>
               <th>Gen</th>
-              <th>Mutation</th>
+              <th>{{ isMobile ? 'MUT' : 'Mutation' }}</th>
               <th>Mean</th>
               <th>Best</th>
+              <th>STB</th>
               <th>Hidden</th>
-              <th>Activ</th>
-              <th>Input</th>
+              <th>{{ isMobile ? 'A' : 'Activ' }}</th>
+              <th>{{ isMobile ? 'I' : 'Input' }}</th>
             </tr>
           </thead>
           <tbody>
@@ -71,6 +72,9 @@
                 {{ getBestFitnessPercent(config.id) }}
               </td>
               <td>
+                {{ getSecondsToBest(config.id) }}
+              </td>
+              <td>
                 {{ getHiddenLayers(config.nn.architecture) }}
               </td>
               <td
@@ -78,14 +82,14 @@
                   backgroundColor: getActivationColor(config.nn.activationType),
                 }"
               >
-                {{ config.nn.activationType }}
+                {{ isMobile ? config.nn.activationType.charAt(0) : config.nn.activationType }}
               </td>
               <td
                 :style="{
                   backgroundColor: getInputColor(config.nn.inputModification),
                 }"
               >
-                {{ config.nn.inputModification }}
+                {{ isMobile ? config.nn.inputModification.charAt(0) : config.nn.inputModification }}
               </td>
             </tr>
           </tbody>
@@ -106,8 +110,12 @@
               </thead>
               <tbody>
                 <tr>
-                  <td style="font-weight: bold">FPS</td>
+                  <td style="font-weight: bold">Current FPS</td>
                   <td>{{ currentFps }}</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: bold">Target FPS</td>
+                  <td>{{ fpsTarget }}</td>
                 </tr>
                 <tr>
                   <td style="font-weight: bold">Frame Time</td>
@@ -140,10 +148,6 @@
                 <tr>
                   <td style="font-weight: bold">Adaptive Mode</td>
                   <td>{{ adaptivePopulation ? 'ON' : 'OFF' }}</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold">FPS Target</td>
-                  <td>{{ fpsTarget }}</td>
                 </tr>
               </tbody>
             </table>
@@ -205,6 +209,11 @@ const frameCounter = ref(0);
 const viewMode = ref<'table' | 'graph' | 'performance'>('table');
 const graphCanvasRef = ref<HTMLCanvasElement | null>(null);
 
+// Check if mobile for responsive formatting
+const isMobile = computed(() => {
+  return typeof window !== 'undefined' && window.innerWidth <= 768;
+});
+
 // Performance monitoring
 const currentFps = ref(60);
 const avgFrameTime = ref(16.67);
@@ -222,6 +231,10 @@ let fpsUpdateCounter = 0;
 const adaptivePopulation = ref(ADAPTIVE_POPULATION_ENABLED);
 const targetPopulation = ref(ADAPTIVE_POPULATION_INITIAL);
 const fpsTarget = ref(ADAPTIVE_FPS_TARGET);
+let fpsLowThreshold = ADAPTIVE_FPS_LOW_THRESHOLD;
+let fpsHighThreshold = ADAPTIVE_FPS_HIGH_THRESHOLD;
+let fpsCalibrated = false;
+const FPS_CALIBRATION_FRAMES = 120; // Calibrate after 2 seconds
 
 // Dynamic generation tracking for all config types
 const generationTimeByConfigId = ref<Map<string, number>>(new Map());
@@ -238,16 +251,25 @@ for (const config of CAR_BRAIN_CONFIGS) {
 let animationFrameId: number | null = null;
 const FIXED_DT = 1 / 60; // 60 Hz physics
 
-// Computed property for scores (average of mean and best, normalized to top score = 100%)
+// Computed property for scores (average of mean and best, with STB efficiency factor)
 const scoreByConfigId = computed(() => {
   const scores = new Map<string, number>();
 
-  // Calculate raw scores (average of mean and best)
+  // Calculate composite scores (performance * efficiency)
   for (const config of CAR_BRAIN_CONFIGS) {
     const mean = getMeanFitnessPercentRaw(config.id);
     const best = getBestFitnessPercentRaw(config.id);
-    const average = (mean + best) / 2;
-    scores.set(config.id, average);
+    const performanceScore = (mean + best) / 2;
+
+    // Get seconds to best and calculate efficiency multiplier
+    const stb = ga.value.getSecondsToBest(config.id);
+    // Efficiency factor: faster convergence is rewarded
+    // 0s = 1.0x, 30s = 0.67x, 60s = 0.5x, 120s = 0.33x
+    const efficiencyFactor = 1.0 / (1 + stb / 60);
+
+    // Composite score = performance * efficiency
+    const compositeScore = performanceScore * efficiencyFactor;
+    scores.set(config.id, compositeScore);
   }
 
   // Find max score
@@ -300,10 +322,10 @@ const mutationRateByConfigId = computed(() => {
       const progressPercentage = bestDistance / trackLength;
       const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
       const rate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
-      rates.set(config.id, rate.toFixed(4));
+      rates.set(config.id, formatMutationRate(rate));
     } else {
       // When MUT DIST is OFF, use constant minimum mutation
-      rates.set(config.id, GA_MUTATION_MIN.toFixed(4));
+      rates.set(config.id, formatMutationRate(GA_MUTATION_MIN));
     }
   }
 
@@ -340,6 +362,15 @@ const getInputColor = (inputModification: InputModificationType): string => {
 
 // Format percentage to always be 5 characters: "100.%", "99.3%", "1.34%", "0.34%"
 const formatPercentage = (value: number): string => {
+  if (isMobile.value) {
+    // Mobile: Always use 4 characters with leading zeros
+    // "001%", "015%", "100%"
+    const intValue = Math.round(value);
+    const paddedValue = intValue.toString().padStart(3, '0');
+    return `${paddedValue}%`;
+  }
+
+  // Desktop: Use existing formatting logic
   if (value >= 100) {
     return '100.%';
   } else if (value >= 10) {
@@ -349,6 +380,18 @@ const formatPercentage = (value: number): string => {
   } else {
     return `${value.toFixed(2)}%`;
   }
+};
+
+// Format mutation rate (0-1 range) to be compact
+const formatMutationRate = (rate: number): string => {
+  if (isMobile.value) {
+    // Mobile: Use 3 characters, drop leading 0 and decimal point
+    // 0.250 → "250", 0.010 → "010"
+    return (rate * 1000).toFixed(0).padStart(3, '0');
+  }
+
+  // Desktop: Use 4 decimal places
+  return rate.toFixed(4);
 };
 
 const getHiddenLayers = (architecture: number[]): string => {
@@ -391,6 +434,11 @@ const getMeanFitnessPercent = (configId: string): string => {
 
 const getBestFitnessPercent = (configId: string): string => {
   return formatPercentage(getBestFitnessPercentRaw(configId));
+};
+
+const getSecondsToBest = (configId: string): string => {
+  const seconds = ga.value.getSecondsToBest(configId);
+  return seconds.toFixed(1) + 's';
 };
 
 const getScorePercent = (configId: string): string => {
@@ -667,27 +715,49 @@ const updatePerformanceMetrics = (frameTime: number, updateTime: number, renderT
   }
 };
 
+// Calibrate FPS target based on initial performance
+const calibrateFpsTarget = () => {
+  if (fpsCalibrated) return;
+
+  const fps = currentFps.value;
+
+  // Set target to 90% of current FPS (10% under)
+  fpsTarget.value = Math.round(fps * 0.9);
+
+  // Set thresholds around the target
+  // Low threshold: 5 FPS below target
+  // High threshold: 3 FPS above target
+  fpsLowThreshold = fpsTarget.value - 5;
+  fpsHighThreshold = fpsTarget.value + 3;
+
+  fpsCalibrated = true;
+  console.log(`[Adaptive Pop] Calibrated! Baseline FPS: ${fps}, Target: ${fpsTarget.value}, Range: ${fpsLowThreshold}-${fpsHighThreshold}`);
+};
+
 // Adaptive population control
 const adjustPopulationSize = () => {
   if (!adaptivePopulation.value) return;
 
   const fps = currentFps.value;
 
+  // Log current state for debugging
+  console.log(`[Adaptive Pop] FPS: ${fps}, Target: ${fpsTarget.value}, Range: ${fpsLowThreshold}-${fpsHighThreshold}`);
+
   // If FPS is too low, reduce population
-  if (fps < ADAPTIVE_FPS_LOW_THRESHOLD && targetPopulation.value > ADAPTIVE_POPULATION_MIN) {
+  if (fps < fpsLowThreshold && targetPopulation.value > ADAPTIVE_POPULATION_MIN) {
     targetPopulation.value = Math.max(
       ADAPTIVE_POPULATION_MIN,
       targetPopulation.value - ADAPTIVE_POPULATION_STEP
     );
-    console.log(`FPS too low (${fps}), reducing target population to ${targetPopulation.value}`);
+    console.log(`[Adaptive Pop] FPS too low (${fps}), reducing target population to ${targetPopulation.value}`);
   }
   // If FPS is comfortably high, increase population
-  else if (fps > ADAPTIVE_FPS_HIGH_THRESHOLD && targetPopulation.value < ADAPTIVE_POPULATION_MAX) {
+  else if (fps > fpsHighThreshold && targetPopulation.value < ADAPTIVE_POPULATION_MAX) {
     targetPopulation.value = Math.min(
       ADAPTIVE_POPULATION_MAX,
       targetPopulation.value + ADAPTIVE_POPULATION_STEP
     );
-    console.log(`FPS good (${fps}), increasing target population to ${targetPopulation.value}`);
+    console.log(`[Adaptive Pop] FPS good (${fps}), increasing target population to ${targetPopulation.value}`);
   }
 };
 
@@ -730,8 +800,13 @@ const animate = () => {
   // Update performance metrics
   updatePerformanceMetrics(frameTime, updateTime, renderTime);
 
+  // Calibrate FPS target after warmup period
+  if (!fpsCalibrated && frameCounter.value >= FPS_CALIBRATION_FRAMES) {
+    calibrateFpsTarget();
+  }
+
   // Adjust population based on performance (every 3 seconds)
-  if (frameCounter.value % ADAPTIVE_ADJUSTMENT_INTERVAL === 0) {
+  if (fpsCalibrated && frameCounter.value % ADAPTIVE_ADJUSTMENT_INTERVAL === 0) {
     adjustPopulationSize();
   }
 
@@ -763,6 +838,13 @@ const reset = () => {
     generationTimeByConfigId.value.set(config.id, 0);
     generationMarkersByConfigId.value.set(config.id, []);
   }
+
+  // Reset FPS calibration
+  fpsCalibrated = false;
+  frameCounter.value = 0;
+
+  // Reset target population to initial value
+  targetPopulation.value = ADAPTIVE_POPULATION_INITIAL;
 };
 
 // Toggle Kill Backwards mode

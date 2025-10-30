@@ -98,6 +98,8 @@ export interface ConfigEvolutionState {
   generation: number;
   bestFitness: number;
   bestWeights: any;
+  secondsToBest: number; // Time in seconds to reach current best fitness
+  totalTime: number; // Total elapsed time in seconds for this config
 }
 
 // ============================================================================
