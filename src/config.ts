@@ -176,8 +176,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     mobileDisplayName: 'Ripple',
     id: 'dirgelusmall',
     shortName: 'RP',
-    description:
-      'Small: 9 raw sensor inputs, no hidden layers',
+    description: 'Small: 9 raw sensor inputs, no hidden layers',
     nn: {
       architecture: NN_ARCH_SMALL,
       inputModification: 'dir',
@@ -199,11 +198,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     id: 'dirgelumedium',
     shortName: 'WV',
     description:
-      'Medium: 9 raw sensor inputs with GELU activation, hidden layer size 4',
+      'Medium: 9 raw sensor inputs with RELU activation, hidden layer size 4',
     nn: {
       architecture: NN_ARCH_MEDIUM,
       inputModification: 'dir',
-      activationType: 'gelu',
+      activationType: 'relu',
     },
     colors: {
       light: '#1166cc',
@@ -221,11 +220,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     id: 'dirgelularge',
     shortName: 'TS',
     description:
-      'Large: 9 raw sensor inputs with GELU activation, two hidden layers (6, 3)',
+      'Large: 9 raw sensor inputs with RELU activation, two hidden layers (6, 3)',
     nn: {
       architecture: NN_ARCH_LARGE,
       inputModification: 'dir',
-      activationType: 'gelu',
+      activationType: 'relu',
     },
     colors: {
       light: '#0044aa',
