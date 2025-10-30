@@ -1,4 +1,9 @@
-import type { Point, InputModificationType, ActivationType, CarBrainConfig } from './types';
+import type {
+  Point,
+  InputModificationType,
+  ActivationType,
+  CarBrainConfig,
+} from './types';
 
 export type { Point, InputModificationType, ActivationType, CarBrainConfig };
 
@@ -15,10 +20,11 @@ export function appendMirroredWaypoints(
   return [...waypoints, ...mirroredTail];
 }
 
-export const GA_MUTATION_BASE = 0.01;
-export const GA_MUTATION_PROGRESS_FACTOR = 0.009;
-export const GA_MUTATION_MIN = 0.001;
-export const GA_MUTATION_RATE = 0.08;
+export const GA_MUTATION_BASE = 0.3;
+export const GA_MUTATION_PROGRESS_FACTOR = 0.29;
+export const GA_MUTATION_MIN = 0.01;
+export const GA_MUTATION_RATE = 0.1;
+
 export const GA_POPULATION_SIZE_DESKTOP = 160;
 export const GA_POPULATION_SIZE_MOBILE = 80;
 
@@ -32,27 +38,37 @@ export function getPopulationSize(): number {
 }
 
 export const GA_POPULATION_SIZE = GA_POPULATION_SIZE_DESKTOP;
-export const GA_MUTATION_MIN_MULTIPLIER = 0.2;
-export const GA_MUTATION_MAX_MULTIPLIER = 3.5;
-export const GA_MUTATION_CURVE_POWER = 2.0;
+export const GA_MUTATION_MIN_MULTIPLIER = 0.5;
+export const GA_MUTATION_MAX_MULTIPLIER = 5.0;
+export const GA_MUTATION_CURVE_POWER = 1.5;
 
 export const CANVAS_WIDTH = 800;
 export const CANVAS_HEIGHT = 600;
-export const TRACK_WIDTH_HALF = 30;
+export const TRACK_WIDTH_HALF = 40;
 export const SEGMENTS_PER_CURVE = 30;
+
+export const SHOW_CAR_PERCENTAGES = false;
+export const DEBUG_SHOW_WAYPOINTS = true;
 
 export const wp: Point[] = [
   { x: 400, y: 60 },
   { x: 700, y: 100 },
   { x: 700, y: 500 },
-  { x: 560, y: 500 },
-  { x: 600, y: 240 },
-  { x: 500, y: 140 },
+  { x: 490, y: 500 },
+  { x: 450, y: 400 },
+  { x: 460, y: 340 },
+  { x: 530, y: 310 },
+  { x: 600, y: 300 },
+  { x: 630, y: 250 },
+  { x: 600, y: 200 },
+  { x: 550, y: 160 },
+  { x: 490, y: 170 },
+  { x: 430, y: 250 },
 ];
 export const WAYPOINTS: Point[] = appendMirroredWaypoints(wp, CANVAS_WIDTH);
 
 export const CAR_FORWARD_SPEED = 200;
-export const CAR_STEERING_SENSITIVITY = 0.6;
+export const CAR_STEERING_SENSITIVITY = 0.3;
 export const CAR_WIDTH = 10;
 export const CAR_HEIGHT = 20;
 
@@ -76,10 +92,16 @@ export const SENSOR_RAY_PAIRS = [
 ];
 
 export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 1];
-export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 3, 1];
-export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 5, 5, 1];
-export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 3, 1];
+export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 4, 1];
+export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 4, 4, 1];
+export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 4, 1];
 export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 1];
+
+// export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 4, 1];
+// export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 8, 1];
+// export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 12, 8, 1];
+// export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 6, 1];
+// export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 3, 1];
 
 export const NEURAL_NETWORK_ARCHITECTURE = NN_ARCH_DIFF_MEDIUM;
 
@@ -231,8 +253,6 @@ export function getCarBrainConfig(id: string): CarBrainConfig | undefined {
 export const DEFAULT_DIE_ON_BACKWARDS = true;
 export const DEFAULT_KILL_SLOW_CARS = true;
 export const DEFAULT_MUTATION_BY_DISTANCE = true;
-
-export const SHOW_CAR_PERCENTAGES = false;
 
 export const CANVAS_BACKGROUND_COLOR = '#4a7c4e';
 

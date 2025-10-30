@@ -35,7 +35,7 @@ export class NeuralNetwork {
       const weights: number[][] = [];
       const biases: number[] = [];
 
-      const scale = 0.1;
+      const scale = 0.5;
 
       for (let j = 0; j < outputSize; j++) {
         const neuronWeights: number[] = [];

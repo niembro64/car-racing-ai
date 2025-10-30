@@ -168,7 +168,7 @@ export class GeneticAlgorithm {
       const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
       baseMutationRate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
     } else {
-      baseMutationRate = 0.01;
+      baseMutationRate = GA_MUTATION_MIN;
     }
 
     // Create next generation
@@ -240,7 +240,7 @@ export class GeneticAlgorithm {
       const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
       return Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
     } else {
-      return 0.01;
+      return GA_MUTATION_MIN;
     }
   }
 

@@ -107,6 +107,8 @@ import {
   GA_MUTATION_BASE,
   GA_MUTATION_PROGRESS_FACTOR,
   GA_MUTATION_MIN,
+  DEBUG_SHOW_WAYPOINTS,
+  wp,
 } from '@/config';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -204,7 +206,7 @@ const getAdaptiveMutationRate = (configId: string): string => {
     const rate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
     return rate.toFixed(4);
   } else {
-    return GA_MUTATION_BASE.toFixed(4);
+    return GA_MUTATION_MIN.toFixed(4);
   }
 };
 
@@ -374,6 +376,28 @@ const render = (ctx: CanvasRenderingContext2D) => {
 
   // Render track
   track.render(ctx);
+
+  // Render waypoint debug markers
+  if (DEBUG_SHOW_WAYPOINTS) {
+    ctx.fillStyle = '#ff0000';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    for (const point of wp) {
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3;
+      const coordText = `(${Math.round(point.x)}, ${Math.round(point.y)})`;
+      ctx.strokeText(coordText, point.x, point.y - 12);
+      ctx.fillText(coordText, point.x, point.y - 12);
+      ctx.fillStyle = '#ff0000';
+    }
+  }
 
   // Render generation markers dynamically for all configs
   ctx.font = 'bold 16px monospace';
