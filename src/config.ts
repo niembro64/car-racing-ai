@@ -25,9 +25,6 @@ export const GA_MUTATION_PROGRESS_FACTOR = 0.29;
 export const GA_MUTATION_MIN = 0.01;
 export const GA_MUTATION_RATE = 0.1;
 
-export const GA_POPULATION_SIZE_DESKTOP = 100;
-export const GA_POPULATION_SIZE_MOBILE = 60;
-
 export function getPopulationSize(): number {
   if (typeof window === 'undefined') {
     return GA_POPULATION_SIZE_DESKTOP;
@@ -37,15 +34,14 @@ export function getPopulationSize(): number {
     : GA_POPULATION_SIZE_DESKTOP;
 }
 
-export const GA_POPULATION_SIZE = GA_POPULATION_SIZE_DESKTOP;
 export const GA_MUTATION_MIN_MULTIPLIER = 0.5;
 export const GA_MUTATION_MAX_MULTIPLIER = 5.0;
 export const GA_MUTATION_CURVE_POWER = 1.5;
 
 export const CANVAS_WIDTH = 800;
 export const CANVAS_HEIGHT = 600;
-export const TRACK_WIDTH_HALF = 40;
-export const SEGMENTS_PER_CURVE = 30;
+export const TRACK_WIDTH_HALF = 42;
+export const SEGMENTS_PER_CURVE = 12;
 
 export const SHOW_CAR_PERCENTAGES = false;
 export const DEBUG_SHOW_WAYPOINTS = true;
@@ -68,10 +64,10 @@ export const wp: Point[] = [
 export const WAYPOINTS: Point[] = appendMirroredWaypoints(wp, CANVAS_WIDTH);
 
 export const CAR_FORWARD_SPEED = 200;
-export const CAR_STEERING_SENSITIVITY = 0.3;
+export const CAR_STEERING_SENSITIVITY = 0.6;
 export const CAR_WIDTH = 10;
 export const CAR_HEIGHT = 20;
-export const CAR_START_ANGLE_WIGGLE = Math.PI / 6;
+export const CAR_START_ANGLE_WIGGLE = Math.PI / 16;
 
 export const SENSOR_RAY_ANGLES = [
   0,
@@ -246,6 +242,11 @@ export const CAR_BRAIN_CONFIGS: CarBrainConfig[] = [
     },
   },
 ];
+
+export const GA_POPULATION_SIZE_DESKTOP = CAR_BRAIN_CONFIGS.length * 8;
+export const GA_POPULATION_SIZE_MOBILE = CAR_BRAIN_CONFIGS.length * 4;
+
+export const GA_POPULATION_SIZE = GA_POPULATION_SIZE_DESKTOP;
 
 export function getCarBrainConfig(id: string): CarBrainConfig | undefined {
   return CAR_BRAIN_CONFIGS.find((config) => config.id === id);

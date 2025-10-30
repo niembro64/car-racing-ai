@@ -33,6 +33,7 @@
         <table class="stats-table">
           <thead>
             <tr>
+              <th>Score</th>
               <th>Type</th>
               <th>Gen</th>
               <th>Mutation</th>
@@ -50,13 +51,16 @@
               :style="{ backgroundColor: config.colors.elite }"
             >
               <td style="font-weight: bold">
+                {{ getScorePercent(config.id) }}
+              </td>
+              <td style="font-weight: bold">
                 {{ config.displayName }}
               </td>
               <td>
                 {{ ga.getGeneration(config.id) }}
               </td>
               <td>
-                {{ getAdaptiveMutationRate(config.id) }}
+                {{ mutationRateByConfigId.get(config.id) }}
               </td>
               <td>
                 {{ getMeanFitnessPercent(config.id) }}
@@ -127,6 +131,7 @@ const speedMultiplier = ref(1);
 const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
 const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
 const mutationByDistance = ref(DEFAULT_MUTATION_BY_DISTANCE);
+const frameCounter = ref(0);
 
 // Dynamic generation tracking for all config types
 const generationTimeByConfigId = ref<Map<string, number>>(new Map());
@@ -143,13 +148,70 @@ for (const config of CAR_BRAIN_CONFIGS) {
 let animationFrameId: number | null = null;
 const FIXED_DT = 1 / 60; // 60 Hz physics
 
-// Computed property to sort car brain configs by generation (ascending)
+// Computed property for scores (average of mean and best, normalized to top score = 100%)
+const scoreByConfigId = computed(() => {
+  const scores = new Map<string, number>();
+
+  // Calculate raw scores (average of mean and best)
+  for (const config of CAR_BRAIN_CONFIGS) {
+    const mean = getMeanFitnessPercentRaw(config.id);
+    const best = getBestFitnessPercentRaw(config.id);
+    const average = (mean + best) / 2;
+    scores.set(config.id, average);
+  }
+
+  // Find max score
+  const maxScore = Math.max(...Array.from(scores.values()), 0.0001); // Avoid division by zero
+
+  // Normalize scores (top score = 100%)
+  const normalizedScores = new Map<string, number>();
+  for (const [configId, score] of scores.entries()) {
+    normalizedScores.set(configId, (score / maxScore) * 100);
+  }
+
+  return normalizedScores;
+});
+
+// Computed property to sort car brain configs by score (descending)
 const sortedCarBrainConfigs = computed(() => {
   return [...CAR_BRAIN_CONFIGS].sort((a, b) => {
-    const genA = ga.value.getGeneration(a.id);
-    const genB = ga.value.getGeneration(b.id);
-    return genA - genB;
+    const scoreA = scoreByConfigId.value.get(a.id) ?? 0;
+    const scoreB = scoreByConfigId.value.get(b.id) ?? 0;
+    return scoreB - scoreA; // Descending order (best first)
   });
+});
+
+// Computed property for mutation rates (updates every frame)
+const mutationRateByConfigId = computed(() => {
+  // Reference frameCounter to trigger re-computation every frame
+  frameCounter.value;
+
+  const rates = new Map<string, string>();
+
+  for (const config of CAR_BRAIN_CONFIGS) {
+    if (mutationByDistance.value) {
+      const trackLength = track.getTotalLength();
+
+      // Get current generation's best distance (live updates)
+      const carsOfType = population.value.filter(car => car.configId === config.id);
+      const currentBest = carsOfType.length > 0
+        ? Math.max(...carsOfType.map(car => car.maxDistanceReached))
+        : 0;
+
+      // Use the better of current or historical best
+      const historicalBest = ga.value.getBestFitness(config.id);
+      const bestDistance = Math.max(currentBest, historicalBest);
+
+      const progressPercentage = bestDistance / trackLength;
+      const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
+      const rate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
+      rates.set(config.id, rate.toFixed(4));
+    } else {
+      rates.set(config.id, GA_MUTATION_MIN.toFixed(4));
+    }
+  }
+
+  return rates;
 });
 
 // Get background color for activation type
@@ -193,50 +255,51 @@ const formatPercentage = (value: number): string => {
   }
 };
 
-const getAdaptiveMutationRate = (configId: string): string => {
-  if (mutationByDistance.value) {
-    const trackLength = track.getTotalLength();
-    const bestFitness = ga.value.getBestFitness(configId);
-    const progressPercentage = bestFitness / trackLength;
-    const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
-    const rate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
-    return rate.toFixed(4);
-  } else {
-    return GA_MUTATION_MIN.toFixed(4);
-  }
-};
-
 const getHiddenLayers = (architecture: number[]): string => {
   const hiddenLayers = architecture.slice(1, -1);
   return `[${hiddenLayers.join(',')}]`;
 };
 
-const getMeanFitnessPercent = (configId: string): string => {
+// Helper to get raw mean fitness percentage (not formatted)
+const getMeanFitnessPercentRaw = (configId: string): number => {
   const markers = generationMarkersByConfigId.value.get(configId) ?? [];
 
   if (markers.length === 0) {
-    return formatPercentage(0);
+    return 0;
   }
 
   const trackLength = track.getTotalLength();
   const totalFitness = markers.reduce((sum, marker) => sum + marker.fitness, 0);
   const meanFitness = totalFitness / markers.length;
 
-  return formatPercentage((meanFitness / trackLength) * 100);
+  return (meanFitness / trackLength) * 100;
 };
 
-// Generic helper to compute best fitness percentage for a config (max of all generation markers)
-const getBestFitnessPercent = (configId: string): string => {
+// Helper to get raw best fitness percentage (not formatted)
+const getBestFitnessPercentRaw = (configId: string): number => {
   const markers = generationMarkersByConfigId.value.get(configId) ?? [];
 
   if (markers.length === 0) {
-    return formatPercentage(0);
+    return 0;
   }
 
   const trackLength = track.getTotalLength();
   const bestFitness = Math.max(...markers.map((marker) => marker.fitness));
 
-  return formatPercentage((bestFitness / trackLength) * 100);
+  return (bestFitness / trackLength) * 100;
+};
+
+const getMeanFitnessPercent = (configId: string): string => {
+  return formatPercentage(getMeanFitnessPercentRaw(configId));
+};
+
+const getBestFitnessPercent = (configId: string): string => {
+  return formatPercentage(getBestFitnessPercentRaw(configId));
+};
+
+const getScorePercent = (configId: string): string => {
+  const score = scoreByConfigId.value.get(configId) ?? 0;
+  return formatPercentage(score);
 };
 
 // Initialize simulation
@@ -462,6 +525,9 @@ const animate = () => {
 
   // Render at normal rate
   render(ctx);
+
+  // Increment frame counter for Vue reactivity
+  frameCounter.value++;
 
   animationFrameId = requestAnimationFrame(animate);
 };
