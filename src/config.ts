@@ -87,11 +87,11 @@ export const SENSOR_RAY_PAIRS = [
   [7, 8],
 ];
 
-export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 6, 1];
-export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 8, 1];
-export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 12, 6, 1];
-export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 6, 1];
-export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 4, 1];
+export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 1];
+export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 4, 1];
+export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 6, 3, 1];
+export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 1];
+export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 4, 1];
 
 // export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 4, 1];
 // export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 8, 1];
@@ -257,7 +257,9 @@ export const DEFAULT_MUTATION_BY_DISTANCE = true;
 
 export const CANVAS_BACKGROUND_COLOR = '#4a7c4e';
 
-export const TRACK_SURFACE_COLOR = '#333333';
+// export const TRACK_SURFACE_COLOR = '#000';
+// export const TRACK_SURFACE_COLOR = '#333333';
+export const TRACK_SURFACE_COLOR = '#888';
 export const TRACK_BOUNDARY_COLOR = '#ffffff';
 export const TRACK_CENTERLINE_COLOR = '#fbbf24';
 export const START_FINISH_LINE_COLOR = '#ffffff';

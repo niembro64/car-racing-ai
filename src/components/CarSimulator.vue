@@ -353,6 +353,12 @@ const evolvePopulationByConfig = (
       generation: ga.value.getGeneration(config.id),
       fitness: bestCar.maxDistanceReached,
     });
+
+    // Keep only last 100 markers per config
+    if (markers.length > 100) {
+      markers.splice(0, markers.length - 100);
+    }
+
     generationMarkersByConfigId.value.set(config.id, markers);
   }
 
@@ -436,6 +442,16 @@ const updatePhysics = (dt: number) => {
         `all ${config.displayName} cars crashed`
       );
     }
+  }
+
+  // Keep only last 100 dead cars in memory
+  const aliveCars = population.value.filter((c) => c.alive);
+  const deadCars = population.value.filter((c) => !c.alive);
+
+  if (deadCars.length > 100) {
+    // Remove oldest dead cars, keep last 100
+    const recentDeadCars = deadCars.slice(-100);
+    population.value = [...aliveCars, ...recentDeadCars];
   }
 };
 
@@ -611,9 +627,8 @@ const renderGraph = () => {
   ctx.fillStyle = '#1a1a1a';
   ctx.fillRect(0, 0, width, height);
 
-  // Calculate score history for each config
+  // Calculate raw score history for each config
   const configHistories: Map<string, { generation: number; score: number }[]> = new Map();
-  let maxGeneration = 0;
 
   for (const config of CAR_BRAIN_CONFIGS) {
     const markers = generationMarkersByConfigId.value.get(config.id) ?? [];
@@ -639,13 +654,51 @@ const renderGraph = () => {
       const score = (meanPercent + bestPercent) / 2;
 
       history.push({ generation: markers[i].generation, score });
-      maxGeneration = Math.max(maxGeneration, markers[i].generation);
     }
 
     configHistories.set(config.id, history);
   }
 
-  if (maxGeneration === 0) maxGeneration = 1;
+  // Find minimum generation count across all car types
+  let minGeneration = Infinity;
+  for (const history of configHistories.values()) {
+    if (history.length > 0) {
+      const lastGen = history[history.length - 1].generation;
+      minGeneration = Math.min(minGeneration, lastGen);
+    }
+  }
+
+  if (!isFinite(minGeneration) || minGeneration === 0) minGeneration = 1;
+
+  // Truncate all histories to only show up to minimum generation
+  for (const history of configHistories.values()) {
+    const truncatedLength = history.findIndex(point => point.generation > minGeneration);
+    if (truncatedLength !== -1) {
+      history.splice(truncatedLength);
+    }
+  }
+
+  const maxGeneration = minGeneration;
+
+  // Normalize scores: for each generation, show each as percentage of total sum
+  // Build a map of generation -> total sum of all scores
+  const generationTotalScores = new Map<number, number>();
+
+  for (const history of configHistories.values()) {
+    for (const point of history) {
+      const currentTotal = generationTotalScores.get(point.generation) ?? 0;
+      generationTotalScores.set(point.generation, currentTotal + point.score);
+    }
+  }
+
+  // Normalize all scores as percentage of total
+  for (const history of configHistories.values()) {
+    for (const point of history) {
+      const totalScore = generationTotalScores.get(point.generation) ?? 1;
+      // Normalize so all scores sum to 100%
+      point.score = totalScore > 0 ? (point.score / totalScore) * 100 : 0;
+    }
+  }
 
   // Logarithmic scale helper: map generation to log position
   const maxLog = Math.log10(maxGeneration + 1);

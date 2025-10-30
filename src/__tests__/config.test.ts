@@ -94,7 +94,7 @@ describe('Configuration', () => {
   });
 
   it('should have valid hex colors', () => {
-    const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
+    const hexColorRegex = /^#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$/; // Accept both 3 and 6 digit hex
     const rgbaColorRegex = /^rgba\(\d+,\s*\d+,\s*\d+,\s*[\d.]+\)$/;
 
     const colors = [
