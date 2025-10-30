@@ -41,14 +41,14 @@
           <table v-if="viewMode === 'table'" class="stats-table" @click="cycleView">
           <thead>
             <tr>
-              <th>Score</th>
+              <th v-if="!isMobile">Score</th>
               <th>Type</th>
               <th>Gen</th>
               <th>{{ isMobile ? 'MUT' : 'Mutation' }}</th>
               <th>Mean</th>
               <th>Best</th>
               <th>Lap</th>
-              <th>STB</th>
+              <th v-if="!isMobile">STB</th>
               <th>Hidden</th>
               <th>{{ isMobile ? 'A' : 'Activ' }}</th>
               <th>{{ isMobile ? 'I' : 'Input' }}</th>
@@ -60,7 +60,7 @@
               :key="config.id"
               :style="{ backgroundColor: config.colors.dark }"
             >
-              <td style="font-weight: bold">
+              <td v-if="!isMobile" style="font-weight: bold">
                 {{ getScorePercent(config.id) }}
               </td>
               <td style="font-weight: bold">
@@ -81,7 +81,7 @@
               <td>
                 {{ getBestLapTime(config.id) }}
               </td>
-              <td>
+              <td v-if="!isMobile">
                 {{ getSecondsToBest(config.id) }}
               </td>
               <td>
