@@ -193,14 +193,14 @@ const sortedCarBrainConfigs = computed(() => {
 
 // Computed property for mutation rates (updates every frame)
 const mutationRateByConfigId = computed(() => {
-  // Reference frameCounter and mutationByDistance to trigger re-computation
-  frameCounter.value;
-  const useMutationByDistance = mutationByDistance.value;
+  // Explicitly access reactive dependencies to ensure Vue tracks them
+  void frameCounter.value; // Trigger on every frame
+  const isMutationByDistance = mutationByDistance.value; // Trigger on toggle
 
   const rates = new Map<string, string>();
 
   for (const config of CAR_BRAIN_CONFIGS) {
-    if (useMutationByDistance) {
+    if (isMutationByDistance) {
       const trackLength = track.getTotalLength();
 
       // Get current generation's best distance (live updates)
@@ -218,6 +218,7 @@ const mutationRateByConfigId = computed(() => {
       const rate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
       rates.set(config.id, rate.toFixed(4));
     } else {
+      // When MUT DIST is OFF, use constant minimum mutation
       rates.set(config.id, GA_MUTATION_MIN.toFixed(4));
     }
   }
@@ -602,9 +603,10 @@ const renderGraph = () => {
   canvas.width = width;
   canvas.height = height;
 
-  const padding = 50;
+  const padding = 45;
+  const topPadding = 25; // Extra space at top for labels above dots
   const graphWidth = width - padding * 2;
-  const graphHeight = height - padding * 2;
+  const graphHeight = height - padding - topPadding;
 
   // Clear canvas
   ctx.fillStyle = '#1a1a1a';
@@ -657,7 +659,7 @@ const renderGraph = () => {
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(padding, padding);
+  ctx.moveTo(padding, topPadding);
   ctx.lineTo(padding, height - padding);
   ctx.lineTo(width - padding, height - padding);
   ctx.stroke();
@@ -690,7 +692,7 @@ const renderGraph = () => {
 
     ctx.strokeStyle = '#333333';
     ctx.beginPath();
-    ctx.moveTo(x, padding);
+    ctx.moveTo(x, topPadding);
     ctx.lineTo(x, height - padding);
     ctx.stroke();
 
@@ -720,7 +722,7 @@ const renderGraph = () => {
     if (!history || history.length === 0) continue;
 
     ctx.strokeStyle = config.colors.elite;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 4;
     ctx.beginPath();
 
     let started = false;
@@ -738,20 +740,21 @@ const renderGraph = () => {
 
     ctx.stroke();
 
-    // Draw label at the end of the line
+    // Draw label at the end of the line (above the dot)
     const lastPoint = history[history.length - 1];
     const lastX = genToX(lastPoint.generation);
     const lastY = height - padding - (lastPoint.score / 100) * graphHeight;
 
+    // Draw dot at end (larger)
     ctx.fillStyle = config.colors.elite;
-    ctx.font = 'bold 10px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(config.shortName, lastX + 6, lastY + 3);
-
-    // Draw dot at end
     ctx.beginPath();
-    ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+    ctx.arc(lastX, lastY, 7, 0, Math.PI * 2);
     ctx.fill();
+
+    // Draw label above the dot (larger font)
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(config.shortName, lastX, lastY - 12);
   }
 };
 
