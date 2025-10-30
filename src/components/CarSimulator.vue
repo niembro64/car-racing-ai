@@ -106,67 +106,93 @@
 
           <!-- Performance View -->
           <div v-else class="performance-view" @click="cycleView">
-            <table class="stats-table">
-              <thead>
-                <tr>
-                  <th colspan="2">Performance Monitor</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style="font-weight: bold">Current FPS</td>
-                  <td>{{ currentFps }}</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold">Target FPS</td>
-                  <td>{{ fpsTarget }}</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold">Frame Time</td>
-                  <td>{{ avgFrameTime.toFixed(2) }}ms</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold">Update Time</td>
-                  <td>{{ avgUpdateTime.toFixed(2) }}ms</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold">Render Time</td>
-                  <td>{{ avgRenderTime.toFixed(2) }}ms</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold">Total Cars</td>
-                  <td>{{ totalCars }}</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold">Alive Cars</td>
-                  <td>{{ aliveCars }}</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold">Dead Cars</td>
-                  <td>{{ deadCars }}</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold">Target Pop</td>
-                  <td>{{ targetPopulation }}</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold">Adaptive Mode</td>
-                  <td>{{ adaptivePopulation ? 'PID' : 'OFF' }}</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold">Stability</td>
-                  <td>{{ (performanceStability * 100).toFixed(0) }}%</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold">Trend</td>
-                  <td>{{ performanceTrend > 0 ? '↗' : performanceTrend < 0 ? '↘' : '→' }} {{ (performanceTrend * 100).toFixed(0) }}%</td>
-                </tr>
-                <tr>
-                  <td style="font-weight: bold">Headroom</td>
-                  <td>{{ (performanceHeadroom * 100).toFixed(0) }}%</td>
-                </tr>
-              </tbody>
-            </table>
+            <div style="display: flex; gap: 10px; width: 100%;">
+              <!-- Left Column -->
+              <table class="stats-table perf-table" style="flex: 1;">
+                <thead>
+                  <tr>
+                    <th colspan="2">Frame Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="label-cell">Current FPS</td>
+                    <td class="value-cell">{{ currentFps }}</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">Target FPS</td>
+                    <td class="value-cell">{{ fpsTarget }}</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">0.1% Low</td>
+                    <td class="value-cell">{{ fps0_1PercentLow }}</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">1% Low</td>
+                    <td class="value-cell">{{ fps1PercentLow }}</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">5% Low</td>
+                    <td class="value-cell">{{ fps5PercentLow }}</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">Frame Time</td>
+                    <td class="value-cell">{{ avgFrameTime.toFixed(2) }}ms</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">Update Time</td>
+                    <td class="value-cell">{{ avgUpdateTime.toFixed(2) }}ms</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">Render Time</td>
+                    <td class="value-cell">{{ avgRenderTime.toFixed(2) }}ms</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Right Column -->
+              <table class="stats-table perf-table" style="flex: 1;">
+                <thead>
+                  <tr>
+                    <th colspan="2">System Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="label-cell">Target Cars</td>
+                    <td class="value-cell">{{ targetPopulation }}</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">Total Cars</td>
+                    <td class="value-cell">{{ totalCars }}</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">Alive Cars</td>
+                    <td class="value-cell">{{ aliveCars }}</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">Dead Cars</td>
+                    <td class="value-cell">{{ deadCars }}</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">Adaptive</td>
+                    <td class="value-cell">{{ adaptivePopulation ? 'PID' : 'OFF' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">Headroom</td>
+                    <td class="value-cell">{{ (performanceHeadroom * 100).toFixed(0) }}%</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">Stability</td>
+                    <td class="value-cell">{{ (performanceStability * 100).toFixed(0) }}%</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">Trend</td>
+                    <td class="value-cell">{{ performanceTrend > 0 ? '↗' : performanceTrend < 0 ? '↘' : '→' }} {{ performanceTrend >= 0 ? '+' : '' }}{{ (performanceTrend * 100).toFixed(0) }}%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -210,6 +236,7 @@ import {
   POP_HYSTERESIS_THRESHOLD,
   PERF_EMERGENCY_FPS,
   PERF_SAFE_FPS,
+  GRAPH_GENERATION_USE_LOG_SCALE,
   wp,
 } from '@/config';
 
@@ -268,6 +295,9 @@ const targetPopulation = ref(POP_INITIAL);
 const performanceStability = ref(1.0);
 const performanceTrend = ref(0);
 const performanceHeadroom = ref(1.0);
+const fps0_1PercentLow = ref(60);
+const fps1PercentLow = ref(60);
+const fps5PercentLow = ref(60);
 
 // Profiling metrics (for display)
 const avgFrameTime = ref(16.67);
@@ -812,6 +842,9 @@ const updatePerformanceMetrics = (updateTime: number, renderTime: number) => {
     performanceStability.value = metrics.stability;
     performanceTrend.value = metrics.trend;
     performanceHeadroom.value = metrics.headroom;
+    fps0_1PercentLow.value = Math.round(metrics.p0_1Fps);
+    fps1PercentLow.value = Math.round(metrics.p1Fps);
+    fps5PercentLow.value = Math.round(metrics.p5Fps);
     avgUpdateTime.value = updateTimeHistory.reduce((a, b) => a + b, 0) / updateTimeHistory.length;
     avgRenderTime.value = renderTimeHistory.reduce((a, b) => a + b, 0) / renderTimeHistory.length;
   }
@@ -1047,11 +1080,16 @@ const renderGraph = () => {
     }
   }
 
-  // Logarithmic scale helper: map generation to log position
-  const maxLog = Math.log10(maxGeneration + 1);
+  // Scale helper: map generation to x position (log or linear)
   const genToX = (gen: number): number => {
-    const logPos = Math.log10(gen + 1) / maxLog;
-    return padding + logPos * graphWidth;
+    if (GRAPH_GENERATION_USE_LOG_SCALE) {
+      const maxLog = Math.log10(maxGeneration + 1);
+      const logPos = Math.log10(gen + 1) / maxLog;
+      return padding + logPos * graphWidth;
+    } else {
+      // Linear scale
+      return padding + (gen / maxGeneration) * graphWidth;
+    }
   };
 
   // Draw axes
@@ -1083,24 +1121,45 @@ const renderGraph = () => {
     ctx.fillText(`${i * 10}%`, padding - 5, y + 3);
   }
 
-  // X-axis grid (logarithmic generations: 1, 10, 100, 1000, etc.)
-  let power = 0;
-  while (Math.pow(10, power) - 1 <= maxGeneration) {
-    const gen = Math.pow(10, power) - 1;
-    const x = genToX(gen);
+  // X-axis grid
+  if (GRAPH_GENERATION_USE_LOG_SCALE) {
+    // Logarithmic generations: 1, 10, 100, 1000, etc.
+    let power = 0;
+    while (Math.pow(10, power) - 1 <= maxGeneration) {
+      const gen = Math.pow(10, power) - 1;
+      const x = genToX(gen);
 
-    ctx.strokeStyle = '#333333';
-    ctx.beginPath();
-    ctx.moveTo(x, topPadding);
-    ctx.lineTo(x, height - padding);
-    ctx.stroke();
+      ctx.strokeStyle = '#333333';
+      ctx.beginPath();
+      ctx.moveTo(x, topPadding);
+      ctx.lineTo(x, height - padding);
+      ctx.stroke();
 
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    const label = gen === 0 ? '0' : `${Math.pow(10, power)}`;
-    ctx.fillText(label, x, height - padding + 15);
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      const label = gen === 0 ? '0' : `${Math.pow(10, power)}`;
+      ctx.fillText(label, x, height - padding + 15);
 
-    power++;
+      power++;
+    }
+  } else {
+    // Linear scale: evenly spaced grid lines
+    const numGridLines = 10;
+    const step = Math.ceil(maxGeneration / numGridLines);
+    for (let i = 0; i <= numGridLines; i++) {
+      const gen = Math.min(i * step, maxGeneration);
+      const x = genToX(gen);
+
+      ctx.strokeStyle = '#333333';
+      ctx.beginPath();
+      ctx.moveTo(x, topPadding);
+      ctx.lineTo(x, height - padding);
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.fillText(gen.toString(), x, height - padding + 15);
+    }
   }
 
   // Axis labels
@@ -1267,6 +1326,7 @@ canvas {
 .stats-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-family: 'Courier New', 'Courier', monospace;
   font-size: 14px;
   font-weight: bold;
@@ -1306,6 +1366,18 @@ canvas {
 
 .stats-table tbody tr:hover {
   background: rgba(255, 255, 255, 0.05);
+}
+
+/* Performance table specific styling */
+.perf-table .label-cell {
+  text-align: left;
+  width: 60%;
+  font-weight: bold;
+}
+
+.perf-table .value-cell {
+  text-align: right;
+  width: 40%;
 }
 
 /* Mobile layout: Table on top, buttons below */

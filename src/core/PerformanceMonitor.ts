@@ -13,6 +13,9 @@ export interface PerformanceMetrics {
   averageFps: number;
   minFps: number;
   maxFps: number;
+  p0_1Fps: number; // 0.1% low (worst 0.1% of frames)
+  p1Fps: number; // 1% low (worst 1% of frames)
+  p5Fps: number; // 5% low (worst 5% of frames)
   p50Fps: number; // Median
   p95Fps: number; // 95th percentile
   p99Fps: number; // 99th percentile
@@ -88,7 +91,10 @@ export class PerformanceMonitor {
     const minFps = Math.min(...this.fpsHistory);
     const maxFps = Math.max(...this.fpsHistory);
 
-    // Percentiles
+    // Percentiles (low percentiles = worst frames, high percentiles = best frames)
+    const p0_1Fps = this.getPercentile(sortedFps, 0.001); // 0.1% low
+    const p1Fps = this.getPercentile(sortedFps, 0.01); // 1% low
+    const p5Fps = this.getPercentile(sortedFps, 0.05); // 5% low
     const p50Fps = this.getPercentile(sortedFps, 0.5);
     const p95Fps = this.getPercentile(sortedFps, 0.95);
     const p99Fps = this.getPercentile(sortedFps, 0.99);
@@ -115,6 +121,9 @@ export class PerformanceMonitor {
       averageFps,
       minFps,
       maxFps,
+      p0_1Fps,
+      p1Fps,
+      p5Fps,
       p50Fps,
       p95Fps,
       p99Fps,
@@ -166,6 +175,9 @@ export class PerformanceMonitor {
       averageFps: this.targetFps,
       minFps: this.targetFps,
       maxFps: this.targetFps,
+      p0_1Fps: this.targetFps,
+      p1Fps: this.targetFps,
+      p5Fps: this.targetFps,
       p50Fps: this.targetFps,
       p95Fps: this.targetFps,
       p99Fps: this.targetFps,

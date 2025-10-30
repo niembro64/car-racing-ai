@@ -253,10 +253,10 @@ export const PERFORMANCE_MANAGEMENT_ENABLED = true;
 
 // Performance Monitor Configuration
 export const PERF_TARGET_FPS = 60;
-export const PERF_HISTORY_SIZE = 120; // 2 seconds of history at 60fps
+export const PERF_HISTORY_SIZE = 60 * 20; // 2 seconds of history at 60fps
 
 // Population Controller Configuration
-export const POP_INITIAL = CAR_BRAIN_CONFIGS.length * 30; // 180 cars (30 per type)
+export const POP_INITIAL = CAR_BRAIN_CONFIGS.length * 20; // 180 cars (30 per type)
 export const POP_MIN = CAR_BRAIN_CONFIGS.length * 1; // 6 cars (1 per type)
 export const POP_MAX = CAR_BRAIN_CONFIGS.length * 50; // 300 cars (50 per type)
 
@@ -266,7 +266,7 @@ export const POP_MAX = CAR_BRAIN_CONFIGS.length * 50; // 300 cars (50 per type)
 // D: Dampens oscillation (responds to rate of change)
 export const PID_KP = 2.0; // Proportional gain
 export const PID_KI = 0.1; // Integral gain
-export const PID_KD = 1.0; // Derivative gain
+export const PID_KD = 1; // Derivative gain
 
 // Adjustment Constraints
 export const POP_MAX_CHANGE_RATE = 0.15; // Max 15% change per adjustment
@@ -307,3 +307,6 @@ export const CAR_LABEL_COLOR_DEAD = '#9ca3af';
 export const CENTERLINE_RAY_HIT_COLOR = '#ffffff';
 
 export const GENERATION_MARKER_RADIUS = 6;
+
+// Graph visualization options
+export const GRAPH_GENERATION_USE_LOG_SCALE = true;
