@@ -32,9 +32,179 @@ export function appendMirroredWaypoints(
   return [...waypoints, ...mirroredTail];
 }
 
-export const GA_MUTATION_BASE = 0.25;
-export const GA_MUTATION_PROGRESS_FACTOR = 0.24;
+export const GA_MUTATION_BASE = 0.1;
 export const GA_MUTATION_MIN = 0.01;
+
+// Bezier curve control points for mutation decay (CSS cubic-bezier style)
+// Uses CSS cubic-bezier format: cubic-bezier(P1_X, P1_Y, P2_X, P2_Y)
+// X-axis = track progress (0 = start, 1 = end of track)
+// Y-axis = decay amount (0 = no decay/full mutation, 1 = full decay/min mutation)
+// We invert Y to get mutation: mutationFactor = 1 - Y
+// So low Y values = high mutation, high Y values = low mutation
+// Array format: [P1_X, P1_Y, P2_X, P2_Y]
+// Current: [1, 0, 0, 1] → stays high, drops rapidly in middle, smooth end
+export const GA_MUTATION_BEZIER_POINTS = [1, 0, 0.25, 0.75];
+
+/**
+ * Evaluate a cubic bezier curve at parameter t.
+ * Used for smooth, customizable mutation decay curves.
+ *
+ * @param t - Parameter along curve (0 to 1)
+ * @param p0 - Start point
+ * @param p1 - First control point
+ * @param p2 - Second control point
+ * @param p3 - End point
+ * @returns Point on the bezier curve at parameter t
+ */
+function cubicBezier(
+  t: number,
+  p0: Point,
+  p1: Point,
+  p2: Point,
+  p3: Point
+): Point {
+  const oneMinusT = 1 - t;
+  const oneMinusTSquared = oneMinusT * oneMinusT;
+  const oneMinusTCubed = oneMinusTSquared * oneMinusT;
+  const tSquared = t * t;
+  const tCubed = tSquared * t;
+
+  return {
+    x:
+      oneMinusTCubed * p0.x +
+      3 * oneMinusTSquared * t * p1.x +
+      3 * oneMinusT * tSquared * p2.x +
+      tCubed * p3.x,
+    y:
+      oneMinusTCubed * p0.y +
+      3 * oneMinusTSquared * t * p1.y +
+      3 * oneMinusT * tSquared * p2.y +
+      tCubed * p3.y,
+  };
+}
+
+/**
+ * Find the y-value on a bezier curve for a given x-value.
+ * Uses binary search to find the t parameter that gives the desired x,
+ * then returns the corresponding y value.
+ * This implements proper CSS cubic-bezier evaluation.
+ *
+ * @param x - The x value to look up (0 to 1) - represents track progress
+ * @param p0 - Start point (0, 0)
+ * @param p1 - First control point
+ * @param p2 - Second control point
+ * @param p3 - End point (1, 1)
+ * @returns The y value at the given x
+ */
+function bezierYForX(
+  x: number,
+  p0: Point,
+  p1: Point,
+  p2: Point,
+  p3: Point
+): number {
+  // Clamp x to valid range
+  if (x <= 0) return p0.y;
+  if (x >= 1) return p3.y;
+
+  // Binary search to find t where bezier.x = x
+  let tMin = 0;
+  let tMax = 1;
+  let t = x; // Initial guess
+
+  // Iterate to find the correct t value
+  for (let i = 0; i < 20; i++) {
+    const point = cubicBezier(t, p0, p1, p2, p3);
+    const currentX = point.x;
+
+    // Check if we're close enough
+    if (Math.abs(currentX - x) < 0.0001) {
+      return point.y;
+    }
+
+    // Binary search: adjust bounds based on whether we're above or below target
+    if (currentX < x) {
+      tMin = t;
+    } else {
+      tMax = t;
+    }
+    t = (tMin + tMax) / 2;
+  }
+
+  // Fallback: return y at final t
+  return cubicBezier(t, p0, p1, p2, p3).y;
+}
+
+/**
+ * Calculate the base mutation rate that would be used for the next generation.
+ * This encapsulates all the logic for determining mutation rate based on:
+ * - Whether distance-based mutation is enabled
+ * - Current progress on the track
+ * - Bezier curve-based decay
+ *
+ * @param mutationByDistance - Whether distance-based mutation is enabled
+ * @param bestDistance - Best distance reached by this car type (in track units)
+ * @param trackLength - Total length of the track
+ * @returns Base mutation rate (sigma) between GA_MUTATION_MIN and GA_MUTATION_BASE
+ *
+ * Behavior:
+ * - If mutationByDistance is false: returns GA_MUTATION_MIN (constant, low mutation)
+ * - If mutationByDistance is true: uses bezier curve-based decay across full track
+ *   - Curve maps track progress (0→1) to decay factor (1→0)
+ *   - At 0% progress: returns GA_MUTATION_BASE (maximum mutation for exploration)
+ *   - At 100% progress: returns GA_MUTATION_MIN (minimum mutation for exploitation)
+ *   - Bezier curve controls the shape of decay between these points
+ *
+ * Bezier Curve Control (CSS cubic-bezier style):
+ * - Uses CSS cubic-bezier(P1_X, P1_Y, P2_X, P2_Y) format
+ * - X-axis represents track progress (0 = start, 1 = end of track)
+ * - Y-axis represents decay (0 = full mutation, 1 = min mutation)
+ * - For a given track progress X, we find the Y value on the curve
+ * - Then invert: mutationFactor = 1 - Y
+ * - Common presets (use cubic-bezier.com visualizer):
+ *   - Linear: [0, 0, 1, 1] → steady linear decay
+ *   - Ease-in-out: [0.42, 0, 0.58, 1] → balanced S-curve
+ *   - Ease-in: [0.42, 0, 1, 1] → stay high, drop at end
+ *   - Ease-out: [0, 0, 0.58, 1] → drop early, level off
+ *   - Current: [1, 0, 0, 1] → stay very high, rapid drop in middle, smooth end
+ *
+ * Note: This returns the BASE rate. Individual cars may have this rate
+ * multiplied by a rank-based factor (see getMutationMultiplier).
+ */
+export function getMutationRate(
+  mutationByDistance: boolean,
+  bestDistance: number,
+  trackLength: number
+): number {
+  if (!mutationByDistance) {
+    return GA_MUTATION_MIN;
+  }
+
+  // Calculate track progress (0 = start, 1 = complete)
+  const trackProgress = Math.max(0, Math.min(1, bestDistance / trackLength));
+
+  // Use CSS-style cubic-bezier evaluation
+  // X-axis = track progress (0 to 1)
+  // Y-axis = easing value (0 to 1)
+  const [p1x, p1y, p2x, p2y] = GA_MUTATION_BEZIER_POINTS;
+
+  const p0: Point = { x: 0, y: 0 }; // Start: 0% track progress → 0% decay
+  const p1: Point = { x: p1x, y: p1y }; // First control point
+  const p2: Point = { x: p2x, y: p2y }; // Second control point
+  const p3: Point = { x: 1, y: 1 }; // End: 100% track progress → 100% decay
+
+  // Find Y value for the given X (track progress)
+  // This properly evaluates cubic-bezier where X = track progress
+  const easingValue = bezierYForX(trackProgress, p0, p1, p2, p3);
+
+  // Invert to get decay factor (1 = full mutation, 0 = min mutation)
+  // When track progress is low, easing is low, so decay factor is high (lots of mutation)
+  // When track progress is high, easing is high, so decay factor is low (little mutation)
+  const decayFactor = 1 - easingValue;
+
+  const range = GA_MUTATION_BASE - GA_MUTATION_MIN;
+  return GA_MUTATION_MIN + range * decayFactor;
+}
 
 export function getPopulationSize(): number {
   if (typeof window === 'undefined') {
@@ -137,7 +307,7 @@ export const PERF_CALIBRATION_HISTORY_RATIO = 0.5; // Minimum ratio of history f
 export const PERF_UI_UPDATE_INTERVAL = 1; // Update FPS display every N frames (1 = every frame)
 export const FPS_CALC_SAVED_WEIGHT = 0.99;
 // Population Bounds
-export const POP_INITIAL = CAR_BRAIN_CONFIGS.length * 20; 
+export const POP_INITIAL = CAR_BRAIN_CONFIGS.length * 20;
 export const POP_MIN = CAR_BRAIN_CONFIGS.length * 1; // 6 cars (1 per type minimum)
 export const POP_MAX = CAR_BRAIN_CONFIGS.length * 50; // 300 cars (50 per type maximum)
 

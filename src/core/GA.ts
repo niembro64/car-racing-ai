@@ -5,9 +5,7 @@ import { SeededRandom } from './math/geom';
 import type { CarBrainConfig, ConfigEvolutionState } from '@/types';
 import {
   getPopulationSize,
-  GA_MUTATION_BASE,
-  GA_MUTATION_PROGRESS_FACTOR,
-  GA_MUTATION_MIN,
+  getMutationRate,
   GA_MUTATION_MIN_MULTIPLIER,
   GA_MUTATION_MAX_MULTIPLIER,
   GA_MUTATION_CURVE_POWER,
@@ -151,16 +149,13 @@ export class GeneticAlgorithm {
     // Increment generation
     state.generation++;
 
-    let baseMutationRate: number;
-    if (mutationByDistance) {
-      const trackLength = track.getTotalLength();
-      // Use CURRENT generation's best, not all-time best
-      const progressPercentage = bestCar.maxDistanceReached / trackLength;
-      const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
-      baseMutationRate = Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
-    } else {
-      baseMutationRate = GA_MUTATION_MIN;
-    }
+    // Calculate base mutation rate using the helper function
+    const trackLength = track.getTotalLength();
+    const baseMutationRate = getMutationRate(
+      mutationByDistance,
+      bestCar.maxDistanceReached,
+      trackLength
+    );
 
     // Create next generation
     const nextGeneration: Car[] = [];
@@ -226,15 +221,8 @@ export class GeneticAlgorithm {
     const state = this.stateByShortName.get(shortName);
     if (!state) return 0;
 
-    if (mutationByDistance) {
-      const trackLength = track.getTotalLength();
-      // Use CURRENT generation's best, not all-time best
-      const progressPercentage = currentBestDistance / trackLength;
-      const mutationReduction = progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
-      return Math.max(GA_MUTATION_MIN, GA_MUTATION_BASE - mutationReduction);
-    } else {
-      return GA_MUTATION_MIN;
-    }
+    const trackLength = track.getTotalLength();
+    return getMutationRate(mutationByDistance, currentBestDistance, trackLength);
   }
 
   // Export weights as JSON

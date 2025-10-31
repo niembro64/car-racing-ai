@@ -6,7 +6,6 @@ describe('Configuration', () => {
   it('should have all genetic algorithm settings', () => {
     expect(config.GA_POPULATION_SIZE).toBeDefined();
     expect(config.GA_MUTATION_BASE).toBeDefined();
-    expect(config.GA_MUTATION_PROGRESS_FACTOR).toBeDefined();
     expect(config.GA_MUTATION_MIN).toBeDefined();
     expect(config.GA_MUTATION_MIN_MULTIPLIER).toBeDefined();
     expect(config.GA_MUTATION_MAX_MULTIPLIER).toBeDefined();

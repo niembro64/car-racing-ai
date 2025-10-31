@@ -334,9 +334,8 @@ import {
   DEFAULT_DELAYED_STEERING,
   DEFAULT_SPEED_MULTIPLIER,
   CAR_STEERING_DELAY_SECONDS,
+  getMutationRate,
   GA_MUTATION_BASE,
-  GA_MUTATION_PROGRESS_FACTOR,
-  GA_MUTATION_MIN,
   DEBUG_SHOW_WAYPOINTS,
   PERFORMANCE_MANAGEMENT_ENABLED,
   PERF_TARGET_FPS,
@@ -567,13 +566,12 @@ const sortedCarBrainConfigs = computed(() => {
 const mutationRatePercentByConfigId = computed(() => {
   void frameCounter.value; // Trigger on every frame
   const isMutationByDistance = mutationByDistance.value; // Trigger on toggle
+  const trackLength = track.getTotalLength();
 
   const percentages = new Map<string, number>();
 
   for (const config of activeCarConfigs.value) {
     if (isMutationByDistance) {
-      const trackLength = track.getTotalLength();
-
       const carsOfType = population.value.filter(
         (car) => car.configShortName === config.shortName
       );
@@ -584,12 +582,10 @@ const mutationRatePercentByConfigId = computed(() => {
 
       const bestDistance = currentBest;
 
-      const progressPercentage = bestDistance / trackLength;
-      const mutationReduction =
-        progressPercentage * GA_MUTATION_PROGRESS_FACTOR;
-      const rate = Math.max(
-        GA_MUTATION_MIN,
-        GA_MUTATION_BASE - mutationReduction
+      const rate = getMutationRate(
+        mutationByDistance.value,
+        bestDistance,
+        trackLength
       );
 
       // Normalize to 0-100% range (GA_MUTATION_BASE is max)
@@ -597,7 +593,8 @@ const mutationRatePercentByConfigId = computed(() => {
       percentages.set(config.shortName, normalizedPercent);
     } else {
       // When MUT DIST is OFF, use constant minimum mutation
-      const normalizedPercent = (GA_MUTATION_MIN / GA_MUTATION_BASE) * 100;
+      const rate = getMutationRate(false, 0, trackLength);
+      const normalizedPercent = (rate / GA_MUTATION_BASE) * 100;
       percentages.set(config.shortName, normalizedPercent);
     }
   }
@@ -1380,6 +1377,29 @@ const renderGraph = () => {
     }
   }
 
+  // Find min and max scores across all data to scale y-axis dynamically
+  let minScore = Infinity;
+  let maxScore = -Infinity;
+
+  for (const history of configHistories.values()) {
+    for (const point of history) {
+      minScore = Math.min(minScore, point.score);
+      maxScore = Math.max(maxScore, point.score);
+    }
+  }
+
+  // If no valid data, use default range
+  if (!isFinite(minScore) || !isFinite(maxScore)) {
+    minScore = 0;
+    maxScore = 100;
+  }
+
+  // Add 10% padding to the range for visual clarity
+  const scoreRange = maxScore - minScore;
+  const padding10 = scoreRange * 0.1;
+  minScore = Math.max(0, minScore - padding10);
+  maxScore = Math.min(100, maxScore + padding10);
+
   // Scale helper: map generation to x position (log or linear)
   const genToX = (gen: number): number => {
     if (GRAPH_GENERATION_USE_LOG_SCALE) {
@@ -1390,6 +1410,12 @@ const renderGraph = () => {
       // Linear scale
       return padding + (gen / maxGeneration) * graphWidth;
     }
+  };
+
+  // Scale helper: map score to y position using dynamic range
+  const scoreToY = (score: number): number => {
+    const normalizedScore = (score - minScore) / (maxScore - minScore);
+    return height - padding - normalizedScore * graphHeight;
   };
 
   // Draw axes
@@ -1408,9 +1434,10 @@ const renderGraph = () => {
   ctx.font = '10px monospace';
   ctx.textAlign = 'center';
 
-  // Y-axis grid (0-100%)
+  // Y-axis grid (dynamic range based on actual data)
   for (let i = 0; i <= 10; i++) {
-    const y = height - padding - (i * graphHeight) / 10;
+    const score = minScore + (i * (maxScore - minScore)) / 10;
+    const y = scoreToY(score);
     ctx.beginPath();
     ctx.moveTo(padding, y);
     ctx.lineTo(width - padding, y);
@@ -1418,7 +1445,7 @@ const renderGraph = () => {
 
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'right';
-    ctx.fillText(`${i * 10}%`, padding - 5, y + 3);
+    ctx.fillText(`${score.toFixed(1)}%`, padding - 5, y + 3);
   }
 
   // X-axis grid
@@ -1486,7 +1513,7 @@ const renderGraph = () => {
     let started = false;
     for (const point of history) {
       const x = genToX(point.generation);
-      const y = height - padding - (point.score / 100) * graphHeight;
+      const y = scoreToY(point.score);
 
       if (!started) {
         ctx.moveTo(x, y);
@@ -1501,7 +1528,7 @@ const renderGraph = () => {
     // Draw label at the end of the line (above the dot)
     const lastPoint = history[history.length - 1];
     const lastX = genToX(lastPoint.generation);
-    const lastY = height - padding - (lastPoint.score / 100) * graphHeight;
+    const lastY = scoreToY(lastPoint.score);
 
     // Draw dot at end (larger)
     ctx.fillStyle = config.colors.dark;
