@@ -240,7 +240,7 @@
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">Avg C per Type</td>
+                    <td class="label-cell">Avg C/T</td>
                     <td class="value-cell">
                       {{ averageCarsPerType.toFixed(1) }}
                     </td>
