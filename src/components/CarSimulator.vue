@@ -327,6 +327,7 @@ import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
   GENERATION_MARKER_RADIUS,
+  GENERATION_MARKERS_MAX_HISTORY,
   LAP_COMPLETION_THRESHOLD,
   DEFAULT_DIE_ON_BACKWARDS,
   DEFAULT_KILL_SLOW_CARS,
@@ -739,9 +740,9 @@ const evolvePopulationByConfig = (
       fitness: bestCar.maxDistanceReached,
     });
 
-    // Keep only last 100 markers per config
-    if (markers.length > 100) {
-      markers.splice(0, markers.length - 100);
+    // Keep only last N markers per config
+    if (markers.length > GENERATION_MARKERS_MAX_HISTORY) {
+      markers.splice(0, markers.length - GENERATION_MARKERS_MAX_HISTORY);
     }
 
     generationMarkersByConfigId.value.set(config.shortName, markers);

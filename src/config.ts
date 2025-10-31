@@ -361,5 +361,8 @@ export const CENTERLINE_RAY_HIT_COLOR = '#ffffff';
 
 export const GENERATION_MARKER_RADIUS = 6;
 
+// Generation marker history
+export const GENERATION_MARKERS_MAX_HISTORY = 10; // Keep last N markers per car type for MEAN calculation
+
 // Graph visualization options
 export const GRAPH_GENERATION_USE_LOG_SCALE = true;
