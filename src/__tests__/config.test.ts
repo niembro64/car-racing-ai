@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as config from '../config';
+import { CAR_BRAIN_CONFIGS } from '../core/config_cars';
 
 describe('Configuration', () => {
   it('should have all genetic algorithm settings', () => {
@@ -46,7 +47,7 @@ describe('Configuration', () => {
     expect(config.CAR_LABEL_COLOR_DEAD).toBeDefined();
 
     // Check that CAR_BRAIN_CONFIGS have proper color definitions
-    for (const carConfig of config.CAR_BRAIN_CONFIGS) {
+    for (const carConfig of CAR_BRAIN_CONFIGS) {
       expect(carConfig.colors.light).toBeDefined();
       expect(carConfig.colors.dark).toBeDefined();
     }
@@ -58,13 +59,11 @@ describe('Configuration', () => {
     expect(config.START_FINISH_LINE_WIDTH).toBeDefined();
   });
 
-  it('should have car ray visualization settings in CAR_BRAIN_CONFIGS', () => {
-    for (const carConfig of config.CAR_BRAIN_CONFIGS) {
-      expect(carConfig.colors.light).toBeDefined();
-      expect(carConfig.colors.dark).toBeDefined();
-      expect(carConfig.rayVisualization.width).toBeDefined();
-      expect(carConfig.rayVisualization.hitRadius).toBeDefined();
-    }
+  it('should have global ray visualization settings', () => {
+    expect(config.RAY_VISUALIZATION_WIDTH).toBeDefined();
+    expect(config.RAY_VISUALIZATION_HIT_RADIUS).toBeDefined();
+    expect(typeof config.RAY_VISUALIZATION_WIDTH).toBe('number');
+    expect(typeof config.RAY_VISUALIZATION_HIT_RADIUS).toBe('number');
   });
 
   it('should have valid numeric values', () => {
@@ -114,7 +113,7 @@ describe('Configuration', () => {
     });
 
     // Check CAR_BRAIN_CONFIGS colors
-    for (const carConfig of config.CAR_BRAIN_CONFIGS) {
+    for (const carConfig of CAR_BRAIN_CONFIGS) {
       expect(
         hexColorRegex.test(carConfig.colors.light) ||
           rgbaColorRegex.test(carConfig.colors.light)

@@ -216,13 +216,13 @@
                 </thead>
                 <tbody>
                   <tr>
-                    <td class="label-cell">Performance Target per Type Saved</td>
+                    <td class="label-cell">PTPT Saved</td>
                     <td class="value-cell">
                       {{ savedPerformanceTargetPerType.toFixed(1) }}
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">Performance Target per Type</td>
+                    <td class="label-cell">PTPT</td>
                     <td class="value-cell">
                       {{ actualPerformanceTargetPerType.toFixed(1) }}
                     </td>
@@ -240,7 +240,7 @@
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">Average Cars per Type</td>
+                    <td class="label-cell">Avg C per Type</td>
                     <td class="value-cell">
                       {{ averageCarsPerType.toFixed(1) }}
                     </td>
