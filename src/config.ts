@@ -186,8 +186,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   },
   {
     useCar: false,
-    displayName: 'Blaze',
-    shortName: 'BL',
+    displayName: 'Shine',
+    shortName: 'SH',
     description: 'Linear activation, direct inputs, 2 hidden layers (3, 2)',
     nn: {
       architecture: NN_ARCH_LARGE,
