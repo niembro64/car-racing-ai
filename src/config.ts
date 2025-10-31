@@ -45,7 +45,7 @@ export const SEGMENTS_PER_CURVE = 10;
 
 // Lap completion threshold (0.995 = 99.5%)
 // Lower than 1.0 to account for discrete physics updates
-export const LAP_COMPLETION_THRESHOLD = 0.995;
+export const LAP_COMPLETION_THRESHOLD = 0.999;
 
 export const SHOW_CAR_PERCENTAGES = false;
 export const DEBUG_SHOW_WAYPOINTS = false;
@@ -427,7 +427,7 @@ export const PID_KD = 1; // Derivative gain
 
 // Adjustment Constraints
 export const POP_MAX_CHANGE_RATE = 0.15; // Max 15% change per adjustment
-export const POP_ADJUSTMENT_INTERVAL = 180; // Adjust every 180 frames (3s at 60fps)
+export const POP_ADJUSTMENT_INTERVAL = 30; // Adjust every 180 frames (3s at 60fps)
 
 // Hysteresis (prevents oscillation near target)
 export const POP_HYSTERESIS_THRESHOLD = 0.05; // ±5% of target FPS
@@ -435,6 +435,7 @@ export const POP_HYSTERESIS_THRESHOLD = 0.05; // ±5% of target FPS
 // Performance Thresholds
 export const PERF_EMERGENCY_FPS = 20; // Aggressive reduction below this
 export const PERF_SAFE_FPS = 50; // Conservative growth above this
+export const PERF_LOW_THRESHOLD_PERCENT = 0.333; // 0.1% low as percentage of target (e.g., 20 FPS when target is 60)
 
 // Legacy compatibility (for gradual migration)
 export const ADAPTIVE_POPULATION_ENABLED = PERFORMANCE_MANAGEMENT_ENABLED;
@@ -446,7 +447,7 @@ export const DEFAULT_DIE_ON_BACKWARDS = true;
 export const DEFAULT_KILL_SLOW_CARS = true;
 export const DEFAULT_MUTATION_BY_DISTANCE = true;
 export const DEFAULT_DELAYED_STEERING = true;
-export const CAR_STEERING_DELAY_SECONDS = 0.2;
+export const CAR_STEERING_DELAY_SECONDS = 1;
 export const DEFAULT_SPEED_MULTIPLIER: SpeedMultiplier = 2;
 
 export const ENABLE_CONSOLE_LOGS = true;

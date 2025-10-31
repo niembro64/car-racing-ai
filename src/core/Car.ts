@@ -162,7 +162,9 @@ export class Car {
     let output: NeuralOutput = this.brain.run(input);
 
     // Check if steering should be delayed
-    if (steeringDelayEnabled && this.elapsedTime < steeringDelaySeconds) {
+    // Adjust delay by speed multiplier to keep effective delay consistent
+    const adjustedDelay = steeringDelaySeconds / speedMultiplier;
+    if (steeringDelayEnabled && this.elapsedTime < adjustedDelay) {
       // Prevent steering by forcing direction to 0
       output = { ...output, direction: 0 };
     }
