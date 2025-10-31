@@ -109,9 +109,9 @@ export class Car {
     dt: number,
     wallSegments: Segment[],
     track: any,
-    steeringDelayEnabled: boolean = false,
-    steeringDelaySeconds: number = 0.5,
-    speedMultiplier: number = 1
+    steeringDelayEnabled: boolean,
+    steeringDelaySeconds: number,
+    speedMultiplier: number
   ): void {
     if (!this.alive) return;
 
@@ -177,7 +177,11 @@ export class Car {
   }
 
   // Apply physics based on AI output
-  private applyPhysics(output: NeuralOutput, dt: number, speedMultiplier: number = 1): void {
+  private applyPhysics(
+    output: NeuralOutput,
+    dt: number,
+    speedMultiplier: number = 1
+  ): void {
     // Constant forward speed (with optional multiplier)
     this.speed = CAR_FORWARD_SPEED * speedMultiplier;
 
@@ -278,10 +282,15 @@ export class Car {
   // Render car on canvas
   render(ctx: CanvasRenderingContext2D, showRays: boolean = false): void {
     // Find the config for this car type by shortName (check all defined configs)
-    const config = CAR_BRAIN_CONFIGS_DEFINED.find((c) => c.shortName === this.configShortName);
+    const config = CAR_BRAIN_CONFIGS_DEFINED.find(
+      (c) => c.shortName === this.configShortName
+    );
 
     if (!config) {
-      console.error('No config found for car with shortName =', this.configShortName);
+      console.error(
+        'No config found for car with shortName =',
+        this.configShortName
+      );
       return;
     }
 

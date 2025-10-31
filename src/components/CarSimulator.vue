@@ -356,7 +356,10 @@ import {
   print,
   wp,
 } from '@/config';
-import { CAR_BRAIN_CONFIGS, CAR_BRAIN_CONFIGS_DEFINED } from '@/core/config_cars';
+import {
+  CAR_BRAIN_CONFIGS,
+  CAR_BRAIN_CONFIGS_DEFINED,
+} from '@/core/config_cars';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
@@ -761,13 +764,13 @@ const evolvePopulationByConfig = (
   // Update the actual performance target being used (raw value)
   actualPerformanceTargetPerType.value = targetCarsPerType;
 
-  print(
-    `[Evolution] ${config.displayName}: ${savedPerformanceTargetPerType.value.toFixed(
-      1
-    )} cars for this type (raw: ${targetCarsPerType.toFixed(1)}) | Total: ${targetPopulationTotal.value} | Target: ${
-      fpsTarget.value
-    } FPS`
-  );
+  // Log progress to diagnose lap completion
+  const trackLength = track.getTotalLength();
+  const maxProgressPercent = bestCar
+    ? (bestCar.maxDistanceReached / trackLength) * 100
+    : 0;
+  const bestLapTime = bestLapTimeByConfigId.value.get(config.shortName);
+  const hasBestLap = bestLapTime !== Infinity;
 
   const newCars = ga.value.evolvePopulation(
     configCars,
@@ -805,7 +808,20 @@ const updatePhysics = (dt: number) => {
       car.fitness = result.distance;
       car.updateSignedFitness(result.distance, trackLength);
 
-      // Check if car completed a lap (reached ~99.5% progress)
+      // Diagnostic: Log when cars get close to completion
+      if (
+        car.currentProgressRatio >= 0.8 &&
+        car.currentProgressRatio < LAP_COMPLETION_THRESHOLD &&
+        frameCounter.value % 60 === 0
+      ) {
+        print(
+          `[CLOSE] ${car.configShortName} at ${(
+            car.currentProgressRatio * 100
+          ).toFixed(1)}% (need ${(LAP_COMPLETION_THRESHOLD * 100).toFixed(0)}%)`
+        );
+      }
+
+      // Check if car completed a lap (reached threshold progress)
       // Use threshold < 1.0 to account for discrete physics updates
       // Cars may not land exactly at the finish line due to frame timing
       if (car.currentProgressRatio >= LAP_COMPLETION_THRESHOLD) {
@@ -821,6 +837,19 @@ const updatePhysics = (dt: number) => {
           if (currentLapTime === Infinity) {
             const completionTime =
               generationTimeByConfigId.value.get(config.shortName) ?? 0;
+
+            print(
+              `[DEBUG] Lap completion triggered! Config: ${
+                config.shortName
+              }, Progress: ${(car.currentProgressRatio * 100).toFixed(
+                2
+              )}%, Timer: ${completionTime.toFixed(2)}s`
+            );
+
+            // Verify this is tracking per car type
+            print(
+              `[DEBUG] Recording lap for car type: ${config.shortName} (${config.displayName})`
+            );
 
             // Record current generation lap time
             lapCompletionTimeByConfigId.value.set(
@@ -894,6 +923,18 @@ const updatePhysics = (dt: number) => {
     const allDead = configCars.every((c) => !c.alive);
 
     if (allDead && configCars.length > 0) {
+      // Log max progress reached before evolving
+      const maxProgress = Math.max(
+        ...configCars.map((c) => c.currentProgressRatio)
+      );
+      print(
+        `[DEBUG] ${config.shortName} max progress: ${(
+          maxProgress * 100
+        ).toFixed(2)}% (threshold: ${(LAP_COMPLETION_THRESHOLD * 100).toFixed(
+          1
+        )}%)`
+      );
+
       evolvePopulationByConfig(
         config,
         `all ${config.displayName} cars crashed`

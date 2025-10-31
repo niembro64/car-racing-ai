@@ -141,9 +141,10 @@ export class Track {
     let closestPoint: Point = this.centerline[0];
     let bestDistance = 0;
 
-    for (let i = 0; i < this.centerline.length - 1; i++) {
+    // Check all segments including the wrap-around segment (last point to first point)
+    for (let i = 0; i < this.centerline.length; i++) {
       const p1 = this.centerline[i];
-      const p2 = this.centerline[i + 1];
+      const p2 = this.centerline[(i + 1) % this.centerline.length]; // Wrap around
 
       // Project point onto segment
       const dx = p2.x - p1.x;
@@ -172,7 +173,13 @@ export class Track {
         minDist = Math.sqrt(distSq);
         closestPoint = { x: projX, y: projY };
         const segmentDist = Math.sqrt(lenSq);
-        bestDistance = this.cumulativeLengths[i] + t * segmentDist;
+
+        // For the last segment (wrap-around), distance continues from the last cumulative length
+        if (i === this.centerline.length - 1) {
+          bestDistance = this.cumulativeLengths[i] + t * segmentDist;
+        } else {
+          bestDistance = this.cumulativeLengths[i] + t * segmentDist;
+        }
       }
     }
 

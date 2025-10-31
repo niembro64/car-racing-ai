@@ -224,9 +224,10 @@ export const CANVAS_HEIGHT = 600;
 export const TRACK_WIDTH_HALF = 40;
 export const SEGMENTS_PER_CURVE = 10;
 
-// Lap completion threshold (0.995 = 99.5%)
-// Lower than 1.0 to account for discrete physics updates
-export const LAP_COMPLETION_THRESHOLD = 0.999;
+// Lap completion threshold (0.90 = 90%)
+// Lower than 1.0 to account for discrete physics updates and navigation difficulty
+// Cars must complete 90% of the track to trigger lap completion
+export const LAP_COMPLETION_THRESHOLD = 1;
 
 export const SHOW_CAR_PERCENTAGES = false;
 export const DEBUG_SHOW_WAYPOINTS = false;
