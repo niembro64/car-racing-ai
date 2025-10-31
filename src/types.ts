@@ -67,10 +67,8 @@ export type SpeedMultiplier = 1 | 2 | 5 | 10;
 export interface CarBrainConfig {
   useCar: boolean; // Whether to use this config for cars
   // Identification
-  id: string; // Unique identifier (e.g., 'normgelu', 'difflinear')
-  displayName: string; // Full name for desktop (e.g., 'Smoothie', 'Diffbot')
-  mobileDisplayName: string; // Shorter name for mobile (e.g., 'Smooth', 'Diff')
-  shortName: string; // Abbreviated name for HUD (e.g., 'SM', 'DB')
+  displayName: string; // Full name for desktop (e.g., 'Spark', 'Wave')
+  shortName: string; // Abbreviated name for mobile/HUD (e.g., 'SP', 'WV')
   description: string; // Human-readable description of the approach
 
   // Neural network configuration
@@ -84,12 +82,6 @@ export interface CarBrainConfig {
   colors: {
     dark: string; // Darker shade for elite cars and markers
     light: string; // Lighter shade for normal cars and rays
-  };
-
-  // Ray visualization settings
-  rayVisualization: {
-    width: number; // Line width for sensor rays
-    hitRadius: number; // Radius of hit point circles
   };
 }
 

@@ -101,14 +101,16 @@ export const NN_ARCH_DIFF_LARGE = [1 + SENSOR_RAY_PAIRS.length, 3, 2, 1];
 
 export const NEURAL_NETWORK_ARCHITECTURE = NN_ARCH_DIFF_MEDIUM;
 
+// Ray visualization settings
+export const RAY_VISUALIZATION_WIDTH = 0.5;
+export const RAY_VISUALIZATION_HIT_RADIUS = 3;
+
 export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   // === None/Raw (no hidden layers, no activation function) ===
   {
     useCar: true,
-    displayName: 'None Pair',
-    mobileDisplayName: 'NonP',
-    id: 'none-pair-s',
-    shortName: 'NP',
+    displayName: 'Pico',
+    shortName: 'PC',
     description: 'No hidden layers, differential inputs (1 fwd + 4 L-R pairs)',
     nn: {
       architecture: NN_ARCH_DIFF_SMALL,
@@ -119,17 +121,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#cccccc',
       dark: '#999999',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
   {
     useCar: true,
-    displayName: 'None Dir',
-    mobileDisplayName: 'NonD',
-    id: 'none-dir-s',
-    shortName: 'ND',
+    displayName: 'Nano',
+    shortName: 'NA',
     description: 'No hidden layers, direct raw sensor inputs (9 rays)',
     nn: {
       architecture: NN_ARCH_SMALL,
@@ -140,19 +136,13 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#aaaaaa',
       dark: '#777777',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
 
   // === Linear activation (orange/yellow family) ===
   {
     useCar: true,
-    displayName: 'Linear Pair M',
-    mobileDisplayName: 'LinP-M',
-    id: 'linear-pair-m',
-    shortName: 'LP2',
+    displayName: 'Spark',
+    shortName: 'SP',
     description: 'Linear activation, differential inputs, 1 hidden layer (3)',
     nn: {
       architecture: NN_ARCH_DIFF_MEDIUM,
@@ -163,17 +153,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#cc8833',
       dark: '#995522',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
   {
     useCar: false,
-    displayName: 'Linear Pair L',
-    mobileDisplayName: 'LinP-L',
-    id: 'linear-pair-l',
-    shortName: 'LP3',
+    displayName: 'Flame',
+    shortName: 'FL',
     description: 'Linear activation, differential inputs, 2 hidden layers (3, 2)',
     nn: {
       architecture: NN_ARCH_DIFF_LARGE,
@@ -184,17 +168,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#aa6611',
       dark: '#774400',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
   {
     useCar: true,
-    displayName: 'Linear Dir M',
-    mobileDisplayName: 'LinD-M',
-    id: 'linear-dir-m',
-    shortName: 'LD2',
+    displayName: 'Glow',
+    shortName: 'GL',
     description: 'Linear activation, direct inputs, 1 hidden layer (3)',
     nn: {
       architecture: NN_ARCH_MEDIUM,
@@ -205,17 +183,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#ccaa33',
       dark: '#997722',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
   {
     useCar: false,
-    displayName: 'Linear Dir L',
-    mobileDisplayName: 'LinD-L',
-    id: 'linear-dir-l',
-    shortName: 'LD3',
+    displayName: 'Blaze',
+    shortName: 'BL',
     description: 'Linear activation, direct inputs, 2 hidden layers (3, 2)',
     nn: {
       architecture: NN_ARCH_LARGE,
@@ -226,19 +198,13 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#aa8811',
       dark: '#775500',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
 
   // === ReLU activation (blue family) ===
   {
     useCar: false,
-    displayName: 'ReLU Pair M',
-    mobileDisplayName: 'RelP-M',
-    id: 'relu-pair-m',
-    shortName: 'RP2',
+    displayName: 'Drop',
+    shortName: 'DR',
     description: 'ReLU activation, differential inputs, 1 hidden layer (3)',
     nn: {
       architecture: NN_ARCH_DIFF_MEDIUM,
@@ -249,17 +215,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#5588cc',
       dark: '#336699',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
   {
     useCar: false,
-    displayName: 'ReLU Pair L',
-    mobileDisplayName: 'RelP-L',
-    id: 'relu-pair-l',
-    shortName: 'RP3',
+    displayName: 'Wave',
+    shortName: 'WV',
     description: 'ReLU activation, differential inputs, 2 hidden layers (3, 2)',
     nn: {
       architecture: NN_ARCH_DIFF_LARGE,
@@ -270,17 +230,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#3366aa',
       dark: '#224477',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
   {
     useCar: false,
-    displayName: 'ReLU Dir M',
-    mobileDisplayName: 'RelD-M',
-    id: 'relu-dir-m',
-    shortName: 'RD2',
+    displayName: 'Mist',
+    shortName: 'MI',
     description: 'ReLU activation, direct inputs, 1 hidden layer (3)',
     nn: {
       architecture: NN_ARCH_MEDIUM,
@@ -291,17 +245,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#55aacc',
       dark: '#338899',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
   {
     useCar: false,
-    displayName: 'ReLU Dir L',
-    mobileDisplayName: 'RelD-L',
-    id: 'relu-dir-l',
-    shortName: 'RD3',
+    displayName: 'Tide',
+    shortName: 'TD',
     description: 'ReLU activation, direct inputs, 2 hidden layers (3, 2)',
     nn: {
       architecture: NN_ARCH_LARGE,
@@ -312,19 +260,13 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#3388aa',
       dark: '#226677',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
 
   // === GELU activation (green/cyan family) ===
   {
     useCar: true,
-    displayName: 'GELU Pair M',
-    mobileDisplayName: 'GelP-M',
-    id: 'gelu-pair-m',
-    shortName: 'GP2',
+    displayName: 'Leaf',
+    shortName: 'LF',
     description: 'GELU activation, differential inputs, 1 hidden layer (3)',
     nn: {
       architecture: NN_ARCH_DIFF_MEDIUM,
@@ -335,17 +277,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#44cc88',
       dark: '#229955',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
   {
     useCar: false,
-    displayName: 'GELU Pair L',
-    mobileDisplayName: 'GelP-L',
-    id: 'gelu-pair-l',
-    shortName: 'GP3',
+    displayName: 'Vine',
+    shortName: 'VN',
     description: 'GELU activation, differential inputs, 2 hidden layers (3, 2)',
     nn: {
       architecture: NN_ARCH_DIFF_LARGE,
@@ -356,17 +292,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#22aa66',
       dark: '#117733',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
   {
     useCar: true,
-    displayName: 'GELU Dir M',
-    mobileDisplayName: 'GelD-M',
-    id: 'gelu-dir-m',
-    shortName: 'GD2',
+    displayName: 'Moss',
+    shortName: 'MS',
     description: 'GELU activation, direct inputs, 1 hidden layer (3)',
     nn: {
       architecture: NN_ARCH_MEDIUM,
@@ -377,17 +307,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#44ccaa',
       dark: '#229977',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
   {
     useCar: false,
-    displayName: 'GELU Dir L',
-    mobileDisplayName: 'GelD-L',
-    id: 'gelu-dir-l',
-    shortName: 'GD3',
+    displayName: 'Fern',
+    shortName: 'FN',
     description: 'GELU activation, direct inputs, 2 hidden layers (3, 2)',
     nn: {
       architecture: NN_ARCH_LARGE,
@@ -398,19 +322,13 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#22aa88',
       dark: '#117755',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
 
   // === Step activation (purple/magenta family) ===
   {
     useCar: false,
-    displayName: 'Step Pair M',
-    mobileDisplayName: 'StpP-M',
-    id: 'step-pair-m',
-    shortName: 'SP2',
+    displayName: 'Bit',
+    shortName: 'BT',
     description: 'Step activation, differential inputs, 1 hidden layer (3)',
     nn: {
       architecture: NN_ARCH_DIFF_MEDIUM,
@@ -421,17 +339,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#cc55cc',
       dark: '#993399',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
   {
     useCar: false,
-    displayName: 'Step Pair L',
-    mobileDisplayName: 'StpP-L',
-    id: 'step-pair-l',
-    shortName: 'SP3',
+    displayName: 'Byte',
+    shortName: 'BY',
     description: 'Step activation, differential inputs, 2 hidden layers (3, 2)',
     nn: {
       architecture: NN_ARCH_DIFF_LARGE,
@@ -442,17 +354,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#aa33aa',
       dark: '#771177',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
   {
     useCar: false,
-    displayName: 'Step Dir M',
-    mobileDisplayName: 'StpD-M',
-    id: 'step-dir-m',
-    shortName: 'SD2',
+    displayName: 'Chip',
+    shortName: 'CH',
     description: 'Step activation, direct inputs, 1 hidden layer (3)',
     nn: {
       architecture: NN_ARCH_MEDIUM,
@@ -463,17 +369,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       light: '#9955cc',
       dark: '#663399',
     },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
-    },
   },
   {
     useCar: false,
-    displayName: 'Step Dir L',
-    mobileDisplayName: 'StpD-L',
-    id: 'step-dir-l',
-    shortName: 'SD3',
+    displayName: 'Core',
+    shortName: 'CR',
     description: 'Step activation, direct inputs, 2 hidden layers (3, 2)',
     nn: {
       architecture: NN_ARCH_LARGE,
@@ -483,10 +383,6 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     colors: {
       light: '#7733aa',
       dark: '#551177',
-    },
-    rayVisualization: {
-      width: 0.5,
-      hitRadius: 3,
     },
   },
 ];
@@ -500,8 +396,8 @@ export const GA_POPULATION_SIZE_MOBILE = CAR_BRAIN_CONFIGS.length * 10;
 
 export const GA_POPULATION_SIZE = GA_POPULATION_SIZE_DESKTOP;
 
-export function getCarBrainConfig(id: string): CarBrainConfig | undefined {
-  return CAR_BRAIN_CONFIGS.find((config) => config.id === id);
+export function getCarBrainConfig(shortName: string): CarBrainConfig | undefined {
+  return CAR_BRAIN_CONFIGS.find((config) => config.shortName === shortName);
 }
 
 // ============================================================================

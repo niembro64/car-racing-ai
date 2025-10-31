@@ -24,6 +24,8 @@ import {
   SENSOR_RAY_PAIRS,
   SHOW_CAR_PERCENTAGES,
   CAR_BRAIN_CONFIGS_DEFINED,
+  RAY_VISUALIZATION_WIDTH,
+  RAY_VISUALIZATION_HIT_RADIUS,
 } from '@/config';
 
 export class Car {
@@ -68,7 +70,7 @@ export class Car {
   inputModification: InputModificationType;
 
   // Config identifier (which brain config this car belongs to)
-  configId: string;
+  configShortName: string;
 
   constructor(
     x: number,
@@ -77,7 +79,7 @@ export class Car {
     brain: NeuralNetwork,
     color: string,
     inputModification: InputModificationType,
-    configId: string = 'unknown',
+    configShortName: string = 'UNK',
     sizeMultiplier: number = 1.0
   ) {
     this.x = x;
@@ -96,7 +98,7 @@ export class Car {
     this.elapsedTime = 0;
     this.sizeMultiplier = sizeMultiplier;
     this.inputModification = inputModification;
-    this.configId = configId;
+    this.configShortName = configShortName;
     this.brain = brain;
     this.rayCaster = new RayCaster();
     this.color = color;
@@ -273,11 +275,11 @@ export class Car {
 
   // Render car on canvas
   render(ctx: CanvasRenderingContext2D, showRays: boolean = false): void {
-    // Find the config for this car type by configId (check all defined configs)
-    const config = CAR_BRAIN_CONFIGS_DEFINED.find((c) => c.id === this.configId);
+    // Find the config for this car type by shortName (check all defined configs)
+    const config = CAR_BRAIN_CONFIGS_DEFINED.find((c) => c.shortName === this.configShortName);
 
     if (!config) {
-      console.error('No config found for car with configId =', this.configId);
+      console.error('No config found for car with shortName =', this.configShortName);
       return;
     }
 
@@ -287,8 +289,8 @@ export class Car {
       if (this.lastCenterlinePoint) {
         const rayColor = config.colors.light;
         const hitColor = CENTERLINE_RAY_HIT_COLOR;
-        const lineWidth = config.rayVisualization.width;
-        const hitRadius = config.rayVisualization.hitRadius;
+        const lineWidth = RAY_VISUALIZATION_WIDTH;
+        const hitRadius = RAY_VISUALIZATION_HIT_RADIUS;
 
         ctx.save();
         // Draw line to centerline
@@ -318,8 +320,8 @@ export class Car {
       // Use colors and settings from config
       const rayColor = config.colors.light;
       const hitColor = config.colors.light;
-      const lineWidth = config.rayVisualization.width;
-      const hitRadius = config.rayVisualization.hitRadius;
+      const lineWidth = RAY_VISUALIZATION_WIDTH;
+      const hitRadius = RAY_VISUALIZATION_HIT_RADIUS;
 
       this.rayCaster.renderRays(
         ctx,
@@ -411,7 +413,7 @@ export class Car {
       newBrain,
       this.color,
       this.inputModification,
-      this.configId
+      this.configShortName
     );
   }
 }

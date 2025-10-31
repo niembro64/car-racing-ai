@@ -1,5 +1,5 @@
 <template>
-  <div class="percentage-bar-container">
+  <div :class="['percentage-bar-container', { compact }]">
     <div
       class="percentage-bar-fill"
       :class="variant"
@@ -14,10 +14,12 @@ import { computed } from 'vue';
 interface Props {
   percentage: number;
   variant?: 'white' | 'black';
+  compact?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  variant: 'white'
+  variant: 'white',
+  compact: false
 });
 
 const clampedPercentage = computed(() => {
@@ -35,10 +37,19 @@ const clampedPercentage = computed(() => {
   position: relative;
 }
 
+.percentage-bar-container.compact {
+  height: 8px;
+  border-radius: 1px;
+}
+
 .percentage-bar-fill {
   height: 100%;
   transition: width 0.3s ease;
   border-radius: 2px;
+}
+
+.compact .percentage-bar-fill {
+  border-radius: 1px;
 }
 
 .percentage-bar-fill.white {

@@ -17,8 +17,8 @@ import {
 } from '@/config';
 
 export class GeneticAlgorithm {
-  // Map from config ID to evolution state
-  private stateByConfigId: Map<string, ConfigEvolutionState> = new Map();
+  // Map from config shortName to evolution state
+  private stateByShortName: Map<string, ConfigEvolutionState> = new Map();
   private rng: SeededRandom;
 
   constructor(seed: number) {
@@ -26,7 +26,7 @@ export class GeneticAlgorithm {
 
     // Initialize state for all defined configs (including inactive ones)
     for (const config of CAR_BRAIN_CONFIGS_DEFINED) {
-      this.stateByConfigId.set(config.id, {
+      this.stateByShortName.set(config.shortName, {
         generation: 0,
         bestFitness: 0,
         bestWeights: null,
@@ -35,46 +35,21 @@ export class GeneticAlgorithm {
     }
   }
 
-  // Accessor methods for backward compatibility and convenience
-  get generationNormReLU(): number {
-    return this.stateByConfigId.get('normgelu')?.generation ?? 0;
-  }
-
-  get generationDiffLinear(): number {
-    return this.stateByConfigId.get('difflinear')?.generation ?? 0;
-  }
-
-  get bestFitnessNormReLU(): number {
-    return this.stateByConfigId.get('normgelu')?.bestFitness ?? 0;
-  }
-
-  get bestFitnessDiffLinear(): number {
-    return this.stateByConfigId.get('difflinear')?.bestFitness ?? 0;
-  }
-
-  get bestWeightsNormReLU(): any {
-    return this.stateByConfigId.get('normgelu')?.bestWeights ?? null;
-  }
-
-  get bestWeightsDiffLinear(): any {
-    return this.stateByConfigId.get('difflinear')?.bestWeights ?? null;
-  }
-
   // Generic accessors
-  getGeneration(configId: string): number {
-    return this.stateByConfigId.get(configId)?.generation ?? 0;
+  getGeneration(shortName: string): number {
+    return this.stateByShortName.get(shortName)?.generation ?? 0;
   }
 
-  getBestFitness(configId: string): number {
-    return this.stateByConfigId.get(configId)?.bestFitness ?? 0;
+  getBestFitness(shortName: string): number {
+    return this.stateByShortName.get(shortName)?.bestFitness ?? 0;
   }
 
-  getBestWeights(configId: string): any {
-    return this.stateByConfigId.get(configId)?.bestWeights ?? null;
+  getBestWeights(shortName: string): any {
+    return this.stateByShortName.get(shortName)?.bestWeights ?? null;
   }
 
-  getTotalTime(configId: string): number {
-    return this.stateByConfigId.get(configId)?.totalTime ?? 0;
+  getTotalTime(shortName: string): number {
+    return this.stateByShortName.get(shortName)?.totalTime ?? 0;
   }
 
   // Calculate mutation multiplier for a given brain index within a subpopulation
@@ -121,7 +96,7 @@ export class GeneticAlgorithm {
           brain,
           config.colors.dark,
           config.nn.inputModification,
-          config.id,
+          config.shortName,
           1.0  // Normal size for initial population
         );
         population.push(car);
@@ -141,9 +116,9 @@ export class GeneticAlgorithm {
     mutationByDistance: boolean = true,
     carsForThisType?: number
   ): Car[] {
-    const state = this.stateByConfigId.get(config.id);
+    const state = this.stateByShortName.get(config.shortName);
     if (!state) {
-      throw new Error(`Unknown config ID: ${config.id}`);
+      throw new Error(`Unknown config shortName: ${config.shortName}`);
     }
 
     // If no per-type size specified, use default divided equally
@@ -214,7 +189,7 @@ export class GeneticAlgorithm {
             eliteBrain,
             config.colors.dark,
             config.nn.inputModification,
-            config.id,
+            config.shortName,
             1.5  // Elite cars are 1.5x larger
           )
         );
@@ -238,7 +213,7 @@ export class GeneticAlgorithm {
             mutatedBrain,
             config.colors.dark,
             config.nn.inputModification,
-            config.id,
+            config.shortName,
             1.0  // Normal size for mutated cars
           )
         );
@@ -248,8 +223,8 @@ export class GeneticAlgorithm {
     return nextGeneration;
   }
 
-  getCurrentMutationRate(configId: string, mutationByDistance: boolean, track: Track, currentBestDistance: number): number {
-    const state = this.stateByConfigId.get(configId);
+  getCurrentMutationRate(shortName: string, mutationByDistance: boolean, track: Track, currentBestDistance: number): number {
+    const state = this.stateByShortName.get(shortName);
     if (!state) return 0;
 
     if (mutationByDistance) {
@@ -263,48 +238,17 @@ export class GeneticAlgorithm {
     }
   }
 
-  // Backward compatibility wrappers
-  evolveNormReLUPopulation(
-    normReLUCars: Car[],
-    track: Track,
-    generationTime: number,
-    winnerCar?: Car
-  ): Car[] {
-    const config = CAR_BRAIN_CONFIGS.find(c => c.id === 'normgelu');
-    if (!config) throw new Error('NormGeLU config not found');
-    return this.evolvePopulation(normReLUCars, config, track, generationTime, winnerCar);
-  }
-
-  evolveDiffLinearPopulation(
-    diffLinearCars: Car[],
-    track: Track,
-    generationTime: number,
-    winnerCar?: Car
-  ): Car[] {
-    const config = CAR_BRAIN_CONFIGS.find(c => c.id === 'difflinear');
-    if (!config) throw new Error('DiffLinear config not found');
-    return this.evolvePopulation(diffLinearCars, config, track, generationTime, winnerCar);
-  }
-
   // Export weights as JSON
   exportWeights(): string {
     // Convert Map to plain object for JSON serialization
     const stateObject: Record<string, ConfigEvolutionState> = {};
-    for (const [configId, state] of this.stateByConfigId.entries()) {
-      stateObject[configId] = state;
+    for (const [shortName, state] of this.stateByShortName.entries()) {
+      stateObject[shortName] = state;
     }
 
-    // Also include backward-compatible keys for existing save files
     return JSON.stringify(
       {
-        stateByConfigId: stateObject,
-        // Backward compatibility
-        generationNormReLU: this.generationNormReLU,
-        generationDiffLinear: this.generationDiffLinear,
-        bestFitnessNormReLU: this.bestFitnessNormReLU,
-        bestFitnessDiffLinear: this.bestFitnessDiffLinear,
-        bestWeightsNormReLU: this.bestWeightsNormReLU,
-        bestWeightsDiffLinear: this.bestWeightsDiffLinear,
+        stateByShortName: stateObject,
       },
       null,
       2
@@ -316,26 +260,10 @@ export class GeneticAlgorithm {
     try {
       const data = JSON.parse(json);
 
-      // Try new format first
-      if (data.stateByConfigId) {
-        for (const [configId, state] of Object.entries(data.stateByConfigId)) {
-          this.stateByConfigId.set(configId, state as ConfigEvolutionState);
-        }
-      } else {
-        // Fall back to old format for backward compatibility
-        const normreluState = this.stateByConfigId.get('normrelu');
-        const difflinearState = this.stateByConfigId.get('difflinear');
-
-        if (normreluState) {
-          normreluState.generation = data.generationNormReLU || 0;
-          normreluState.bestFitness = data.bestFitnessNormReLU || 0;
-          normreluState.bestWeights = data.bestWeightsNormReLU || null;
-        }
-
-        if (difflinearState) {
-          difflinearState.generation = data.generationDiffLinear || 0;
-          difflinearState.bestFitness = data.bestFitnessDiffLinear || 0;
-          difflinearState.bestWeights = data.bestWeightsDiffLinear || null;
+      // Load state by shortName
+      if (data.stateByShortName) {
+        for (const [shortName, state] of Object.entries(data.stateByShortName)) {
+          this.stateByShortName.set(shortName, state as ConfigEvolutionState);
         }
       }
     } catch (error) {
@@ -345,7 +273,7 @@ export class GeneticAlgorithm {
 
   // Reset evolution
   reset(): void {
-    for (const state of this.stateByConfigId.values()) {
+    for (const state of this.stateByShortName.values()) {
       state.generation = 0;
       state.bestFitness = 0;
       state.bestWeights = null;

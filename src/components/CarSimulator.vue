@@ -49,7 +49,7 @@
           <!-- Table View -->
           <table
             v-if="viewMode === 'table'"
-            class="stats-table"
+            :class="['stats-table', { 'stats-table-compact': useAllCarTypes }]"
             @click="cycleView"
           >
             <thead>
@@ -69,43 +69,47 @@
             <tbody>
               <tr
                 v-for="config in sortedCarBrainConfigs"
-                :key="config.id"
+                :key="config.shortName"
                 :style="{ backgroundColor: config.colors.dark }"
               >
                 <td v-if="!isMobile">
                   <PercentageBar
-                    :percentage="scoreByConfigId.get(config.id) ?? 0"
+                    :percentage="scoreByConfigId.get(config.shortName) ?? 0"
                     variant="white"
+                    :compact="useAllCarTypes"
                   />
                 </td>
                 <td style="font-weight: bold">
-                  {{ isMobile ? config.mobileDisplayName : config.displayName }}
+                  {{ isMobile ? config.shortName : config.displayName }}
                 </td>
                 <td>
-                  {{ ga.getGeneration(config.id) }}
+                  {{ ga.getGeneration(config.shortName) }}
                 </td>
                 <td>
                   <PercentageBar
                     :percentage="
-                      mutationRatePercentByConfigId.get(config.id) ?? 0
+                      mutationRatePercentByConfigId.get(config.shortName) ?? 0
                     "
                     variant="white"
+                    :compact="useAllCarTypes"
                   />
                 </td>
                 <td>
                   <PercentageBar
-                    :percentage="getMeanFitnessPercentRaw(config.id)"
+                    :percentage="getMeanFitnessPercentRaw(config.shortName)"
                     variant="white"
+                    :compact="useAllCarTypes"
                   />
                 </td>
                 <td>
                   <PercentageBar
-                    :percentage="getBestFitnessPercentRaw(config.id)"
+                    :percentage="getBestFitnessPercentRaw(config.shortName)"
                     variant="white"
+                    :compact="useAllCarTypes"
                   />
                 </td>
                 <td>
-                  {{ getBestLapTime(config.id) }}
+                  {{ getBestLapTime(config.shortName) }}
                 </td>
                 <td>
                   {{ getHiddenLayers(config.nn.architecture) }}
@@ -418,10 +422,10 @@ const bestLapTimeByConfigId = ref<Map<string, number>>(new Map()); // Best lap t
 
 // Initialize tracking maps for all possible configs (including inactive ones)
 for (const config of CAR_BRAIN_CONFIGS_DEFINED) {
-  generationTimeByConfigId.value.set(config.id, 0);
-  generationMarkersByConfigId.value.set(config.id, []);
-  lapCompletionTimeByConfigId.value.set(config.id, Infinity); // Current gen: Start at infinity
-  bestLapTimeByConfigId.value.set(config.id, Infinity); // Best ever: Start at infinity
+  generationTimeByConfigId.value.set(config.shortName, 0);
+  generationMarkersByConfigId.value.set(config.shortName, []);
+  lapCompletionTimeByConfigId.value.set(config.shortName, Infinity); // Current gen: Start at infinity
+  bestLapTimeByConfigId.value.set(config.shortName, Infinity); // Best ever: Start at infinity
 }
 
 let animationFrameId: number | null = null;
@@ -441,23 +445,23 @@ const FIXED_DT = 1 / 60; // 60 Hz physics
  * Combines multiple factors: performance, learning efficiency, speed, consistency
  * Returns a 0-100 score
  */
-const calculateComprehensiveScore = (configId: string): number => {
+const calculateComprehensiveScore = (shortName: string): number => {
   // Component 1: Mean Performance (40% weight) - Most important: consistent track completion
-  const meanCompletion = getMeanFitnessPercentRaw(configId); // 0-100
+  const meanCompletion = getMeanFitnessPercentRaw(shortName); // 0-100
   const meanScore = meanCompletion * 0.4;
 
   // Component 2: Best Performance (20% weight) - Peak capability achieved
-  const bestCompletion = getBestFitnessPercentRaw(configId); // 0-100
+  const bestCompletion = getBestFitnessPercentRaw(shortName); // 0-100
   const bestScore = bestCompletion * 0.2;
 
   // Component 3: Learning Efficiency (20% weight) - Fewer generations = better learner
-  const generations = ga.value.getGeneration(configId);
+  const generations = ga.value.getGeneration(shortName);
   // Penalize 0.5 points per generation (200 generations = 0 efficiency score)
   const efficiencyRaw = Math.max(0, 100 - generations * 0.5);
   const efficiencyScore = efficiencyRaw * 0.2;
 
   // Component 4: Lap Speed Bonus (10% weight) - Reward fast lap times
-  const lapTime = bestLapTimeByConfigId.value.get(configId);
+  const lapTime = bestLapTimeByConfigId.value.get(shortName);
   let speedScore = 0;
   if (lapTime !== undefined && lapTime !== Infinity) {
     // 30 second lap = 100 points, 60 second lap = 50 points, etc.
@@ -480,8 +484,8 @@ const calculateComprehensiveScore = (configId: string): number => {
 
 const compareConfigs = (a: CarBrainConfig, b: CarBrainConfig): number => {
   // Compare by comprehensive score (higher is better)
-  const scoreA = calculateComprehensiveScore(a.id);
-  const scoreB = calculateComprehensiveScore(b.id);
+  const scoreA = calculateComprehensiveScore(a.shortName);
+  const scoreB = calculateComprehensiveScore(b.shortName);
   return scoreB - scoreA;
 };
 
@@ -494,8 +498,8 @@ const scoreByConfigId = computed(() => {
 
   // Calculate comprehensive score for each config
   for (const config of activeCarConfigs.value) {
-    const score = calculateComprehensiveScore(config.id);
-    scores.set(config.id, score);
+    const score = calculateComprehensiveScore(config.shortName);
+    scores.set(config.shortName, score);
   }
 
   return scores;
@@ -528,7 +532,7 @@ const mutationRatePercentByConfigId = computed(() => {
       const trackLength = track.getTotalLength();
 
       const carsOfType = population.value.filter(
-        (car) => car.configId === config.id
+        (car) => car.configShortName === config.shortName
       );
       const currentBest =
         carsOfType.length > 0
@@ -547,11 +551,11 @@ const mutationRatePercentByConfigId = computed(() => {
 
       // Normalize to 0-100% range (GA_MUTATION_BASE is max)
       const normalizedPercent = (rate / GA_MUTATION_BASE) * 100;
-      percentages.set(config.id, normalizedPercent);
+      percentages.set(config.shortName, normalizedPercent);
     } else {
       // When MUT DIST is OFF, use constant minimum mutation
       const normalizedPercent = (GA_MUTATION_MIN / GA_MUTATION_BASE) * 100;
-      percentages.set(config.id, normalizedPercent);
+      percentages.set(config.shortName, normalizedPercent);
     }
   }
 
@@ -594,8 +598,8 @@ const getHiddenLayers = (architecture: number[]): string => {
 };
 
 // Helper to get raw mean fitness percentage (not formatted)
-const getMeanFitnessPercentRaw = (configId: string): number => {
-  const markers = generationMarkersByConfigId.value.get(configId) ?? [];
+const getMeanFitnessPercentRaw = (shortName: string): number => {
+  const markers = generationMarkersByConfigId.value.get(shortName) ?? [];
 
   if (markers.length === 0) {
     return 0;
@@ -609,8 +613,8 @@ const getMeanFitnessPercentRaw = (configId: string): number => {
 };
 
 // Helper to get raw best fitness percentage (not formatted)
-const getBestFitnessPercentRaw = (configId: string): number => {
-  const markers = generationMarkersByConfigId.value.get(configId) ?? [];
+const getBestFitnessPercentRaw = (shortName: string): number => {
+  const markers = generationMarkersByConfigId.value.get(shortName) ?? [];
 
   if (markers.length === 0) {
     return 0;
@@ -622,10 +626,10 @@ const getBestFitnessPercentRaw = (configId: string): number => {
   return (bestFitness / trackLength) * 100;
 };
 
-const getBestLapTime = (configId: string): string => {
-  const lapTime = bestLapTimeByConfigId.value.get(configId) ?? Infinity;
+const getBestLapTime = (shortName: string): string => {
+  const lapTime = bestLapTimeByConfigId.value.get(shortName) ?? Infinity;
   if (lapTime === Infinity) {
-    return '—'; // Em dash for no lap completed
+    return '-'; // Em dash for no lap completed
   }
   return lapTime.toFixed(3) + 's';
 };
@@ -656,9 +660,9 @@ const init = () => {
 
   // Reset generation times, markers, and lap times for active configs
   for (const config of activeCarConfigs.value) {
-    generationTimeByConfigId.value.set(config.id, 0);
-    generationMarkersByConfigId.value.set(config.id, []);
-    lapCompletionTimeByConfigId.value.set(config.id, Infinity);
+    generationTimeByConfigId.value.set(config.shortName, 0);
+    generationMarkersByConfigId.value.set(config.shortName, []);
+    lapCompletionTimeByConfigId.value.set(config.shortName, Infinity);
   }
 };
 
@@ -668,12 +672,12 @@ const evolvePopulationByConfig = (
   _reason: string,
   winnerCar?: Car
 ) => {
-  // Separate cars by configId (unique identifier)
+  // Separate cars by shortName (unique identifier)
   const configCars = population.value.filter(
-    (car) => car.configId === config.id
+    (car) => car.configShortName === config.shortName
   );
   const otherCars = population.value.filter(
-    (car) => car.configId !== config.id
+    (car) => car.configShortName !== config.shortName
   );
 
   // Find best car for marker
@@ -684,11 +688,11 @@ const evolvePopulationByConfig = (
 
   // Save best position as marker (with fitness)
   if (bestCar) {
-    const markers = generationMarkersByConfigId.value.get(config.id) ?? [];
+    const markers = generationMarkersByConfigId.value.get(config.shortName) ?? [];
     markers.push({
       x: bestCar.x,
       y: bestCar.y,
-      generation: ga.value.getGeneration(config.id),
+      generation: ga.value.getGeneration(config.shortName),
       fitness: bestCar.maxDistanceReached,
     });
 
@@ -697,11 +701,11 @@ const evolvePopulationByConfig = (
       markers.splice(0, markers.length - 100);
     }
 
-    generationMarkersByConfigId.value.set(config.id, markers);
+    generationMarkersByConfigId.value.set(config.shortName, markers);
   }
 
   // Evolve this population with per-type target population (based on current FPS)
-  const generationTime = generationTimeByConfigId.value.get(config.id) ?? 0;
+  const generationTime = generationTimeByConfigId.value.get(config.shortName) ?? 0;
 
   print(
     `[Evolution] ${config.displayName}: ${targetPopulationPerType.value} cars for this type | Total: ${targetPopulationTotal.value} | Target: ${fpsTarget.value} FPS`
@@ -716,8 +720,8 @@ const evolvePopulationByConfig = (
     mutationByDistance.value,
     targetPopulationPerType.value
   );
-  generationTimeByConfigId.value.set(config.id, 0);
-  lapCompletionTimeByConfigId.value.set(config.id, Infinity); // Reset lap time for new generation
+  generationTimeByConfigId.value.set(config.shortName, 0);
+  lapCompletionTimeByConfigId.value.set(config.shortName, Infinity); // Reset lap time for new generation
 
   // Combine with other car types
   population.value = [...newCars, ...otherCars];
@@ -747,32 +751,32 @@ const updatePhysics = (dt: number) => {
       // Use threshold < 1.0 to account for discrete physics updates
       // Cars may not land exactly at the finish line due to frame timing
       if (car.currentProgressRatio >= LAP_COMPLETION_THRESHOLD) {
-        // Find the config for this car type by configId (check all defined configs)
+        // Find the config for this car type by shortName (check all defined configs)
         const config = CAR_BRAIN_CONFIGS_DEFINED.find(
-          (c) => c.id === car.configId
+          (c) => c.shortName === car.configShortName
         );
 
         if (config) {
           // Record lap completion time (only if not already recorded this generation)
           const currentLapTime =
-            lapCompletionTimeByConfigId.value.get(config.id) ?? Infinity;
+            lapCompletionTimeByConfigId.value.get(config.shortName) ?? Infinity;
           if (currentLapTime === Infinity) {
             const completionTime =
-              generationTimeByConfigId.value.get(config.id) ?? 0;
+              generationTimeByConfigId.value.get(config.shortName) ?? 0;
 
             // Record current generation lap time
-            lapCompletionTimeByConfigId.value.set(config.id, completionTime);
+            lapCompletionTimeByConfigId.value.set(config.shortName, completionTime);
 
             // Update best lap time if this is better
             const bestLapTime =
-              bestLapTimeByConfigId.value.get(config.id) ?? Infinity;
+              bestLapTimeByConfigId.value.get(config.shortName) ?? Infinity;
             if (completionTime < bestLapTime) {
-              bestLapTimeByConfigId.value.set(config.id, completionTime);
+              bestLapTimeByConfigId.value.set(config.shortName, completionTime);
               print(
                 `[Lap Complete] 🏆 ${
                   config.displayName
                 } NEW BEST: ${completionTime.toFixed(2)}s (prev: ${
-                  bestLapTime === Infinity ? '—' : bestLapTime.toFixed(2) + 's'
+                  bestLapTime === Infinity ? '-' : bestLapTime.toFixed(2) + 's'
                 })`
               );
             } else {
@@ -788,7 +792,7 @@ const updatePhysics = (dt: number) => {
 
           // Kill all cars of same type immediately
           population.value.forEach((c) => {
-            if (c.configId === config.id && c !== car) {
+            if (c.configShortName === config.shortName && c !== car) {
               c.alive = false;
               c.speed = 0;
             }
@@ -816,13 +820,13 @@ const updatePhysics = (dt: number) => {
 
   // Update generation times for active config types
   for (const config of activeCarConfigs.value) {
-    const currentTime = generationTimeByConfigId.value.get(config.id) ?? 0;
-    generationTimeByConfigId.value.set(config.id, currentTime + dt);
+    const currentTime = generationTimeByConfigId.value.get(config.shortName) ?? 0;
+    generationTimeByConfigId.value.set(config.shortName, currentTime + dt);
   }
 
   // Check each config population independently for all-dead condition
   for (const config of activeCarConfigs.value) {
-    const configCars = population.value.filter((c) => c.configId === config.id);
+    const configCars = population.value.filter((c) => c.configShortName === config.shortName);
     const allDead = configCars.every((c) => !c.alive);
 
     if (allDead && configCars.length > 0) {
@@ -880,7 +884,7 @@ const render = (ctx: CanvasRenderingContext2D) => {
   ctx.textBaseline = 'bottom';
 
   for (const config of activeCarConfigs.value) {
-    const markers = generationMarkersByConfigId.value.get(config.id) ?? [];
+    const markers = generationMarkersByConfigId.value.get(config.shortName) ?? [];
     ctx.fillStyle = config.colors.dark;
 
     for (const marker of markers) {
@@ -1068,10 +1072,10 @@ const reset = () => {
 
   // Clear generation times, markers, and lap times for active configs
   for (const config of activeCarConfigs.value) {
-    generationTimeByConfigId.value.set(config.id, 0);
-    generationMarkersByConfigId.value.set(config.id, []);
-    lapCompletionTimeByConfigId.value.set(config.id, Infinity);
-    bestLapTimeByConfigId.value.set(config.id, Infinity); // Reset best lap times on manual reset
+    generationTimeByConfigId.value.set(config.shortName, 0);
+    generationMarkersByConfigId.value.set(config.shortName, []);
+    lapCompletionTimeByConfigId.value.set(config.shortName, Infinity);
+    bestLapTimeByConfigId.value.set(config.shortName, Infinity); // Reset best lap times on manual reset
   }
 
   // Reset performance management system
@@ -1153,7 +1157,7 @@ const renderGraph = () => {
     new Map();
 
   for (const config of activeCarConfigs.value) {
-    const markers = generationMarkersByConfigId.value.get(config.id) ?? [];
+    const markers = generationMarkersByConfigId.value.get(config.shortName) ?? [];
     if (markers.length === 0) continue;
 
     const history: { generation: number; score: number }[] = [];
@@ -1181,7 +1185,7 @@ const renderGraph = () => {
       history.push({ generation: markers[i].generation, score });
     }
 
-    configHistories.set(config.id, history);
+    configHistories.set(config.shortName, history);
   }
 
   // Find minimum generation count across all car types
@@ -1323,7 +1327,7 @@ const renderGraph = () => {
 
   // Draw lines for each active config
   for (const config of activeCarConfigs.value) {
-    const history = configHistories.get(config.id);
+    const history = configHistories.get(config.shortName);
     if (!history || history.length === 0) continue;
 
     ctx.strokeStyle = config.colors.dark;
@@ -1530,6 +1534,22 @@ canvas {
 
 .stats-table tbody tr:hover {
   background: rgba(255, 255, 255, 0.05);
+}
+
+/* Compact mode for when ALL TYPES is toggled on */
+.stats-table-compact {
+  font-size: 9px !important;
+}
+
+.stats-table-compact th {
+  padding: 1px 3px !important;
+  font-size: 8px !important;
+  letter-spacing: 0px !important;
+}
+
+.stats-table-compact td {
+  padding: 1px 3px !important;
+  line-height: 1.1;
 }
 
 /* Performance table specific styling */
