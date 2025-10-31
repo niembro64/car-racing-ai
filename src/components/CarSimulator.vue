@@ -338,6 +338,8 @@ import {
   CAR_STEERING_DELAY_SECONDS,
   CAR_START_ANGLE_WIGGLE,
   getMutationRate,
+  countTrainableParameters,
+  getParameterBasedMutationScale,
   GA_MUTATION_BASE,
   DEBUG_SHOW_WAYPOINTS,
   PERFORMANCE_MANAGEMENT_ENABLED,
@@ -370,6 +372,17 @@ const canvasWidth = CANVAS_WIDTH;
 const canvasHeight = CANVAS_HEIGHT;
 
 const track = new Track(TRACK_WIDTH_HALF);
+
+// Calculate min/max trainable parameters across all car brain architectures
+// Used for parameter-based mutation scaling
+let minParameters = Infinity;
+let maxParameters = 0;
+for (const config of CAR_BRAIN_CONFIGS_DEFINED) {
+  const paramCount = countTrainableParameters(config.nn.architecture);
+  minParameters = Math.min(minParameters, paramCount);
+  maxParameters = Math.max(maxParameters, paramCount);
+}
+
 // Use truly random seed based on current time and Math.random()
 let randomSeed = Date.now() + Math.random() * 1000000;
 const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed));
@@ -600,6 +613,8 @@ const mutationRatePercentByConfigId = computed(() => {
   const percentages = new Map<string, number>();
 
   for (const config of activeCarConfigs.value) {
+    // Calculate base mutation rate from track progress
+    let baseRate: number;
     if (isMutationByDistance) {
       const carsOfType = population.value.filter(
         (car) => car.configShortName === config.shortName
@@ -611,21 +626,28 @@ const mutationRatePercentByConfigId = computed(() => {
 
       const bestDistance = currentBest;
 
-      const rate = getMutationRate(
+      baseRate = getMutationRate(
         mutationByDistance.value,
         bestDistance,
         trackLength
       );
-
-      // Normalize to 0-100% range (GA_MUTATION_BASE is max)
-      const normalizedPercent = (rate / GA_MUTATION_BASE) * 100;
-      percentages.set(config.shortName, normalizedPercent);
     } else {
       // When MUT DIST is OFF, use constant minimum mutation
-      const rate = getMutationRate(false, 0, trackLength);
-      const normalizedPercent = (rate / GA_MUTATION_BASE) * 100;
-      percentages.set(config.shortName, normalizedPercent);
+      baseRate = getMutationRate(false, 0, trackLength);
     }
+
+    // Apply parameter-based scaling (larger networks get lower rates)
+    const paramCount = countTrainableParameters(config.nn.architecture);
+    const paramScale = getParameterBasedMutationScale(
+      paramCount,
+      minParameters,
+      maxParameters
+    );
+    const scaledRate = baseRate * paramScale;
+
+    // Normalize to 0-100% range (GA_MUTATION_BASE is max)
+    const normalizedPercent = (scaledRate / GA_MUTATION_BASE) * 100;
+    percentages.set(config.shortName, normalizedPercent);
   }
 
   return percentages;
@@ -788,14 +810,6 @@ const evolvePopulationByConfig = (
 
   // Update the actual performance target being used (raw value)
   actualPerformanceTargetPerType.value = targetCarsPerType;
-
-  // Log progress to diagnose lap completion
-  const trackLength = track.getTotalLength();
-  const maxProgressPercent = bestCar
-    ? (bestCar.maxDistanceReached / trackLength) * 100
-    : 0;
-  const bestLapTime = bestLapTimeByConfigId.value.get(config.shortName);
-  const hasBestLap = bestLapTime !== Infinity;
 
   const newCars = ga.value.evolvePopulation(
     configCars,
@@ -1280,12 +1294,6 @@ const restartCurrentGeneration = (config: CarBrainConfig) => {
     print(`[SYNC] ${config.displayName}: No weights yet, skipping restart`);
     return;
   }
-
-  // Get target population size for this type
-  const targetCarsPerType =
-    fps0_1PercentLow.value >= POP_THRESHOLD_FPS
-      ? performanceTargetCarsPerType.value
-      : performanceTargetCarsPerTypeDown.value;
 
   const carsPerType = Math.round(savedPerformanceTargetPerType.value);
 

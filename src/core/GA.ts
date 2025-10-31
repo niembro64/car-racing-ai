@@ -6,6 +6,8 @@ import type { CarBrainConfig, ConfigEvolutionState } from '@/types';
 import {
   getPopulationSize,
   getMutationRate,
+  countTrainableParameters,
+  getParameterBasedMutationScale,
   GA_MUTATION_MIN_MULTIPLIER,
   GA_MUTATION_MAX_MULTIPLIER,
   GA_MUTATION_CURVE_POWER,
@@ -17,9 +19,21 @@ export class GeneticAlgorithm {
   // Map from config shortName to evolution state
   private stateByShortName: Map<string, ConfigEvolutionState> = new Map();
   private rng: SeededRandom;
+  private minParameters: number;
+  private maxParameters: number;
 
   constructor(seed: number) {
     this.rng = new SeededRandom(seed);
+
+    // Calculate min/max trainable parameters across all architectures
+    // Used for parameter-based mutation scaling
+    this.minParameters = Infinity;
+    this.maxParameters = 0;
+    for (const config of CAR_BRAIN_CONFIGS_DEFINED) {
+      const paramCount = countTrainableParameters(config.nn.architecture);
+      this.minParameters = Math.min(this.minParameters, paramCount);
+      this.maxParameters = Math.max(this.maxParameters, paramCount);
+    }
 
     // Initialize state for all defined configs (including inactive ones)
     for (const config of CAR_BRAIN_CONFIGS_DEFINED) {
@@ -157,6 +171,15 @@ export class GeneticAlgorithm {
       trackLength
     );
 
+    // Apply parameter-based scaling (larger networks get lower mutation rates)
+    const paramCount = countTrainableParameters(config.nn.architecture);
+    const paramScale = getParameterBasedMutationScale(
+      paramCount,
+      this.minParameters,
+      this.maxParameters
+    );
+    const scaledMutationRate = baseMutationRate * paramScale;
+
     // Create next generation
     const nextGeneration: Car[] = [];
 
@@ -193,9 +216,10 @@ export class GeneticAlgorithm {
 
         // Apply mutation curve only when NOT using distance-based mutation
         // Distance-based mutation already provides enough variation
+        // Note: scaledMutationRate already includes parameter-based scaling
         const sigma = mutationByDistance
-          ? baseMutationRate
-          : baseMutationRate * this.getMutationMultiplier(i, carsPerType);
+          ? scaledMutationRate
+          : scaledMutationRate * this.getMutationMultiplier(i, carsPerType);
 
         const mutatedBrain = eliteBrain.mutate(sigma, mutationSeed);
 

@@ -32,8 +32,14 @@ export function appendMirroredWaypoints(
   return [...waypoints, ...mirroredTail];
 }
 
-export const GA_MUTATION_BASE = 0.9;
+export const GA_MUTATION_BASE = 0.3;
 export const GA_MUTATION_MIN = 0.01;
+
+// Parameter-based mutation scaling
+// Smaller networks (fewer parameters) get full mutation rate
+// Larger networks (more parameters) get reduced mutation rate
+export const GA_MUTATION_PARAM_SCALE_MIN = 0.2; // Scale factor for largest network (20% of base rate)
+export const GA_MUTATION_PARAM_SCALE_MAX = 1.0; // Scale factor for smallest network (100% of base rate)
 
 // Bezier curve control points for mutation decay (CSS cubic-bezier style)
 // Uses CSS cubic-bezier format: cubic-bezier(P1_X, P1_Y, P2_X, P2_Y)
@@ -43,7 +49,7 @@ export const GA_MUTATION_MIN = 0.01;
 // So low Y values = high mutation, high Y values = low mutation
 // Array format: [P1_X, P1_Y, P2_X, P2_Y]
 // Current: [1, 0, 0, 1] → stays high, drops rapidly in middle, smooth end
-export const GA_MUTATION_BEZIER_POINTS = [1, 0, 0.25, 0.25];
+export const GA_MUTATION_BEZIER_POINTS = [1, 0.1, 0.25, 0.75];
 
 /**
  * Evaluate a cubic bezier curve at parameter t.
@@ -204,6 +210,68 @@ export function getMutationRate(
 
   const range = GA_MUTATION_BASE - GA_MUTATION_MIN;
   return GA_MUTATION_MIN + range * decayFactor;
+}
+
+/**
+ * Calculate the number of trainable parameters in a neural network architecture.
+ * Parameters = sum of all weights and biases across all layers.
+ *
+ * @param architecture - Array of layer sizes [input, hidden..., output]
+ * @returns Total number of trainable parameters (weights + biases)
+ *
+ * Example: [5, 3, 1] has:
+ * - Layer 1: (5 inputs * 3 neurons) + 3 biases = 18 parameters
+ * - Layer 2: (3 inputs * 1 neuron) + 1 bias = 4 parameters
+ * - Total: 22 parameters
+ */
+export function countTrainableParameters(architecture: number[]): number {
+  let totalParams = 0;
+
+  for (let i = 0; i < architecture.length - 1; i++) {
+    const inputSize = architecture[i];
+    const outputSize = architecture[i + 1];
+
+    // Weights: inputSize * outputSize
+    // Biases: outputSize
+    totalParams += inputSize * outputSize + outputSize;
+  }
+
+  return totalParams;
+}
+
+/**
+ * Calculate mutation scaling factor based on network size.
+ * Larger networks (more parameters) get lower mutation rates because
+ * each mutation affects more values.
+ *
+ * @param parameterCount - Number of trainable parameters in this network
+ * @param minParams - Minimum parameter count across all architectures
+ * @param maxParams - Maximum parameter count across all architectures
+ * @returns Scaling factor between GA_MUTATION_PARAM_SCALE_MIN and GA_MUTATION_PARAM_SCALE_MAX
+ *
+ * Behavior:
+ * - Smallest network (minParams) → returns GA_MUTATION_PARAM_SCALE_MAX (1.0 = full rate)
+ * - Largest network (maxParams) → returns GA_MUTATION_PARAM_SCALE_MIN (0.2 = reduced rate)
+ * - Linear interpolation between them
+ */
+export function getParameterBasedMutationScale(
+  parameterCount: number,
+  minParams: number,
+  maxParams: number
+): number {
+  if (maxParams === minParams) {
+    return GA_MUTATION_PARAM_SCALE_MAX; // All networks same size
+  }
+
+  // Normalize parameter count to 0-1 range (0 = smallest, 1 = largest)
+  const normalized = (parameterCount - minParams) / (maxParams - minParams);
+
+  // Invert: smallest gets max scale, largest gets min scale
+  const scale =
+    GA_MUTATION_PARAM_SCALE_MAX -
+    normalized * (GA_MUTATION_PARAM_SCALE_MAX - GA_MUTATION_PARAM_SCALE_MIN);
+
+  return scale;
 }
 
 export function getPopulationSize(): number {
