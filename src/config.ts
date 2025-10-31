@@ -32,7 +32,7 @@ export function appendMirroredWaypoints(
   return [...waypoints, ...mirroredTail];
 }
 
-export const GA_MUTATION_BASE = 0.3;
+export const GA_MUTATION_BASE = 0.1;
 export const GA_MUTATION_MIN = 0.01;
 
 // Parameter-based mutation scaling
@@ -321,7 +321,7 @@ export const CAR_FORWARD_SPEED = 100;
 export const CAR_STEERING_SENSITIVITY = 0.2;
 export const CAR_WIDTH = 10;
 export const CAR_HEIGHT = 20;
-export const CAR_START_ANGLE_WIGGLE = Math.PI / 16;
+export const CAR_START_ANGLE_WIGGLE = Math.PI / 20;
 
 // Re-export constants from config_nn.ts
 export {
@@ -399,7 +399,7 @@ export const DEFAULT_DIE_ON_BACKWARDS = true;
 export const DEFAULT_KILL_SLOW_CARS = true;
 export const DEFAULT_MUTATION_BY_DISTANCE = true;
 export const DEFAULT_DELAYED_STEERING = true;
-export const CAR_STEERING_DELAY_SECONDS = 1;
+export const CAR_STEERING_DELAY_SECONDS = 0.3;
 export const DEFAULT_SPEED_MULTIPLIER: SpeedMultiplier = 1;
 
 export const ENABLE_CONSOLE_LOGS = true;
