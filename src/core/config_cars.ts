@@ -289,6 +289,23 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       dark: '#551177',
     },
   },
+
+  // === SWIGLU activation (red/pink family) ===
+  {
+    useCar: true,
+    displayName: 'Neo',
+    shortName: 'NE',
+    description: 'SWIGLU activation, differential inputs, 1 hidden layer (3)',
+    nn: {
+      architecture: NN_ARCH_DIFF_MEDIUM,
+      inputModification: 'pair',
+      activationType: 'swiglu',
+    },
+    colors: {
+      light: '#ff6699',
+      dark: '#cc3366',
+    },
+  },
 ];
 
 export const CAR_BRAIN_CONFIGS = CAR_BRAIN_CONFIGS_DEFINED.filter(

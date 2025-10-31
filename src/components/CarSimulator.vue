@@ -615,6 +615,8 @@ const getActivationColor = (activationType: ActivationType): string => {
       return '#4a8'; // Green-cyan family
     case 'step':
       return '#c5c'; // Purple-magenta family
+    case 'swiglu':
+      return '#f69'; // Red-pink family
     default:
       throw new Error(`Unknown activation type: ${activationType}`);
   }

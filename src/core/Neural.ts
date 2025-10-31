@@ -82,6 +82,14 @@ export class NeuralNetwork {
     return x >= 0 ? 1 : 0;
   }
 
+  // SWIGLU activation (Swish-Gated Linear Unit)
+  // SWIGLU(x) = x * swish(x) where swish(x) = x * sigmoid(x)
+  // This gives: SWIGLU(x) = x * (x / (1 + e^(-x))) = x² / (1 + e^(-x))
+  private swiglu(x: number): number {
+    const sigmoid = 1.0 / (1.0 + Math.exp(-x));
+    return x * x * sigmoid;
+  }
+
   // Forward pass through network
   private forward(input: number[]): number[] {
     let current = input;
@@ -108,6 +116,8 @@ export class NeuralNetwork {
           next.push(this.gelu(sum)); // GELU for hidden layers
         } else if (this.activationType === 'step') {
           next.push(this.step(sum)); // Step for hidden layers
+        } else if (this.activationType === 'swiglu') {
+          next.push(this.swiglu(sum)); // SWIGLU for hidden layers
         } else if (this.activationType === 'linear') {
           next.push(this.linear(sum)); // Linear for hidden layers
         } else if (this.activationType === '-') {
