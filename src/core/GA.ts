@@ -11,10 +11,9 @@ import {
   GA_MUTATION_MIN_MULTIPLIER,
   GA_MUTATION_MAX_MULTIPLIER,
   GA_MUTATION_CURVE_POWER,
-  CAR_BRAIN_CONFIGS,
-  CAR_BRAIN_CONFIGS_DEFINED,
   CAR_START_ANGLE_WIGGLE,
 } from '@/config';
+import { CAR_BRAIN_CONFIGS, CAR_BRAIN_CONFIGS_DEFINED } from './config_cars';
 
 export class GeneticAlgorithm {
   // Map from config shortName to evolution state

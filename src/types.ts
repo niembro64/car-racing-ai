@@ -58,8 +58,9 @@ export interface GenomeData {
   fitness: number;
 }
 
-// Speed multiplier options
-export type SpeedMultiplier = 1 | 2 | 5 | 10;
+// Speed multiplier options - type is derived from this array
+export const SPEED_MULTIPLIERS = [1, 2, 4, 8, 16] as const;
+export type SpeedMultiplier = (typeof SPEED_MULTIPLIERS)[number];
 // ============================================================================
 // CAR BRAIN CONFIGURATION TYPES
 // ============================================================================

@@ -1,48 +1,42 @@
 /**
- * PopulationController - Intelligent adaptive population management
+ * PopulationController - Adaptive population management
  *
- * Uses a PID-like control algorithm with multiple performance metrics to
- * dynamically adjust car population for optimal performance.
+ * Works with CARS PER TYPE (not total population)
  *
- * Features:
- * - PID control for smooth, stable adjustments
- * - Multi-metric decision making (FPS, stability, trend)
- * - Predictive adjustments based on performance trends
- * - Hysteresis to prevent oscillation
- * - Configurable safety constraints
+ * SINGLE THRESHOLD: POP_THRESHOLD_FPS (0.1% low)
+ * - Below threshold → Decrease cars/type by POP_DECREASE_PERCENTAGE
+ * - At/Above threshold → Increase cars/type by POP_INCREASE_PERCENTAGE
+ *
+ * Special case: At minimum, adds POP_MINIMUM_ESCAPE_MULTIPLIER cars per type
+ * Adjusts every POP_ADJUSTMENT_INTERVAL frames (1 second at 60 FPS)
+ * Cars per type tracked as decimals for precision, rounded for actual spawning
+ *
+ * All configuration values imported from config.ts
  */
 
 import type { PerformanceMetrics } from './PerformanceMonitor';
+import {
+  POP_THRESHOLD_FPS,
+  POP_INCREASE_PERCENTAGE,
+  POP_DECREASE_PERCENTAGE,
+  POP_MINIMUM_ESCAPE_MULTIPLIER,
+} from '@/config';
 
 export interface PopulationControllerConfig {
-  targetFps: number;
-  minPopulation: number;
-  maxPopulation: number;
-  initialPopulation: number;
-
-  // PID gains
-  kProportional: number; // Proportional gain
-  kIntegral: number;     // Integral gain
-  kDerivative: number;   // Derivative gain
-
-  // Adjustment constraints
-  maxChangeRate: number;      // Max population change per adjustment (fraction)
-  adjustmentInterval: number; // Frames between adjustments
-
-  // Hysteresis (prevent oscillation near target)
-  hysteresisThreshold: number; // FPS deviation needed to trigger change
-
-  // Safety thresholds
-  emergencyFpsThreshold: number; // Aggressive reduction below this FPS
-  safeFpsThreshold: number;      // Conservative growth above this FPS
+  targetFps: number;            // Used for display/metrics only (not for logic)
+  minPopulation: number;        // Minimum cars allowed (1 per type)
+  maxPopulation: number;        // Maximum cars allowed (50 per type)
+  initialPopulation: number;    // Starting population
+  maxChangeRate: number;        // Max population change per adjustment (15%)
+  adjustmentInterval: number;   // Frames between adjustments (60 = 1 second at 60fps)
 }
 
 export interface PopulationAdjustment {
-  totalPopulation: number; // Total across all types
-  populationPerType: number; // Population per car type
-  numTypes: number; // Number of car types
-  delta: number;
-  reason: string;
+  totalPopulation: number;     // Total across all types (rounded for spawning)
+  populationPerType: number;   // Cars per type (decimal value for precision)
+  numTypes: number;             // Number of car types
+  delta: number;                // Change in cars per type (can be decimal)
+  reason: string;               // Human-readable reason for adjustment
   metrics: {
     fps: number;
     error: number;
@@ -54,100 +48,101 @@ export interface PopulationAdjustment {
 
 export class PopulationController {
   private config: PopulationControllerConfig;
-  private numCarTypes: number;
+  private numberOfCarTypes: number;
 
-  // PID state
-  private currentPopulation: number;
-  private errorIntegral: number = 0;
-  private lastError: number = 0;
-  private adjustmentCounter: number = 0;
+  // Current state (tracked as cars per type, can be decimal)
+  private currentCarsPerType: number;
+  private frameCounterSinceLastAdjustment: number = 0;
 
-  // State tracking
-  private consecutiveIncreases: number = 0;
-  private consecutiveDecreases: number = 0;
+  // Tracking for stability
+  private consecutiveCarsPerTypeIncreases: number = 0;
+  private consecutiveCarsPerTypeDecreases: number = 0;
 
   constructor(config: PopulationControllerConfig, numCarTypes: number) {
     this.config = config;
-    this.numCarTypes = numCarTypes;
-    this.currentPopulation = config.initialPopulation;
+    this.numberOfCarTypes = numCarTypes;
+    // Convert initial population to cars per type
+    this.currentCarsPerType = config.initialPopulation / numCarTypes;
   }
 
   /**
-   * Calculate optimal population based on current performance metrics
+   * Calculate optimal population based on current performance metrics.
+   * Updates every second (60 frames at 60 FPS).
    */
   calculateOptimalPopulation(metrics: PerformanceMetrics): PopulationAdjustment {
-    this.adjustmentCounter++;
+    this.frameCounterSinceLastAdjustment++;
 
-    // Only adjust at specified intervals
-    if (this.adjustmentCounter % this.config.adjustmentInterval !== 0) {
-      return this.noChange(metrics);
+    // Only adjust every second (60 frames at 60fps)
+    if (this.frameCounterSinceLastAdjustment % this.config.adjustmentInterval !== 0) {
+      return this.returnNoChangeNeeded(metrics, 'Waiting for next adjustment interval');
     }
 
-    // Calculate FPS error (how far from target)
-    const fpsError = this.config.targetFps - metrics.currentFps;
-    const relativeError = fpsError / this.config.targetFps;
+    // SINGLE THRESHOLD LOGIC: Only one number matters - 0.1% low vs POP_THRESHOLD_FPS
+    const pointOnePercentLowFps = metrics.p0_1Fps;
 
-    // Check if we're in hysteresis zone (too close to target to adjust)
-    if (Math.abs(relativeError) < this.config.hysteresisThreshold && metrics.stability > 0.7) {
-      return this.noChange(metrics, 'Within hysteresis zone, performance stable');
+    let carsPerTypeChangeAmount = 0;
+    let adjustmentReason = '';
+
+    // Calculate min/max cars per type from config
+    const minCarsPerType = this.config.minPopulation / this.numberOfCarTypes;
+    const maxCarsPerType = this.config.maxPopulation / this.numberOfCarTypes;
+
+    // Check if we're at minimum cars per type
+    const isAtMinimumCarsPerType = this.currentCarsPerType <= minCarsPerType;
+
+    // DECREASE: 0.1% low is below threshold
+    if (pointOnePercentLowFps < POP_THRESHOLD_FPS) {
+      carsPerTypeChangeAmount = -(this.currentCarsPerType * POP_DECREASE_PERCENTAGE);
+      adjustmentReason = `0.1% low below threshold (0.1%: ${pointOnePercentLowFps.toFixed(1)}, Threshold: ${POP_THRESHOLD_FPS})`;
+    }
+    // INCREASE: 0.1% low is at or above threshold
+    else {
+      if (isAtMinimumCarsPerType) {
+        // At minimum: add fixed amount to escape quickly
+        carsPerTypeChangeAmount = POP_MINIMUM_ESCAPE_MULTIPLIER;
+        adjustmentReason = `0.1% low above threshold, escaping minimum (0.1%: ${pointOnePercentLowFps.toFixed(1)}, Threshold: ${POP_THRESHOLD_FPS})`;
+      } else {
+        // Normal: add percentage
+        carsPerTypeChangeAmount = this.currentCarsPerType * POP_INCREASE_PERCENTAGE;
+        adjustmentReason = `0.1% low above threshold (0.1%: ${pointOnePercentLowFps.toFixed(1)}, Threshold: ${POP_THRESHOLD_FPS})`;
+      }
     }
 
-    // Emergency handling: Severe performance degradation
-    // Check both current FPS and 0.1% low FPS to prevent extreme frame drops
-    const emergencyThreshold = this.config.emergencyFpsThreshold;
-    const extremeLowThreshold = this.config.targetFps / 2; // 0.1% low should never go below half target
-
-    if (metrics.currentFps < emergencyThreshold || metrics.p0_1Fps < extremeLowThreshold) {
-      const reason = metrics.p0_1Fps < extremeLowThreshold
-        ? '0.1% low FPS critically low'
-        : 'current FPS critically low';
-      return this.emergencyReduction(metrics, fpsError, reason);
+    // Apply maximum change rate constraint
+    // EXCEPT when at minimum - then we want to escape quickly
+    if (!isAtMinimumCarsPerType) {
+      const maximumAllowedCarsPerTypeChange = this.currentCarsPerType * this.config.maxChangeRate;
+      carsPerTypeChangeAmount = Math.max(-maximumAllowedCarsPerTypeChange, Math.min(maximumAllowedCarsPerTypeChange, carsPerTypeChangeAmount));
     }
 
-    // Calculate PID components
-    const proportional = this.calculateProportional(fpsError, metrics);
-    const integral = this.calculateIntegral(fpsError);
-    const derivative = this.calculateDerivative(fpsError, metrics);
+    // Calculate new cars per type with constraints (keep as decimal for precision)
+    let newCarsPerType = this.currentCarsPerType + carsPerTypeChangeAmount;
+    newCarsPerType = Math.max(minCarsPerType, Math.min(maxCarsPerType, newCarsPerType));
 
-    // Combine PID terms
-    const pidOutput = proportional + integral + derivative;
+    // Track consecutive changes for oscillation detection
+    this.updateConsecutiveChangeTracking(newCarsPerType);
 
-    // Apply predictive adjustment based on trend
-    const predictive = this.calculatePredictive(metrics);
+    // Update current cars per type
+    const actualCarsPerTypeChange = newCarsPerType - this.currentCarsPerType;
+    this.currentCarsPerType = newCarsPerType;
 
-    // Final population change (negative pidOutput = need to reduce population)
-    let populationChange = -(pidOutput + predictive);
+    // Calculate total population (rounded for actual car spawning)
+    const newTotalPopulation = Math.round(newCarsPerType * this.numberOfCarTypes);
 
-    // Apply rate limiting
-    const maxChange = this.currentPopulation * this.config.maxChangeRate;
-    populationChange = Math.max(-maxChange, Math.min(maxChange, populationChange));
-
-    // Calculate new population
-    let newPopulation = Math.round(this.currentPopulation + populationChange);
-
-    // Apply constraints
-    newPopulation = Math.max(this.config.minPopulation, Math.min(this.config.maxPopulation, newPopulation));
-
-    // Track consecutive changes for stability analysis
-    this.updateConsecutiveTracking(newPopulation);
-
-    // Update state
-    this.lastError = fpsError;
-    const actualChange = newPopulation - this.currentPopulation;
-    this.currentPopulation = newPopulation;
-
-    // Generate reason string
-    const reason = this.generateReason(actualChange, metrics, { proportional, integral, derivative, predictive });
+    // Generate user-friendly reason
+    const changeDirection = actualCarsPerTypeChange > 0 ? '⬆️ Adding' : '⬇️ Reducing';
+    const changeAmount = Math.abs(actualCarsPerTypeChange).toFixed(1);
+    const finalReason = `${changeDirection} ${changeAmount} cars/type: ${adjustmentReason}`;
 
     return {
-      totalPopulation: newPopulation,
-      populationPerType: Math.floor(newPopulation / this.numCarTypes),
-      numTypes: this.numCarTypes,
-      delta: actualChange,
-      reason,
+      totalPopulation: newTotalPopulation,
+      populationPerType: newCarsPerType,
+      numTypes: this.numberOfCarTypes,
+      delta: actualCarsPerTypeChange,
+      reason: finalReason,
       metrics: {
         fps: metrics.currentFps,
-        error: relativeError,
+        error: (POP_THRESHOLD_FPS - pointOnePercentLowFps) / POP_THRESHOLD_FPS,
         stability: metrics.stability,
         trend: metrics.trend,
         headroom: metrics.headroom
@@ -156,121 +151,22 @@ export class PopulationController {
   }
 
   /**
-   * Proportional term: Responds to current error
+   * Return when no population change is needed
    */
-  private calculateProportional(fpsError: number, metrics: PerformanceMetrics): number {
-    // Scale by stability - more aggressive when unstable
-    const stabilityFactor = 1.0 + (1.0 - metrics.stability) * 0.5;
-
-    // Additional factor based on 0.1% low FPS
-    // If 0.1% low is getting close to half target FPS, be more aggressive
-    const extremeLowThreshold = this.config.targetFps / 2;
-    const extremeLowMargin = metrics.p0_1Fps - extremeLowThreshold;
-    const extremeLowBuffer = this.config.targetFps * 0.3; // React when within 30% FPS of threshold
-
-    let extremeLowFactor = 1.0;
-    if (extremeLowMargin < extremeLowBuffer) {
-      // Scale from 1.0 to 2.0 as we approach threshold
-      extremeLowFactor = 1.0 + (1.0 - extremeLowMargin / extremeLowBuffer) * 1.0;
-    }
-
-    return this.config.kProportional * fpsError * stabilityFactor * extremeLowFactor;
-  }
-
-  /**
-   * Integral term: Accumulates error over time (eliminates steady-state error)
-   */
-  private calculateIntegral(fpsError: number): number {
-    // Accumulate error
-    this.errorIntegral += fpsError;
-
-    // Anti-windup: Clamp integral to prevent excessive accumulation
-    const maxIntegral = this.config.targetFps * 10;
-    this.errorIntegral = Math.max(-maxIntegral, Math.min(maxIntegral, this.errorIntegral));
-
-    // Decay integral when performance is good (prevent overshoot)
-    if (Math.abs(fpsError) < this.config.targetFps * 0.1) {
-      this.errorIntegral *= 0.95;
-    }
-
-    return this.config.kIntegral * this.errorIntegral;
-  }
-
-  /**
-   * Derivative term: Responds to rate of change (damping)
-   */
-  private calculateDerivative(fpsError: number, metrics: PerformanceMetrics): number {
-    const errorRate = fpsError - this.lastError;
-
-    // Use trend as additional derivative signal
-    const trendComponent = metrics.trend * this.config.targetFps * 0.1;
-
-    return this.config.kDerivative * (errorRate - trendComponent);
-  }
-
-  /**
-   * Predictive term: Anticipate future needs based on trends
-   */
-  private calculatePredictive(metrics: PerformanceMetrics): number {
-    // If performance is degrading, reduce population preemptively
-    if (metrics.trend < -0.3 && metrics.headroom < 0.3) {
-      return this.currentPopulation * 0.05; // Reduce by 5%
-    }
-
-    // If performance is improving with headroom, can add population
-    if (metrics.trend > 0.3 && metrics.headroom > 0.7 && metrics.stability > 0.8) {
-      return -this.currentPopulation * 0.03; // Increase by 3%
-    }
-
-    return 0;
-  }
-
-  /**
-   * Emergency reduction when performance is critical
-   */
-  private emergencyReduction(metrics: PerformanceMetrics, fpsError: number, triggerReason: string = 'current FPS critically low'): PopulationAdjustment {
-    // Aggressive reduction: 20-40% depending on severity
-    const severity = Math.min(1, fpsError / this.config.emergencyFpsThreshold);
-    const reductionFactor = 0.2 + severity * 0.2;
-
-    const newPopulation = Math.max(
-      this.config.minPopulation,
-      Math.round(this.currentPopulation * (1 - reductionFactor))
-    );
-
-    const delta = newPopulation - this.currentPopulation;
-    this.currentPopulation = newPopulation;
-    this.errorIntegral = 0; // Reset integral to prevent windup
-
+  private returnNoChangeNeeded(
+    metrics: PerformanceMetrics,
+    reason: string
+  ): PopulationAdjustment {
+    const totalPopulation = Math.round(this.currentCarsPerType * this.numberOfCarTypes);
     return {
-      totalPopulation: newPopulation,
-      populationPerType: Math.floor(newPopulation / this.numCarTypes),
-      numTypes: this.numCarTypes,
-      delta,
-      reason: `🚨 EMERGENCY: ${triggerReason} (curr: ${metrics.currentFps.toFixed(1)}, 0.1%: ${metrics.p0_1Fps.toFixed(1)}), reducing ${Math.abs(delta)} cars`,
-      metrics: {
-        fps: metrics.currentFps,
-        error: fpsError / this.config.targetFps,
-        stability: metrics.stability,
-        trend: metrics.trend,
-        headroom: metrics.headroom
-      }
-    };
-  }
-
-  /**
-   * No change needed
-   */
-  private noChange(metrics: PerformanceMetrics, reason: string = 'Not adjustment interval'): PopulationAdjustment {
-    return {
-      totalPopulation: this.currentPopulation,
-      populationPerType: Math.floor(this.currentPopulation / this.numCarTypes),
-      numTypes: this.numCarTypes,
+      totalPopulation: totalPopulation,
+      populationPerType: this.currentCarsPerType,
+      numTypes: this.numberOfCarTypes,
       delta: 0,
       reason,
       metrics: {
         fps: metrics.currentFps,
-        error: (this.config.targetFps - metrics.currentFps) / this.config.targetFps,
+        error: (POP_THRESHOLD_FPS - metrics.p0_1Fps) / POP_THRESHOLD_FPS,
         stability: metrics.stability,
         trend: metrics.trend,
         headroom: metrics.headroom
@@ -279,101 +175,63 @@ export class PopulationController {
   }
 
   /**
-   * Generate human-readable reason for adjustment
+   * Track consecutive cars per type increases/decreases to detect oscillation
    */
-  private generateReason(
-    delta: number,
-    metrics: PerformanceMetrics,
-    pidComponents: { proportional: number; integral: number; derivative: number; predictive: number }
-  ): string {
-    if (delta === 0) {
-      return `Stable at ${this.currentPopulation} cars (FPS: ${metrics.currentFps.toFixed(1)})`;
-    }
-
-    const direction = delta > 0 ? '⬆️ Adding' : '⬇️ Reducing';
-    const amount = Math.abs(delta);
-
-    // Determine primary reason
-    let primaryReason = '';
-    const absComponents = {
-      proportional: Math.abs(pidComponents.proportional),
-      integral: Math.abs(pidComponents.integral),
-      derivative: Math.abs(pidComponents.derivative),
-      predictive: Math.abs(pidComponents.predictive)
-    };
-
-    const maxComponent = Math.max(
-      absComponents.proportional,
-      absComponents.integral,
-      absComponents.derivative,
-      absComponents.predictive
-    );
-
-    if (maxComponent === absComponents.proportional) {
-      primaryReason = delta < 0 ? 'FPS below target' : 'FPS above target';
-    } else if (maxComponent === absComponents.integral) {
-      primaryReason = 'Persistent performance gap';
-    } else if (maxComponent === absComponents.derivative) {
-      primaryReason = metrics.trend < 0 ? 'Performance degrading' : 'Performance improving';
+  private updateConsecutiveChangeTracking(newCarsPerType: number): void {
+    if (newCarsPerType > this.currentCarsPerType) {
+      this.consecutiveCarsPerTypeIncreases++;
+      this.consecutiveCarsPerTypeDecreases = 0;
+    } else if (newCarsPerType < this.currentCarsPerType) {
+      this.consecutiveCarsPerTypeDecreases++;
+      this.consecutiveCarsPerTypeIncreases = 0;
     } else {
-      primaryReason = metrics.trend < 0 ? 'Predicted degradation' : 'Predicted headroom';
+      this.consecutiveCarsPerTypeIncreases = 0;
+      this.consecutiveCarsPerTypeDecreases = 0;
     }
 
-    return `${direction} ${amount} cars: ${primaryReason} (FPS: ${metrics.currentFps.toFixed(1)}, Stability: ${(metrics.stability * 100).toFixed(0)}%)`;
-  }
+    // If oscillating excessively (changing direction repeatedly), stabilize
+    const isOscillatingExcessively =
+      this.consecutiveCarsPerTypeIncreases > 5 ||
+      this.consecutiveCarsPerTypeDecreases > 5;
 
-  /**
-   * Track consecutive increases/decreases for stability monitoring
-   */
-  private updateConsecutiveTracking(newPopulation: number): void {
-    if (newPopulation > this.currentPopulation) {
-      this.consecutiveIncreases++;
-      this.consecutiveDecreases = 0;
-    } else if (newPopulation < this.currentPopulation) {
-      this.consecutiveDecreases++;
-      this.consecutiveIncreases = 0;
-    } else {
-      this.consecutiveIncreases = 0;
-      this.consecutiveDecreases = 0;
-    }
-
-    // If oscillating too much, increase hysteresis
-    if (this.consecutiveIncreases > 5 || this.consecutiveDecreases > 5) {
-      // Reset to break the pattern
-      this.errorIntegral *= 0.5;
-      this.consecutiveIncreases = 0;
-      this.consecutiveDecreases = 0;
+    if (isOscillatingExcessively) {
+      // Reset counters to break the oscillation pattern
+      this.consecutiveCarsPerTypeIncreases = 0;
+      this.consecutiveCarsPerTypeDecreases = 0;
     }
   }
 
   /**
-   * Get current population
+   * Get current total population across all car types
    */
   getPopulation(): number {
-    return this.currentPopulation;
+    return Math.round(this.currentCarsPerType * this.numberOfCarTypes);
   }
 
   /**
-   * Set population directly (e.g., for manual override)
+   * Get current cars per type (can be decimal)
    */
-  setPopulation(population: number): void {
-    this.currentPopulation = Math.max(
-      this.config.minPopulation,
-      Math.min(this.config.maxPopulation, population)
-    );
-    this.errorIntegral = 0; // Reset PID state
-    this.lastError = 0;
+  getCarsPerType(): number {
+    return this.currentCarsPerType;
   }
 
   /**
-   * Reset controller state
+   * Set population directly (e.g., for manual override or initial setup)
+   */
+  setPopulation(newPopulation: number): void {
+    const minCarsPerType = this.config.minPopulation / this.numberOfCarTypes;
+    const maxCarsPerType = this.config.maxPopulation / this.numberOfCarTypes;
+    const newCarsPerType = newPopulation / this.numberOfCarTypes;
+    this.currentCarsPerType = Math.max(minCarsPerType, Math.min(maxCarsPerType, newCarsPerType));
+  }
+
+  /**
+   * Reset controller to initial state
    */
   reset(): void {
-    this.currentPopulation = this.config.initialPopulation;
-    this.errorIntegral = 0;
-    this.lastError = 0;
-    this.adjustmentCounter = 0;
-    this.consecutiveIncreases = 0;
-    this.consecutiveDecreases = 0;
+    this.currentCarsPerType = this.config.initialPopulation / this.numberOfCarTypes;
+    this.frameCounterSinceLastAdjustment = 0;
+    this.consecutiveCarsPerTypeIncreases = 0;
+    this.consecutiveCarsPerTypeDecreases = 0;
   }
 }

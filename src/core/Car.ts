@@ -23,10 +23,10 @@ import {
   CENTERLINE_RAY_HIT_COLOR,
   SENSOR_RAY_PAIRS,
   SHOW_CAR_PERCENTAGES,
-  CAR_BRAIN_CONFIGS_DEFINED,
   RAY_VISUALIZATION_WIDTH,
   RAY_VISUALIZATION_HIT_RADIUS,
 } from '@/config';
+import { CAR_BRAIN_CONFIGS_DEFINED } from './config_cars';
 
 export class Car {
   // Position and motion

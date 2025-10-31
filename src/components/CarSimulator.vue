@@ -60,7 +60,7 @@
                 <th>{{ isMobile ? 'MUT' : 'NEXT MUT' }}</th>
                 <th>Mean</th>
                 <th>Best</th>
-                <th>Lap</th>
+                <th>Duration</th>
                 <th>Hidden</th>
                 <th>{{ isMobile ? 'A' : 'Activ' }}</th>
                 <th>{{ isMobile ? 'I' : 'Input' }}</th>
@@ -163,24 +163,34 @@
                 </thead>
                 <tbody>
                   <tr>
-                    <td class="label-cell">Current FPS</td>
-                    <td class="value-cell">{{ currentFps }}</td>
+                    <td class="label-cell">FPS Avg</td>
+                    <td class="value-cell">{{ currentFps.toFixed(1) }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">Target FPS</td>
-                    <td class="value-cell">{{ fpsTarget }}</td>
+                    <td class="label-cell">FPS 0.1% High</td>
+                    <td class="value-cell">{{ fpsTarget.toFixed(1) }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">0.1% Low</td>
-                    <td class="value-cell">{{ fps0_1PercentLow }}</td>
+                    <td class="label-cell">FPS 1% High</td>
+                    <td class="value-cell">{{ fps1PercentHigh.toFixed(1) }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">1% Low</td>
-                    <td class="value-cell">{{ fps1PercentLow }}</td>
+                    <td class="label-cell">FPS 5% High</td>
+                    <td class="value-cell">{{ fps5PercentHigh.toFixed(1) }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">5% Low</td>
-                    <td class="value-cell">{{ fps5PercentLow }}</td>
+                    <td class="label-cell">FPS 0.1% Low</td>
+                    <td class="value-cell">
+                      {{ fps0_1PercentLow.toFixed(1) }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">FPS 1% Low</td>
+                    <td class="value-cell">{{ fps1PercentLow.toFixed(1) }}</td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">FPS 5% Low</td>
+                    <td class="value-cell">{{ fps5PercentLow.toFixed(1) }}</td>
                   </tr>
                   <tr>
                     <td class="label-cell">Frame Time</td>
@@ -206,8 +216,28 @@
                 </thead>
                 <tbody>
                   <tr>
-                    <td class="label-cell">Target/Type</td>
-                    <td class="value-cell">{{ targetPopulationPerType }}</td>
+                    <td class="label-cell">Performance Target per Type</td>
+                    <td class="value-cell">
+                      {{ actualPerformanceTargetPerType.toFixed(1) }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">PTPT Up</td>
+                    <td class="value-cell">
+                      {{ performanceTargetCarsPerType.toFixed(1) }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">PTPT Down</td>
+                    <td class="value-cell">
+                      {{ performanceTargetCarsPerTypeDown.toFixed(1) }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="label-cell">Average Cars per Type</td>
+                    <td class="value-cell">
+                      {{ averageCarsPerType.toFixed(1) }}
+                    </td>
                   </tr>
                   <tr>
                     <td class="label-cell">Total Cars</td>
@@ -285,10 +315,9 @@ import type {
   ActivationType,
   SpeedMultiplier,
 } from '@/types';
+import { SPEED_MULTIPLIERS } from '@/types';
 import {
   TRACK_WIDTH_HALF,
-  CAR_BRAIN_CONFIGS,
-  CAR_BRAIN_CONFIGS_DEFINED,
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
   GENERATION_MARKER_RADIUS,
@@ -306,21 +335,22 @@ import {
   PERFORMANCE_MANAGEMENT_ENABLED,
   PERF_TARGET_FPS,
   PERF_HISTORY_SIZE,
+  PERF_UI_UPDATE_INTERVAL,
+  FPS_CALC_SAVED_WEIGHT,
   POP_INITIAL,
   POP_MIN,
   POP_MAX,
-  PID_KP,
-  PID_KI,
-  PID_KD,
   POP_MAX_CHANGE_RATE,
   POP_ADJUSTMENT_INTERVAL,
-  POP_HYSTERESIS_THRESHOLD,
-  PERF_EMERGENCY_FPS,
-  PERF_SAFE_FPS,
+  POP_THRESHOLD_FPS,
+  POP_AVERAGE_INITIAL,
+  POP_AVERAGE_UPDATE_INTERVAL,
+  POP_AVERAGE_SAVED_WEIGHT,
   GRAPH_GENERATION_USE_LOG_SCALE,
   print,
   wp,
 } from '@/config';
+import { CAR_BRAIN_CONFIGS, CAR_BRAIN_CONFIGS_DEFINED } from '@/core/config_cars';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
@@ -366,32 +396,34 @@ const performanceMonitor = new PerformanceMonitor(
   PERF_HISTORY_SIZE
 );
 
-// Population Controller: PID-based adaptive population management
+// Population Controller: Single-threshold adaptive population management (works with cars per type)
 const populationController = new PopulationController(
   {
     targetFps: PERF_TARGET_FPS,
     minPopulation: POP_MIN,
     maxPopulation: POP_MAX,
     initialPopulation: POP_INITIAL,
-    kProportional: PID_KP,
-    kIntegral: PID_KI,
-    kDerivative: PID_KD,
     maxChangeRate: POP_MAX_CHANGE_RATE,
     adjustmentInterval: POP_ADJUSTMENT_INTERVAL,
-    hysteresisThreshold: POP_HYSTERESIS_THRESHOLD,
-    emergencyFpsThreshold: PERF_EMERGENCY_FPS,
-    safeFpsThreshold: PERF_SAFE_FPS,
   },
   CAR_BRAIN_CONFIGS.length
 ); // Initial setup uses default active configs
 
 // UI state (for reactive display)
 const currentFps = ref(60);
-const targetPopulationPerType = ref(
-  Math.floor(POP_INITIAL / CAR_BRAIN_CONFIGS.length)
+const performanceTargetCarsPerType = ref(
+  POP_INITIAL / CAR_BRAIN_CONFIGS.length
+);
+const averageCarsPerType = ref(POP_AVERAGE_INITIAL);
+let averageCarsPerTypeFrameCounter = 0; // Frame counter for average update interval
+const performanceTargetCarsPerTypeDown = computed(
+  () => averageCarsPerType.value * 0.9 // 10% below average
+);
+const actualPerformanceTargetPerType = ref(
+  POP_INITIAL / CAR_BRAIN_CONFIGS.length
 );
 const targetPopulationTotal = computed(
-  () => targetPopulationPerType.value * activeCarConfigs.value.length
+  () => performanceTargetCarsPerType.value * activeCarConfigs.value.length
 );
 const performanceStability = ref(1.0);
 const performanceTrend = ref(0);
@@ -410,7 +442,9 @@ const HISTORY_SIZE = 60;
 
 // Population control state
 const adaptivePopulation = ref(PERFORMANCE_MANAGEMENT_ENABLED);
-const fpsTarget = ref(PERF_TARGET_FPS);
+const fpsTarget = ref(0); // Will be set dynamically based on 0.1% high (99.9th percentile)
+const fps1PercentHigh = ref(0); // 99th percentile (1% high)
+const fps5PercentHigh = ref(0); // 95th percentile (5% high)
 
 // Dynamic generation tracking for all config types
 const generationTimeByConfigId = ref<Map<string, number>>(new Map());
@@ -631,7 +665,7 @@ const getBestLapTime = (shortName: string): string => {
   if (lapTime === Infinity) {
     return '-'; // Em dash for no lap completed
   }
-  return lapTime.toFixed(3) + 's';
+  return lapTime.toFixed(1) + 's';
 };
 
 // Cycle through views: table -> graph -> performance -> table
@@ -649,7 +683,7 @@ const cycleView = () => {
 const init = () => {
   // Initialize with target population (PID controller will adapt based on performance)
   print(
-    `[Init] Starting with ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | PID-based adaptive control enabled`
+    `[Init] Starting with ${targetPopulationTotal.value} cars (${performanceTargetCarsPerType.value} per type) | PID-based adaptive control enabled`
   );
 
   population.value = ga.value.initializePopulation(
@@ -688,7 +722,8 @@ const evolvePopulationByConfig = (
 
   // Save best position as marker (with fitness)
   if (bestCar) {
-    const markers = generationMarkersByConfigId.value.get(config.shortName) ?? [];
+    const markers =
+      generationMarkersByConfigId.value.get(config.shortName) ?? [];
     markers.push({
       x: bestCar.x,
       y: bestCar.y,
@@ -705,10 +740,24 @@ const evolvePopulationByConfig = (
   }
 
   // Evolve this population with per-type target population (based on current FPS)
-  const generationTime = generationTimeByConfigId.value.get(config.shortName) ?? 0;
+  const generationTime =
+    generationTimeByConfigId.value.get(config.shortName) ?? 0;
+
+  // Use "Up" target if above threshold, "Down" target if below threshold
+  const targetCarsPerType =
+    fps0_1PercentLow.value >= POP_THRESHOLD_FPS
+      ? performanceTargetCarsPerType.value
+      : performanceTargetCarsPerTypeDown.value;
+
+  // Update the actual performance target being used
+  actualPerformanceTargetPerType.value = targetCarsPerType;
 
   print(
-    `[Evolution] ${config.displayName}: ${targetPopulationPerType.value} cars for this type | Total: ${targetPopulationTotal.value} | Target: ${fpsTarget.value} FPS`
+    `[Evolution] ${config.displayName}: ${targetCarsPerType.toFixed(
+      1
+    )} cars for this type | Total: ${targetPopulationTotal.value} | Target: ${
+      fpsTarget.value
+    } FPS`
   );
 
   const newCars = ga.value.evolvePopulation(
@@ -718,7 +767,7 @@ const evolvePopulationByConfig = (
     generationTime,
     winnerCar,
     mutationByDistance.value,
-    targetPopulationPerType.value
+    targetCarsPerType
   );
   generationTimeByConfigId.value.set(config.shortName, 0);
   lapCompletionTimeByConfigId.value.set(config.shortName, Infinity); // Reset lap time for new generation
@@ -765,7 +814,10 @@ const updatePhysics = (dt: number) => {
               generationTimeByConfigId.value.get(config.shortName) ?? 0;
 
             // Record current generation lap time
-            lapCompletionTimeByConfigId.value.set(config.shortName, completionTime);
+            lapCompletionTimeByConfigId.value.set(
+              config.shortName,
+              completionTime
+            );
 
             // Update best lap time if this is better
             const bestLapTime =
@@ -820,13 +872,16 @@ const updatePhysics = (dt: number) => {
 
   // Update generation times for active config types
   for (const config of activeCarConfigs.value) {
-    const currentTime = generationTimeByConfigId.value.get(config.shortName) ?? 0;
+    const currentTime =
+      generationTimeByConfigId.value.get(config.shortName) ?? 0;
     generationTimeByConfigId.value.set(config.shortName, currentTime + dt);
   }
 
   // Check each config population independently for all-dead condition
   for (const config of activeCarConfigs.value) {
-    const configCars = population.value.filter((c) => c.configShortName === config.shortName);
+    const configCars = population.value.filter(
+      (c) => c.configShortName === config.shortName
+    );
     const allDead = configCars.every((c) => !c.alive);
 
     if (allDead && configCars.length > 0) {
@@ -884,7 +939,8 @@ const render = (ctx: CanvasRenderingContext2D) => {
   ctx.textBaseline = 'bottom';
 
   for (const config of activeCarConfigs.value) {
-    const markers = generationMarkersByConfigId.value.get(config.shortName) ?? [];
+    const markers =
+      generationMarkersByConfigId.value.get(config.shortName) ?? [];
     ctx.fillStyle = config.colors.dark;
 
     for (const marker of markers) {
@@ -945,18 +1001,76 @@ const updatePerformanceMetrics = (updateTime: number, renderTime: number) => {
     renderTimeHistory.shift();
   }
 
-  // Update UI metrics (every 10 frames to reduce overhead)
-  if (updateTimeHistory.length % 10 === 0) {
+  // Update UI metrics (configurable interval via PERF_UI_UPDATE_INTERVAL)
+  if (updateTimeHistory.length % PERF_UI_UPDATE_INTERVAL === 0) {
     const metrics = performanceMonitor.getMetrics();
 
-    currentFps.value = Math.round(metrics.currentFps);
+    // FPS Avg: Always use exponential moving average
+    currentFps.value =
+      metrics.currentFps * (1 - FPS_CALC_SAVED_WEIGHT) +
+      currentFps.value * FPS_CALC_SAVED_WEIGHT;
+
     avgFrameTime.value = metrics.frameTimeMs;
     performanceStability.value = metrics.stability;
     performanceTrend.value = metrics.trend;
     performanceHeadroom.value = metrics.headroom;
-    fps0_1PercentLow.value = Math.round(metrics.p0_1Fps);
-    fps1PercentLow.value = Math.round(metrics.p1Fps);
-    fps5PercentLow.value = Math.round(metrics.p5Fps);
+
+    // FPS Low trackers: Immediately jump to lower values, gradually rise with higher values
+    if (
+      metrics.p0_1Fps < fps0_1PercentLow.value ||
+      fps0_1PercentLow.value === 0
+    ) {
+      fps0_1PercentLow.value = metrics.p0_1Fps; // Immediate drop
+    } else {
+      fps0_1PercentLow.value =
+        metrics.p0_1Fps * (1 - FPS_CALC_SAVED_WEIGHT) +
+        fps0_1PercentLow.value * FPS_CALC_SAVED_WEIGHT; // Gradual rise
+    }
+
+    if (metrics.p1Fps < fps1PercentLow.value || fps1PercentLow.value === 0) {
+      fps1PercentLow.value = metrics.p1Fps; // Immediate drop
+    } else {
+      fps1PercentLow.value =
+        metrics.p1Fps * (1 - FPS_CALC_SAVED_WEIGHT) +
+        fps1PercentLow.value * FPS_CALC_SAVED_WEIGHT; // Gradual rise
+    }
+
+    if (metrics.p5Fps < fps5PercentLow.value || fps5PercentLow.value === 0) {
+      fps5PercentLow.value = metrics.p5Fps; // Immediate drop
+    } else {
+      fps5PercentLow.value =
+        metrics.p5Fps * (1 - FPS_CALC_SAVED_WEIGHT) +
+        fps5PercentLow.value * FPS_CALC_SAVED_WEIGHT; // Gradual rise
+    }
+
+    // FPS High trackers: Immediately jump to higher values, gradually decay with lower values
+    // FPS 0.1% High (99.9th percentile)
+    if (metrics.p99_9Fps > fpsTarget.value) {
+      fpsTarget.value = metrics.p99_9Fps; // Immediate rise
+    } else {
+      fpsTarget.value =
+        metrics.p99_9Fps * (1 - FPS_CALC_SAVED_WEIGHT) +
+        fpsTarget.value * FPS_CALC_SAVED_WEIGHT; // Gradual decay
+    }
+
+    // FPS 1% High (99th percentile)
+    if (metrics.p99Fps > fps1PercentHigh.value) {
+      fps1PercentHigh.value = metrics.p99Fps; // Immediate rise
+    } else {
+      fps1PercentHigh.value =
+        metrics.p99Fps * (1 - FPS_CALC_SAVED_WEIGHT) +
+        fps1PercentHigh.value * FPS_CALC_SAVED_WEIGHT; // Gradual decay
+    }
+
+    // FPS 5% High (95th percentile)
+    if (metrics.p95Fps > fps5PercentHigh.value) {
+      fps5PercentHigh.value = metrics.p95Fps; // Immediate rise
+    } else {
+      fps5PercentHigh.value =
+        metrics.p95Fps * (1 - FPS_CALC_SAVED_WEIGHT) +
+        fps5PercentHigh.value * FPS_CALC_SAVED_WEIGHT; // Gradual decay
+    }
+
     avgUpdateTime.value =
       updateTimeHistory.reduce((a, b) => a + b, 0) / updateTimeHistory.length;
     avgRenderTime.value =
@@ -981,7 +1095,7 @@ const adjustPopulationSize = () => {
   const adjustment = populationController.calculateOptimalPopulation(metrics);
 
   // Update UI state (per-type population)
-  targetPopulationPerType.value = adjustment.populationPerType;
+  performanceTargetCarsPerType.value = adjustment.populationPerType;
 
   // Log adjustment details
   if (adjustment.delta !== 0) {
@@ -1038,6 +1152,20 @@ const animate = () => {
   // Adjust population using PID controller (runs at its own interval)
   adjustPopulationSize();
 
+  // Update average cars per type using exponential moving average
+  // Only update based on configured interval
+  averageCarsPerTypeFrameCounter++;
+  if (averageCarsPerTypeFrameCounter >= POP_AVERAGE_UPDATE_INTERVAL) {
+    averageCarsPerTypeFrameCounter = 0;
+    // Calculate actual alive cars per type from alive car count
+    const currentAliveCarsPerType =
+      aliveCars.value / activeCarConfigs.value.length;
+    // Formula: saved_average = new_value * NEW_WEIGHT + saved_average * SAVED_WEIGHT
+    averageCarsPerType.value =
+      currentAliveCarsPerType * (1 - POP_AVERAGE_SAVED_WEIGHT) +
+      averageCarsPerType.value * POP_AVERAGE_SAVED_WEIGHT;
+  }
+
   // Increment frame counter for Vue reactivity
   frameCounter.value++;
 
@@ -1061,7 +1189,7 @@ const reset = () => {
   ga.value = new GeneticAlgorithm(randomSeed);
 
   print(
-    `[Reset] Re-creating ${targetPopulationTotal.value} cars (${targetPopulationPerType.value} per type) | Target: ${fpsTarget.value} FPS`
+    `[Reset] Re-creating ${targetPopulationTotal.value} cars (${performanceTargetCarsPerType.value} per type) | Target: ${fpsTarget.value} FPS`
   );
 
   population.value = ga.value.initializePopulation(
@@ -1084,9 +1212,13 @@ const reset = () => {
   frameCounter.value = 0;
 
   // Reset target population to initial value
-  targetPopulationPerType.value = Math.floor(
-    POP_INITIAL / activeCarConfigs.value.length
-  );
+  performanceTargetCarsPerType.value =
+    POP_INITIAL / activeCarConfigs.value.length;
+  actualPerformanceTargetPerType.value =
+    POP_INITIAL / activeCarConfigs.value.length;
+  // Reset average cars per type to initial configured value
+  averageCarsPerType.value = POP_AVERAGE_INITIAL;
+  averageCarsPerTypeFrameCounter = 0;
 };
 
 // Toggle Kill Backwards mode
@@ -1114,12 +1246,11 @@ const toggleDelayedSteering = () => {
   delayedSteering.value = !delayedSteering.value;
 };
 
-// Toggle Car Speed (cycle through 1x, 2x, 5x, 10x)
+// Toggle Car Speed (cycle through speed multipliers)
 const toggleCarSpeed = () => {
-  const speeds: SpeedMultiplier[] = [1, 2, 5, 10];
-  const currentIndex = speeds.indexOf(carSpeedMultiplier.value);
-  const nextIndex = (currentIndex + 1) % speeds.length;
-  carSpeedMultiplier.value = speeds[nextIndex];
+  const currentIndex = SPEED_MULTIPLIERS.indexOf(carSpeedMultiplier.value);
+  const nextIndex = (currentIndex + 1) % SPEED_MULTIPLIERS.length;
+  carSpeedMultiplier.value = SPEED_MULTIPLIERS[nextIndex];
   print(`[Speed] Car speed set to ${carSpeedMultiplier.value}x`);
 };
 
@@ -1157,7 +1288,8 @@ const renderGraph = () => {
     new Map();
 
   for (const config of activeCarConfigs.value) {
-    const markers = generationMarkersByConfigId.value.get(config.shortName) ?? [];
+    const markers =
+      generationMarkersByConfigId.value.get(config.shortName) ?? [];
     if (markers.length === 0) continue;
 
     const history: { generation: number; score: number }[] = [];

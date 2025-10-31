@@ -5,6 +5,17 @@ import type {
   CarBrainConfig,
   SpeedMultiplier,
 } from './types';
+import {
+  SENSOR_RAY_ANGLES,
+  SENSOR_RAY_PAIRS,
+  NN_ARCH_SMALL,
+  NN_ARCH_MEDIUM,
+  NN_ARCH_LARGE,
+  NN_ARCH_DIFF_SMALL,
+  NN_ARCH_DIFF_MEDIUM,
+  NN_ARCH_DIFF_LARGE,
+} from './config_nn';
+import { CAR_BRAIN_CONFIGS } from './core/config_cars';
 
 export type { Point, InputModificationType, ActivationType, CarBrainConfig };
 
@@ -73,31 +84,17 @@ export const CAR_WIDTH = 10;
 export const CAR_HEIGHT = 20;
 export const CAR_START_ANGLE_WIGGLE = Math.PI / 16;
 
-export const SENSOR_RAY_ANGLES = [
-  0,
-  -Math.PI / 9,
-  Math.PI / 9,
-  -Math.PI / 4.5,
-  Math.PI / 4.5,
-  -Math.PI / 3,
-  Math.PI / 3,
-  -Math.PI / 2,
-  Math.PI / 2,
-];
-
-export const SENSOR_RAY_PAIRS = [
-  [1, 2],
-  [3, 4],
-  [5, 6],
-  [7, 8],
-];
-
-export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 1];
-export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 3, 1];
-export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 3, 2, 1];
-export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 1];
-export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 3, 1];
-export const NN_ARCH_DIFF_LARGE = [1 + SENSOR_RAY_PAIRS.length, 3, 2, 1];
+// Re-export constants from config_nn.ts
+export {
+  SENSOR_RAY_ANGLES,
+  SENSOR_RAY_PAIRS,
+  NN_ARCH_SMALL,
+  NN_ARCH_MEDIUM,
+  NN_ARCH_LARGE,
+  NN_ARCH_DIFF_SMALL,
+  NN_ARCH_DIFF_MEDIUM,
+  NN_ARCH_DIFF_LARGE,
+};
 
 export const NEURAL_NETWORK_ARCHITECTURE = NN_ARCH_DIFF_MEDIUM;
 
@@ -105,350 +102,66 @@ export const NEURAL_NETWORK_ARCHITECTURE = NN_ARCH_DIFF_MEDIUM;
 export const RAY_VISUALIZATION_WIDTH = 0.5;
 export const RAY_VISUALIZATION_HIT_RADIUS = 3;
 
-export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
-  // === None/Raw (no hidden layers, no activation function) ===
-  {
-    useCar: true,
-    displayName: 'Pico',
-    shortName: 'PC',
-    description: 'No hidden layers, differential inputs (1 fwd + 4 L-R pairs)',
-    nn: {
-      architecture: NN_ARCH_DIFF_SMALL,
-      inputModification: 'pair',
-      activationType: '-',
-    },
-    colors: {
-      light: '#cccccc',
-      dark: '#999999',
-    },
-  },
-  {
-    useCar: true,
-    displayName: 'Nano',
-    shortName: 'NA',
-    description: 'No hidden layers, direct raw sensor inputs (9 rays)',
-    nn: {
-      architecture: NN_ARCH_SMALL,
-      inputModification: 'dir',
-      activationType: '-',
-    },
-    colors: {
-      light: '#aaaaaa',
-      dark: '#777777',
-    },
-  },
-
-  // === Linear activation (orange/yellow family) ===
-  {
-    useCar: true,
-    displayName: 'Spark',
-    shortName: 'SP',
-    description: 'Linear activation, differential inputs, 1 hidden layer (3)',
-    nn: {
-      architecture: NN_ARCH_DIFF_MEDIUM,
-      inputModification: 'pair',
-      activationType: 'linear',
-    },
-    colors: {
-      light: '#cc8833',
-      dark: '#995522',
-    },
-  },
-  {
-    useCar: false,
-    displayName: 'Flame',
-    shortName: 'FL',
-    description: 'Linear activation, differential inputs, 2 hidden layers (3, 2)',
-    nn: {
-      architecture: NN_ARCH_DIFF_LARGE,
-      inputModification: 'pair',
-      activationType: 'linear',
-    },
-    colors: {
-      light: '#aa6611',
-      dark: '#774400',
-    },
-  },
-  {
-    useCar: true,
-    displayName: 'Glow',
-    shortName: 'GL',
-    description: 'Linear activation, direct inputs, 1 hidden layer (3)',
-    nn: {
-      architecture: NN_ARCH_MEDIUM,
-      inputModification: 'dir',
-      activationType: 'linear',
-    },
-    colors: {
-      light: '#ccaa33',
-      dark: '#997722',
-    },
-  },
-  {
-    useCar: false,
-    displayName: 'Shine',
-    shortName: 'SH',
-    description: 'Linear activation, direct inputs, 2 hidden layers (3, 2)',
-    nn: {
-      architecture: NN_ARCH_LARGE,
-      inputModification: 'dir',
-      activationType: 'linear',
-    },
-    colors: {
-      light: '#aa8811',
-      dark: '#775500',
-    },
-  },
-
-  // === ReLU activation (blue family) ===
-  {
-    useCar: false,
-    displayName: 'Drop',
-    shortName: 'DR',
-    description: 'ReLU activation, differential inputs, 1 hidden layer (3)',
-    nn: {
-      architecture: NN_ARCH_DIFF_MEDIUM,
-      inputModification: 'pair',
-      activationType: 'relu',
-    },
-    colors: {
-      light: '#5588cc',
-      dark: '#336699',
-    },
-  },
-  {
-    useCar: false,
-    displayName: 'Wave',
-    shortName: 'WV',
-    description: 'ReLU activation, differential inputs, 2 hidden layers (3, 2)',
-    nn: {
-      architecture: NN_ARCH_DIFF_LARGE,
-      inputModification: 'pair',
-      activationType: 'relu',
-    },
-    colors: {
-      light: '#3366aa',
-      dark: '#224477',
-    },
-  },
-  {
-    useCar: false,
-    displayName: 'Mist',
-    shortName: 'MI',
-    description: 'ReLU activation, direct inputs, 1 hidden layer (3)',
-    nn: {
-      architecture: NN_ARCH_MEDIUM,
-      inputModification: 'dir',
-      activationType: 'relu',
-    },
-    colors: {
-      light: '#55aacc',
-      dark: '#338899',
-    },
-  },
-  {
-    useCar: false,
-    displayName: 'Tide',
-    shortName: 'TD',
-    description: 'ReLU activation, direct inputs, 2 hidden layers (3, 2)',
-    nn: {
-      architecture: NN_ARCH_LARGE,
-      inputModification: 'dir',
-      activationType: 'relu',
-    },
-    colors: {
-      light: '#3388aa',
-      dark: '#226677',
-    },
-  },
-
-  // === GELU activation (green/cyan family) ===
-  {
-    useCar: true,
-    displayName: 'Leaf',
-    shortName: 'LF',
-    description: 'GELU activation, differential inputs, 1 hidden layer (3)',
-    nn: {
-      architecture: NN_ARCH_DIFF_MEDIUM,
-      inputModification: 'pair',
-      activationType: 'gelu',
-    },
-    colors: {
-      light: '#44cc88',
-      dark: '#229955',
-    },
-  },
-  {
-    useCar: false,
-    displayName: 'Vine',
-    shortName: 'VN',
-    description: 'GELU activation, differential inputs, 2 hidden layers (3, 2)',
-    nn: {
-      architecture: NN_ARCH_DIFF_LARGE,
-      inputModification: 'pair',
-      activationType: 'gelu',
-    },
-    colors: {
-      light: '#22aa66',
-      dark: '#117733',
-    },
-  },
-  {
-    useCar: true,
-    displayName: 'Moss',
-    shortName: 'MS',
-    description: 'GELU activation, direct inputs, 1 hidden layer (3)',
-    nn: {
-      architecture: NN_ARCH_MEDIUM,
-      inputModification: 'dir',
-      activationType: 'gelu',
-    },
-    colors: {
-      light: '#44ccaa',
-      dark: '#229977',
-    },
-  },
-  {
-    useCar: false,
-    displayName: 'Fern',
-    shortName: 'FN',
-    description: 'GELU activation, direct inputs, 2 hidden layers (3, 2)',
-    nn: {
-      architecture: NN_ARCH_LARGE,
-      inputModification: 'dir',
-      activationType: 'gelu',
-    },
-    colors: {
-      light: '#22aa88',
-      dark: '#117755',
-    },
-  },
-
-  // === Step activation (purple/magenta family) ===
-  {
-    useCar: false,
-    displayName: 'Bit',
-    shortName: 'BT',
-    description: 'Step activation, differential inputs, 1 hidden layer (3)',
-    nn: {
-      architecture: NN_ARCH_DIFF_MEDIUM,
-      inputModification: 'pair',
-      activationType: 'step',
-    },
-    colors: {
-      light: '#cc55cc',
-      dark: '#993399',
-    },
-  },
-  {
-    useCar: false,
-    displayName: 'Byte',
-    shortName: 'BY',
-    description: 'Step activation, differential inputs, 2 hidden layers (3, 2)',
-    nn: {
-      architecture: NN_ARCH_DIFF_LARGE,
-      inputModification: 'pair',
-      activationType: 'step',
-    },
-    colors: {
-      light: '#aa33aa',
-      dark: '#771177',
-    },
-  },
-  {
-    useCar: false,
-    displayName: 'Chip',
-    shortName: 'CH',
-    description: 'Step activation, direct inputs, 1 hidden layer (3)',
-    nn: {
-      architecture: NN_ARCH_MEDIUM,
-      inputModification: 'dir',
-      activationType: 'step',
-    },
-    colors: {
-      light: '#9955cc',
-      dark: '#663399',
-    },
-  },
-  {
-    useCar: false,
-    displayName: 'Core',
-    shortName: 'CR',
-    description: 'Step activation, direct inputs, 2 hidden layers (3, 2)',
-    nn: {
-      architecture: NN_ARCH_LARGE,
-      inputModification: 'dir',
-      activationType: 'step',
-    },
-    colors: {
-      light: '#7733aa',
-      dark: '#551177',
-    },
-  },
-];
-
-export const CAR_BRAIN_CONFIGS = CAR_BRAIN_CONFIGS_DEFINED.filter(
-  (config) => config.useCar
-);
-
 export const GA_POPULATION_SIZE_DESKTOP = CAR_BRAIN_CONFIGS.length * 20;
 export const GA_POPULATION_SIZE_MOBILE = CAR_BRAIN_CONFIGS.length * 10;
 
 export const GA_POPULATION_SIZE = GA_POPULATION_SIZE_DESKTOP;
 
-export function getCarBrainConfig(shortName: string): CarBrainConfig | undefined {
+export function getCarBrainConfig(
+  shortName: string
+): CarBrainConfig | undefined {
   return CAR_BRAIN_CONFIGS.find((config) => config.shortName === shortName);
 }
 
 // ============================================================================
-// Performance Management System
+// Population Controller Configuration
 // ============================================================================
-// Advanced adaptive population control using PID control theory and
-// multi-metric performance monitoring for optimal system performance
+// Adaptive population management with single threshold system
+// Adjusts car population every second based on 0.1% low FPS
 
 export const PERFORMANCE_MANAGEMENT_ENABLED = true;
 
-// Performance Monitor Configuration
-export const PERF_TARGET_FPS = 60;
-export const PERF_HISTORY_SIZE = 60 * 20; // 2 seconds of history at 60fps
+// Performance Monitor Settings
+export const PERF_TARGET_FPS = 60; // Target FPS (used for display only)
+export const PERF_HISTORY_SIZE = 1000; // ~16 seconds of FPS history at 60fps (needed for accurate percentiles)
+export const PERF_INITIAL_SMOOTHED_FPS = 60; // Initial smoothed FPS value
+export const PERF_SMOOTHING_FACTOR = 0.1; // EMA smoothing factor (0-1, lower = smoother)
+export const PERF_TREND_WINDOW_SIZE = 20; // Number of samples for trend calculation
+export const PERF_MAX_VALID_FRAME_TIME_MS = 1000; // Maximum valid frame time (ignore spikes above this)
+export const PERF_MAX_ACCEPTABLE_VARIANCE_MS = 10; // Maximum acceptable frame time variance for stability
+export const PERF_HEADROOM_FACTOR = 0.5; // Factor for headroom calculation (0.5 = 50% of target)
+export const PERF_MIN_TREND_SAMPLES = 5; // Minimum samples needed for trend calculation
+export const PERF_MAX_TREND_SLOPE = 5; // Maximum trend slope (FPS per sample) for normalization
+export const PERF_CALIBRATION_MIN_FRAMES = 60; // Minimum frames before metrics are considered reliable
+export const PERF_CALIBRATION_HISTORY_RATIO = 0.5; // Minimum ratio of history filled for calibration (50%)
+export const PERF_UI_UPDATE_INTERVAL = 1; // Update FPS display every N frames (1 = every frame)
+export const FPS_CALC_SAVED_WEIGHT = 0.99;
+// Population Bounds
+export const POP_INITIAL = CAR_BRAIN_CONFIGS.length * 20; 
+export const POP_MIN = CAR_BRAIN_CONFIGS.length * 1; // 6 cars (1 per type minimum)
+export const POP_MAX = CAR_BRAIN_CONFIGS.length * 50; // 300 cars (50 per type maximum)
 
-// Population Controller Configuration
-export const POP_INITIAL = CAR_BRAIN_CONFIGS.length * 20; // 180 cars (30 per type)
-export const POP_MIN = CAR_BRAIN_CONFIGS.length * 1; // 6 cars (1 per type)
-export const POP_MAX = CAR_BRAIN_CONFIGS.length * 50; // 300 cars (50 per type)
+// Single Threshold System
+export const POP_THRESHOLD_FPS = 20; // The ONLY threshold: 0.1% low FPS target
+export const POP_INCREASE_PERCENTAGE = 0.15; // Add 15% when above threshold
+export const POP_DECREASE_PERCENTAGE = 0.15; // Remove 15% when below threshold
+export const POP_MINIMUM_ESCAPE_MULTIPLIER = 3; // At minimum: add (types × 3) cars instead of percentage
 
-// PID Controller Gains (tuned for stability and responsiveness)
-// P: Responds to current error (how far from target FPS)
-// I: Eliminates steady-state error (accumulates over time)
-// D: Dampens oscillation (responds to rate of change)
-export const PID_KP = 2.0; // Proportional gain
-export const PID_KI = 0.1; // Integral gain
-export const PID_KD = 1; // Derivative gain
+// Adjustment Timing
+export const POP_ADJUSTMENT_INTERVAL = 60 * 15; // Adjust every 60 frames (1 second at 60fps)
+export const POP_MAX_CHANGE_RATE = 0.05; // Maximum population change per adjustment (5%)
 
-// Adjustment Constraints
-export const POP_MAX_CHANGE_RATE = 0.15; // Max 15% change per adjustment
-export const POP_ADJUSTMENT_INTERVAL = 30; // Adjust every 180 frames (3s at 60fps)
-
-// Hysteresis (prevents oscillation near target)
-export const POP_HYSTERESIS_THRESHOLD = 0.05; // ±5% of target FPS
-
-// Performance Thresholds
-export const PERF_EMERGENCY_FPS = 20; // Aggressive reduction below this
-export const PERF_SAFE_FPS = 50; // Conservative growth above this
-export const PERF_LOW_THRESHOLD_PERCENT = 0.333; // 0.1% low as percentage of target (e.g., 20 FPS when target is 60)
-
-// Legacy compatibility (for gradual migration)
-export const ADAPTIVE_POPULATION_ENABLED = PERFORMANCE_MANAGEMENT_ENABLED;
-export const ADAPTIVE_POPULATION_INITIAL = POP_INITIAL;
-export const ADAPTIVE_TARGET_FPS = PERF_TARGET_FPS;
-export const ADAPTIVE_MIN_CARS_PER_TYPE = 1;
+// Average Cars per Type Tracking
+export const POP_AVERAGE_INITIAL = 0; // Initial value for average cars per type
+export const POP_AVERAGE_UPDATE_INTERVAL = 1; // Update average every N frames (1 = every frame)
+export const POP_AVERAGE_SAVED_WEIGHT = 0.99; // Weight for saved average (0.99 = 99%)
 
 export const DEFAULT_DIE_ON_BACKWARDS = true;
 export const DEFAULT_KILL_SLOW_CARS = true;
 export const DEFAULT_MUTATION_BY_DISTANCE = true;
 export const DEFAULT_DELAYED_STEERING = true;
 export const CAR_STEERING_DELAY_SECONDS = 1;
-export const DEFAULT_SPEED_MULTIPLIER: SpeedMultiplier = 2;
+export const DEFAULT_SPEED_MULTIPLIER: SpeedMultiplier = 1;
 
 export const ENABLE_CONSOLE_LOGS = true;
 
