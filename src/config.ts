@@ -32,7 +32,7 @@ export function appendMirroredWaypoints(
   return [...waypoints, ...mirroredTail];
 }
 
-export const GA_MUTATION_BASE = 0.1;
+export const GA_MUTATION_BASE = 0.9;
 export const GA_MUTATION_MIN = 0.01;
 
 // Bezier curve control points for mutation decay (CSS cubic-bezier style)
@@ -43,7 +43,7 @@ export const GA_MUTATION_MIN = 0.01;
 // So low Y values = high mutation, high Y values = low mutation
 // Array format: [P1_X, P1_Y, P2_X, P2_Y]
 // Current: [1, 0, 0, 1] → stays high, drops rapidly in middle, smooth end
-export const GA_MUTATION_BEZIER_POINTS = [1, 0, 0.25, 0.75];
+export const GA_MUTATION_BEZIER_POINTS = [1, 0, 0.25, 0.25];
 
 /**
  * Evaluate a cubic bezier curve at parameter t.
@@ -366,7 +366,7 @@ export const GENERATION_MARKER_RADIUS = 6;
 export const GENERATION_MARKERS_MAX_HISTORY = 10; // Keep last N markers per car type for MEAN calculation
 
 // Graph visualization options
-export const GRAPH_GENERATION_USE_LOG_SCALE = true;
+export const GRAPH_GENERATION_USE_LOG_SCALE = false;
 
 // ============================================================================
 // Comprehensive Score Calculation Weights

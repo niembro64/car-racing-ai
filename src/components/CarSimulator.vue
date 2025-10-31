@@ -1468,9 +1468,12 @@ const renderGraph = () => {
   ctx.fillStyle = '#1a1a1a';
   ctx.fillRect(0, 0, width, height);
 
-  // Calculate raw score history for each active config
+  // Calculate fitness history for each active config
   const configHistories: Map<string, { generation: number; score: number }[]> =
     new Map();
+
+  const trackLength = track.getTotalLength();
+  let maxGeneration = 0;
 
   for (const config of activeCarConfigs.value) {
     const markers =
@@ -1478,102 +1481,41 @@ const renderGraph = () => {
     if (markers.length === 0) continue;
 
     const history: { generation: number; score: number }[] = [];
-    const trackLength = track.getTotalLength();
 
-    // For each generation, calculate score up to that point
-    for (let i = 0; i < markers.length; i++) {
-      const markersUpToNow = markers.slice(0, i + 1);
-
-      // Calculate mean (average of all fitness values up to now)
-      const totalFitness = markersUpToNow.reduce(
-        (sum, m) => sum + m.fitness,
-        0
-      );
-      const meanFitness = totalFitness / markersUpToNow.length;
-      const meanPercent = (meanFitness / trackLength) * 100;
-
-      // Calculate best (max fitness up to now)
-      const bestFitness = Math.max(...markersUpToNow.map((m) => m.fitness));
-      const bestPercent = (bestFitness / trackLength) * 100;
-
-      // Score is average of mean and best
-      const score = (meanPercent + bestPercent) / 2;
-
-      history.push({ generation: markers[i].generation, score });
+    // For each marker (generation), show the best fitness achieved
+    for (const marker of markers) {
+      const fitnessPercent = (marker.fitness / trackLength) * 100;
+      history.push({ generation: marker.generation, score: fitnessPercent });
+      maxGeneration = Math.max(maxGeneration, marker.generation);
     }
 
     configHistories.set(config.shortName, history);
   }
 
-  // Find minimum generation count across all car types
-  let minGeneration = Infinity;
-  for (const history of configHistories.values()) {
-    if (history.length > 0) {
-      const lastGen = history[history.length - 1].generation;
-      minGeneration = Math.min(minGeneration, lastGen);
-    }
-  }
+  // If no data, use defaults
+  if (maxGeneration === 0) maxGeneration = 1;
 
-  if (!isFinite(minGeneration) || minGeneration === 0) minGeneration = 1;
-
-  // Truncate all histories to only show up to minimum generation
-  for (const history of configHistories.values()) {
-    const truncatedLength = history.findIndex(
-      (point) => point.generation > minGeneration
-    );
-    if (truncatedLength !== -1) {
-      history.splice(truncatedLength);
-    }
-  }
-
-  const maxGeneration = minGeneration;
-
-  // Normalize scores: for each generation, show each as percentage of total sum
-  // Build a map of generation -> total sum of all scores
-  const generationTotalScores = new Map<number, number>();
+  // Find min and max scores across all data for y-axis scaling
+  let minScore = 0; // Always start at 0%
+  let maxScore = 0;
 
   for (const history of configHistories.values()) {
     for (const point of history) {
-      const currentTotal = generationTotalScores.get(point.generation) ?? 0;
-      generationTotalScores.set(point.generation, currentTotal + point.score);
-    }
-  }
-
-  // Normalize all scores as percentage of total
-  for (const history of configHistories.values()) {
-    for (const point of history) {
-      const totalScore = generationTotalScores.get(point.generation) ?? 1;
-      // Normalize so all scores sum to 100%
-      point.score = totalScore > 0 ? (point.score / totalScore) * 100 : 0;
-    }
-  }
-
-  // Find min and max scores across all data to scale y-axis dynamically
-  let minScore = Infinity;
-  let maxScore = -Infinity;
-
-  for (const history of configHistories.values()) {
-    for (const point of history) {
-      minScore = Math.min(minScore, point.score);
       maxScore = Math.max(maxScore, point.score);
     }
   }
 
   // If no valid data, use default range
-  if (!isFinite(minScore) || !isFinite(maxScore)) {
-    minScore = 0;
+  if (maxScore === 0) {
     maxScore = 100;
+  } else {
+    // Add 10% padding to the top
+    maxScore = Math.min(100, maxScore * 1.1);
   }
 
-  // Add 10% padding to the range for visual clarity
-  const scoreRange = maxScore - minScore;
-  const padding10 = scoreRange * 0.1;
-  minScore = Math.max(0, minScore - padding10);
-  maxScore = Math.min(100, maxScore + padding10);
-
-  // Scale helper: map generation to x position (log or linear)
+  // Scale helper: map generation to x position
   const genToX = (gen: number): number => {
-    if (GRAPH_GENERATION_USE_LOG_SCALE) {
+    if (GRAPH_GENERATION_USE_LOG_SCALE && maxGeneration > 1) {
       const maxLog = Math.log10(maxGeneration + 1);
       const logPos = Math.log10(gen + 1) / maxLog;
       return padding + logPos * graphWidth;
@@ -1583,7 +1525,7 @@ const renderGraph = () => {
     }
   };
 
-  // Scale helper: map score to y position using dynamic range
+  // Scale helper: map score to y position
   const scoreToY = (score: number): number => {
     const normalizedScore = (score - minScore) / (maxScore - minScore);
     return height - padding - normalizedScore * graphHeight;
@@ -1605,9 +1547,10 @@ const renderGraph = () => {
   ctx.font = '10px monospace';
   ctx.textAlign = 'center';
 
-  // Y-axis grid (dynamic range based on actual data)
-  for (let i = 0; i <= 10; i++) {
-    const score = minScore + (i * (maxScore - minScore)) / 10;
+  // Y-axis grid (track completion percentage 0-100%)
+  const numYGridLines = 10;
+  for (let i = 0; i <= numYGridLines; i++) {
+    const score = minScore + (i * (maxScore - minScore)) / numYGridLines;
     const y = scoreToY(score);
     ctx.beginPath();
     ctx.moveTo(padding, y);
@@ -1616,7 +1559,7 @@ const renderGraph = () => {
 
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'right';
-    ctx.fillText(`${score.toFixed(1)}%`, padding - 5, y + 3);
+    ctx.fillText(`${score.toFixed(0)}%`, padding - 5, y + 3);
   }
 
   // X-axis grid
@@ -1669,7 +1612,7 @@ const renderGraph = () => {
   ctx.save();
   ctx.translate(12, height / 2);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillText('Score (%)', 0, 0);
+  ctx.fillText('Best Fitness (%)', 0, 0);
   ctx.restore();
 
   // Draw lines for each active config
