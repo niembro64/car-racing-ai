@@ -44,7 +44,6 @@ const clampedPercentage = computed(() => {
 
 .percentage-bar-fill {
   height: 100%;
-  transition: width 0.3s ease;
   border-radius: 2px;
 }
 
