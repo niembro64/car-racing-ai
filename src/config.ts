@@ -367,3 +367,34 @@ export const GENERATION_MARKERS_MAX_HISTORY = 10; // Keep last N markers per car
 
 // Graph visualization options
 export const GRAPH_GENERATION_USE_LOG_SCALE = true;
+
+// ============================================================================
+// Comprehensive Score Calculation Weights
+// ============================================================================
+// Configurable weights for ranking car brain configurations
+// All weights should sum to 1.0 (100%)
+
+export const COMPREHENSIVE_SCORE_WEIGHTS = {
+  // Lap speed bonus: Reward for fast lap completion times (highest priority)
+  lapSpeedBonus: 0.5, // 50% weight
+
+  // Mean performance: Average completion across recent generations
+  meanPerformance: 0.25, // 25% weight
+
+  // Best performance: Peak capability achieved
+  bestPerformance: 0.125, // 12.5% weight
+
+  // Learning efficiency: How quickly the AI learns (fewer generations = better)
+  learningEfficiency: 0.125, // 12.5% weight
+};
+
+// Parameters for comprehensive score components
+export const COMPREHENSIVE_SCORE_PARAMS = {
+  // Learning efficiency: Generation penalty (points deducted per generation)
+  // Higher penalty = generations matter more
+  generationPenalty: 0.5, // 200 generations = 0 efficiency score
+
+  // Lap speed bonus: Reference time in seconds for perfect score
+  // Lap times at or below this get 100 points, slower times get proportionally less
+  referenceLapTime: 30, // 30 seconds = 100 points
+};

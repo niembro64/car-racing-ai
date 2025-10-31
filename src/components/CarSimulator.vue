@@ -353,6 +353,8 @@ import {
   POP_AVERAGE_UPDATE_INTERVAL,
   POP_AVERAGE_SAVED_WEIGHT,
   GRAPH_GENERATION_USE_LOG_SCALE,
+  COMPREHENSIVE_SCORE_WEIGHTS,
+  COMPREHENSIVE_SCORE_PARAMS,
   print,
   wp,
 } from '@/config';
@@ -488,44 +490,40 @@ const FIXED_DT = 1 / 60; // 60 Hz physics
  */
 /**
  * Calculate comprehensive score for a car configuration
- * Combines multiple factors: performance, learning efficiency, speed, consistency
+ * Combines multiple factors: lap speed (50%), mean performance (25%), best performance (12.5%), learning efficiency (12.5%)
  * Returns a 0-100 score
  */
 const calculateComprehensiveScore = (shortName: string): number => {
-  // Component 1: Mean Performance (40% weight) - Most important: consistent track completion
-  const meanCompletion = getMeanFitnessPercentRaw(shortName); // 0-100
-  const meanScore = meanCompletion * 0.4;
-
-  // Component 2: Best Performance (20% weight) - Peak capability achieved
-  const bestCompletion = getBestFitnessPercentRaw(shortName); // 0-100
-  const bestScore = bestCompletion * 0.2;
-
-  // Component 3: Learning Efficiency (20% weight) - Fewer generations = better learner
-  const generations = ga.value.getGeneration(shortName);
-  // Penalize 0.5 points per generation (200 generations = 0 efficiency score)
-  const efficiencyRaw = Math.max(0, 100 - generations * 0.5);
-  const efficiencyScore = efficiencyRaw * 0.2;
-
-  // Component 4: Lap Speed Bonus (10% weight) - Reward fast lap times
+  // Component 1: Lap Speed Bonus - Reward fast lap times (highest priority)
   const lapTime = bestLapTimeByConfigId.value.get(shortName);
   let speedScore = 0;
   if (lapTime !== undefined && lapTime !== Infinity) {
-    // 30 second lap = 100 points, 60 second lap = 50 points, etc.
-    const speedRaw = Math.min(100, (30 / lapTime) * 100);
-    speedScore = speedRaw * 0.1;
+    const speedRaw = Math.min(
+      100,
+      (COMPREHENSIVE_SCORE_PARAMS.referenceLapTime / lapTime) * 100
+    );
+    speedScore = speedRaw * COMPREHENSIVE_SCORE_WEIGHTS.lapSpeedBonus;
   }
 
-  // Component 5: Consistency (10% weight) - How close mean is to best
-  let consistencyScore = 0;
-  if (bestCompletion > 0) {
-    const consistencyRaw = (meanCompletion / bestCompletion) * 100;
-    consistencyScore = consistencyRaw * 0.1;
-  }
+  // Component 2: Mean Performance - Consistent track completion
+  const meanCompletion = getMeanFitnessPercentRaw(shortName); // 0-100
+  const meanScore = meanCompletion * COMPREHENSIVE_SCORE_WEIGHTS.meanPerformance;
+
+  // Component 3: Best Performance - Peak capability achieved
+  const bestCompletion = getBestFitnessPercentRaw(shortName); // 0-100
+  const bestScore = bestCompletion * COMPREHENSIVE_SCORE_WEIGHTS.bestPerformance;
+
+  // Component 4: Learning Efficiency - Fewer generations = better learner
+  const generations = ga.value.getGeneration(shortName);
+  const efficiencyRaw = Math.max(
+    0,
+    100 - generations * COMPREHENSIVE_SCORE_PARAMS.generationPenalty
+  );
+  const efficiencyScore =
+    efficiencyRaw * COMPREHENSIVE_SCORE_WEIGHTS.learningEfficiency;
 
   // Total weighted score (0-100)
-  return (
-    meanScore + bestScore + efficiencyScore + speedScore + consistencyScore
-  );
+  return meanScore + bestScore + efficiencyScore + speedScore;
 };
 
 const compareConfigs = (a: CarBrainConfig, b: CarBrainConfig): number => {
