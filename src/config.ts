@@ -154,7 +154,7 @@ export const POP_MAX_CHANGE_RATE = 0.05; // Maximum population change per adjust
 // Average Cars per Type Tracking
 export const POP_AVERAGE_INITIAL = 0; // Initial value for average cars per type
 export const POP_AVERAGE_UPDATE_INTERVAL = 1; // Update average every N frames (1 = every frame)
-export const POP_AVERAGE_SAVED_WEIGHT = 0.99; // Weight for saved average (0.99 = 99%)
+export const POP_AVERAGE_SAVED_WEIGHT = 0.999; // Weight for saved average (0.99 = 99%)
 
 export const DEFAULT_DIE_ON_BACKWARDS = true;
 export const DEFAULT_KILL_SLOW_CARS = true;

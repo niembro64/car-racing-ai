@@ -216,6 +216,12 @@
                 </thead>
                 <tbody>
                   <tr>
+                    <td class="label-cell">Performance Target per Type Saved</td>
+                    <td class="value-cell">
+                      {{ savedPerformanceTargetPerType.toFixed(1) }}
+                    </td>
+                  </tr>
+                  <tr>
                     <td class="label-cell">Performance Target per Type</td>
                     <td class="value-cell">
                       {{ actualPerformanceTargetPerType.toFixed(1) }}
@@ -420,6 +426,9 @@ const performanceTargetCarsPerTypeDown = computed(
   () => averageCarsPerType.value * 0.9 // 10% below average
 );
 const actualPerformanceTargetPerType = ref(
+  POP_INITIAL / CAR_BRAIN_CONFIGS.length
+);
+const savedPerformanceTargetPerType = ref(
   POP_INITIAL / CAR_BRAIN_CONFIGS.length
 );
 const targetPopulationTotal = computed(
@@ -749,13 +758,13 @@ const evolvePopulationByConfig = (
       ? performanceTargetCarsPerType.value
       : performanceTargetCarsPerTypeDown.value;
 
-  // Update the actual performance target being used
+  // Update the actual performance target being used (raw value)
   actualPerformanceTargetPerType.value = targetCarsPerType;
 
   print(
-    `[Evolution] ${config.displayName}: ${targetCarsPerType.toFixed(
+    `[Evolution] ${config.displayName}: ${savedPerformanceTargetPerType.value.toFixed(
       1
-    )} cars for this type | Total: ${targetPopulationTotal.value} | Target: ${
+    )} cars for this type (raw: ${targetCarsPerType.toFixed(1)}) | Total: ${targetPopulationTotal.value} | Target: ${
       fpsTarget.value
     } FPS`
   );
@@ -767,7 +776,7 @@ const evolvePopulationByConfig = (
     generationTime,
     winnerCar,
     mutationByDistance.value,
-    targetCarsPerType
+    savedPerformanceTargetPerType.value
   );
   generationTimeByConfigId.value.set(config.shortName, 0);
   lapCompletionTimeByConfigId.value.set(config.shortName, Infinity); // Reset lap time for new generation
@@ -1166,6 +1175,12 @@ const animate = () => {
       averageCarsPerType.value * POP_AVERAGE_SAVED_WEIGHT;
   }
 
+  // Update saved performance target per type every frame using exponential moving average
+  // Formula: saved = new * (1 - SAVED_WEIGHT) + saved * SAVED_WEIGHT
+  savedPerformanceTargetPerType.value =
+    actualPerformanceTargetPerType.value * (1 - POP_AVERAGE_SAVED_WEIGHT) +
+    savedPerformanceTargetPerType.value * POP_AVERAGE_SAVED_WEIGHT;
+
   // Increment frame counter for Vue reactivity
   frameCounter.value++;
 
@@ -1215,6 +1230,8 @@ const reset = () => {
   performanceTargetCarsPerType.value =
     POP_INITIAL / activeCarConfigs.value.length;
   actualPerformanceTargetPerType.value =
+    POP_INITIAL / activeCarConfigs.value.length;
+  savedPerformanceTargetPerType.value =
     POP_INITIAL / activeCarConfigs.value.length;
   // Reset average cars per type to initial configured value
   averageCarsPerType.value = POP_AVERAGE_INITIAL;
