@@ -311,6 +311,7 @@ import {
 } from 'vue';
 import { Track } from '@/core/Track';
 import { Car } from '@/core/Car';
+import { NeuralNetwork } from '@/core/Neural';
 import { GeneticAlgorithm } from '@/core/GA';
 import { PerformanceMonitor } from '@/core/PerformanceMonitor';
 import { PopulationController } from '@/core/PopulationController';
@@ -335,6 +336,7 @@ import {
   DEFAULT_DELAYED_STEERING,
   DEFAULT_SPEED_MULTIPLIER,
   CAR_STEERING_DELAY_SECONDS,
+  CAR_START_ANGLE_WIGGLE,
   getMutationRate,
   GA_MUTATION_BASE,
   DEBUG_SHOW_WAYPOINTS,
@@ -1252,10 +1254,112 @@ const animate = () => {
 };
 
 // Manually trigger next generation for all active populations
+// Restart current generation for all car types (SYNC button)
+// This restarts all car types at the same generation, using their current generation's weights
 const nextGeneration = () => {
   for (const config of activeCarConfigs.value) {
-    evolvePopulationByConfig(config, 'manual trigger');
+    restartCurrentGeneration(config);
   }
+};
+
+// Restart a specific car type's current generation
+// Uses the same weights that started this generation (doesn't evolve or select a winner)
+const restartCurrentGeneration = (config: CarBrainConfig) => {
+  const configCars = population.value.filter(
+    (car) => car.configShortName === config.shortName
+  );
+  const otherCars = population.value.filter(
+    (car) => car.configShortName !== config.shortName
+  );
+
+  // Get current generation's weights (these are the weights this generation started with)
+  const bestWeights = ga.value.getBestWeights(config.shortName);
+
+  if (!bestWeights) {
+    // No weights yet (generation 0), just reinitialize
+    print(`[SYNC] ${config.displayName}: No weights yet, skipping restart`);
+    return;
+  }
+
+  // Get target population size for this type
+  const targetCarsPerType =
+    fps0_1PercentLow.value >= POP_THRESHOLD_FPS
+      ? performanceTargetCarsPerType.value
+      : performanceTargetCarsPerTypeDown.value;
+
+  const carsPerType = Math.round(savedPerformanceTargetPerType.value);
+
+  print(
+    `[SYNC] ${config.displayName}: Restarting generation ${ga.value.getGeneration(config.shortName)} with ${carsPerType} cars`
+  );
+
+  // Create new cars from the current generation's weights
+  const newCars: Car[] = [];
+  const eliteBrain = NeuralNetwork.fromJSON(
+    bestWeights,
+    Math.random() * 1000000,
+    config.nn.architecture,
+    config.nn.activationType
+  );
+
+  // Calculate mutation rate
+  const trackLength = track.getTotalLength();
+  const bestDistance = configCars.reduce(
+    (max, car) => Math.max(max, car.maxDistanceReached),
+    0
+  );
+  const baseMutationRate = getMutationRate(
+    mutationByDistance.value,
+    bestDistance,
+    trackLength
+  );
+
+  // Create cars: 1 elite + (carsPerType - 1) mutations
+  for (let i = 0; i < carsPerType; i++) {
+    const angleWiggle = (Math.random() - 0.5) * 2 * CAR_START_ANGLE_WIGGLE;
+    const startAngle = track.startAngle + angleWiggle;
+
+    if (i === 0) {
+      // Elite car (exact copy of best brain, larger size)
+      newCars.push(
+        new Car(
+          track.startPosition.x,
+          track.startPosition.y,
+          startAngle,
+          eliteBrain,
+          config.colors.dark,
+          config.nn.inputModification,
+          config.shortName,
+          1.5 // Elite cars are 1.5x larger
+        )
+      );
+    } else {
+      // Mutated car
+      const mutationSeed = Math.random() * 1000000 + i;
+      const sigma = baseMutationRate; // Use base mutation rate without curve
+      const mutatedBrain = eliteBrain.mutate(sigma, mutationSeed);
+
+      newCars.push(
+        new Car(
+          track.startPosition.x,
+          track.startPosition.y,
+          startAngle,
+          mutatedBrain,
+          config.colors.light,
+          config.nn.inputModification,
+          config.shortName,
+          1.0 // Normal size
+        )
+      );
+    }
+  }
+
+  // Reset timers for this config
+  generationTimeByConfigId.value.set(config.shortName, 0);
+  lapCompletionTimeByConfigId.value.set(config.shortName, Infinity);
+
+  // Replace population (keep other car types unchanged)
+  population.value = [...newCars, ...otherCars];
 };
 
 // Reset the simulation (but keep toggle button states)
