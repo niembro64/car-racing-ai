@@ -388,13 +388,6 @@ export const COMPREHENSIVE_SCORE_WEIGHTS = {
   learningEfficiency: 0.125, // 12.5% weight
 };
 
-// Parameters for comprehensive score components
-export const COMPREHENSIVE_SCORE_PARAMS = {
-  // Learning efficiency: Generation penalty (points deducted per generation)
-  // Higher penalty = generations matter more
-  generationPenalty: 0.5, // 200 generations = 0 efficiency score
-
-  // Lap speed bonus: Reference time in seconds for perfect score
-  // Lap times at or below this get 100 points, slower times get proportionally less
-  referenceLapTime: 30, // 30 seconds = 100 points
-};
+// Note: Learning efficiency and lap speed are calculated using relative comparisons
+// between all car types rather than fixed parameters. The car with the best value
+// gets 100 points, the worst gets 0 points, and others are scaled linearly.

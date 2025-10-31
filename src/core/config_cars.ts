@@ -168,7 +168,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
 
   // === GELU activation (green/cyan family) ===
   {
-    useCar: true,
+    useCar: false,
     displayName: 'Leaf',
     shortName: 'LF',
     description: 'GELU activation, differential inputs, 1 hidden layer (3)',
@@ -198,7 +198,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: true,
+    useCar: false,
     displayName: 'Moss',
     shortName: 'MS',
     description: 'GELU activation, direct inputs, 1 hidden layer (3)',
@@ -292,7 +292,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
 
   // === SWIGLU activation (red/pink family) ===
   {
-    useCar: true,
+    useCar: false,
     displayName: 'Neo',
     shortName: 'NE',
     description: 'SWIGLU activation, differential inputs, 1 hidden layer (3)',

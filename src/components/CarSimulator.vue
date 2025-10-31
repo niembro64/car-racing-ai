@@ -354,7 +354,6 @@ import {
   POP_AVERAGE_SAVED_WEIGHT,
   GRAPH_GENERATION_USE_LOG_SCALE,
   COMPREHENSIVE_SCORE_WEIGHTS,
-  COMPREHENSIVE_SCORE_PARAMS,
   print,
   wp,
 } from '@/config';
@@ -490,19 +489,38 @@ const FIXED_DT = 1 / 60; // 60 Hz physics
  */
 /**
  * Calculate comprehensive score for a car configuration
- * Combines multiple factors: lap speed (50%), mean performance (25%), best performance (12.5%), learning efficiency (12.5%)
+ * Uses relative comparisons between all car types:
+ * - Lap speed (50%): Fastest lap gets 100, slowest gets 0
+ * - Mean performance (25%): Direct percentage
+ * - Best performance (12.5%): Direct percentage
+ * - Learning efficiency (12.5%): Fewest generations gets 100, most gets 0
  * Returns a 0-100 score
  */
 const calculateComprehensiveScore = (shortName: string): number => {
-  // Component 1: Lap Speed Bonus - Reward fast lap times (highest priority)
-  const lapTime = bestLapTimeByConfigId.value.get(shortName);
+  // Gather data for all active car configs for relative comparison
+  const allConfigs = activeCarConfigs.value;
+
+  // Component 1: Lap Speed Bonus - Relative to all car types (highest priority)
   let speedScore = 0;
-  if (lapTime !== undefined && lapTime !== Infinity) {
-    const speedRaw = Math.min(
-      100,
-      (COMPREHENSIVE_SCORE_PARAMS.referenceLapTime / lapTime) * 100
-    );
-    speedScore = speedRaw * COMPREHENSIVE_SCORE_WEIGHTS.lapSpeedBonus;
+  const lapTime = bestLapTimeByConfigId.value.get(shortName);
+
+  // Get all lap times that have completed at least one lap
+  const allLapTimes = allConfigs
+    .map((c) => bestLapTimeByConfigId.value.get(c.shortName))
+    .filter((t) => t !== undefined && t !== Infinity) as number[];
+
+  if (lapTime !== undefined && lapTime !== Infinity && allLapTimes.length > 0) {
+    const minLapTime = Math.min(...allLapTimes); // Fastest (best)
+    const maxLapTime = Math.max(...allLapTimes); // Slowest (worst)
+
+    if (maxLapTime > minLapTime) {
+      // Scale: fastest gets 100, slowest gets 0
+      const speedRaw = 100 * (1 - (lapTime - minLapTime) / (maxLapTime - minLapTime));
+      speedScore = speedRaw * COMPREHENSIVE_SCORE_WEIGHTS.lapSpeedBonus;
+    } else {
+      // All lap times are equal
+      speedScore = 100 * COMPREHENSIVE_SCORE_WEIGHTS.lapSpeedBonus;
+    }
   }
 
   // Component 2: Mean Performance - Consistent track completion
@@ -513,14 +531,21 @@ const calculateComprehensiveScore = (shortName: string): number => {
   const bestCompletion = getBestFitnessPercentRaw(shortName); // 0-100
   const bestScore = bestCompletion * COMPREHENSIVE_SCORE_WEIGHTS.bestPerformance;
 
-  // Component 4: Learning Efficiency - Fewer generations = better learner
+  // Component 4: Learning Efficiency - Relative to all car types
+  let efficiencyScore = 0;
   const generations = ga.value.getGeneration(shortName);
-  const efficiencyRaw = Math.max(
-    0,
-    100 - generations * COMPREHENSIVE_SCORE_PARAMS.generationPenalty
-  );
-  const efficiencyScore =
-    efficiencyRaw * COMPREHENSIVE_SCORE_WEIGHTS.learningEfficiency;
+  const allGenerations = allConfigs.map((c) => ga.value.getGeneration(c.shortName));
+  const minGenerations = Math.min(...allGenerations); // Fewest (best)
+  const maxGenerations = Math.max(...allGenerations); // Most (worst)
+
+  if (maxGenerations > minGenerations) {
+    // Scale: fewest generations gets 100, most gets 0
+    const efficiencyRaw = 100 * (1 - (generations - minGenerations) / (maxGenerations - minGenerations));
+    efficiencyScore = efficiencyRaw * COMPREHENSIVE_SCORE_WEIGHTS.learningEfficiency;
+  } else {
+    // All have same generation count
+    efficiencyScore = 100 * COMPREHENSIVE_SCORE_WEIGHTS.learningEfficiency;
+  }
 
   // Total weighted score (0-100)
   return meanScore + bestScore + efficiencyScore + speedScore;
@@ -675,7 +700,7 @@ const getBestLapTime = (shortName: string): string => {
   if (lapTime === Infinity) {
     return '-'; // Em dash for no lap completed
   }
-  return lapTime.toFixed(1) + 's';
+  return lapTime.toFixed(3) + 's';
 };
 
 // Cycle through views: table -> graph -> performance -> table
