@@ -77,9 +77,9 @@ export const CONFIG = {
 
   car: {
     physics: {
-      forwardSpeed: 220,
+      forwardSpeed: 400,
       steeringSensitivity: 0.2,
-      steeringDelaySeconds: 0.3,
+      steeringDelaySeconds: 0.2,
     },
     dimensions: {
       width: 10,
