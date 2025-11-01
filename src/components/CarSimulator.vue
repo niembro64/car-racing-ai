@@ -1688,7 +1688,7 @@ onUnmounted(() => {
   max-height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background: #4a7c4e;
+  background: #242;
   box-sizing: border-box;
 }
 

@@ -35,44 +35,69 @@ export function appendMirroredWaypoints(
 const canvas_width = 800;
 const canvas_height = 600;
 
-export const track_way_points: Point[] = [
-  { x: 400, y: 60 },
-  { x: 700, y: 100 },
-  { x: 700, y: 500 },
-  { x: 490, y: 500 },
-  { x: 450, y: 400 },
-  { x: 460, y: 340 },
-  { x: 530, y: 310 },
-  { x: 600, y: 300 },
-  { x: 630, y: 250 },
-  { x: 600, y: 200 },
-  { x: 550, y: 160 },
-  { x: 490, y: 170 },
-  { x: 430, y: 250 },
+// Track waypoints defined as ratios (0.0 to 1.0) of canvas dimensions
+// This allows the track to scale proportionally with canvas size
+// To get absolute coordinates: x_absolute = x_ratio * canvas_width, y_absolute = y_ratio * canvas_height
+export const track_waypoints_ratios: Point[] = [
+  { x: 0.5, y: 0.1 }, // Originally: (400, 60)
+  { x: 0.875, y: 0.1667 }, // Originally: (700, 100)
+  { x: 0.875, y: 0.8333 }, // Originally: (700, 500)
+  { x: 0.6125, y: 0.8333 }, // Originally: (490, 500)
+  { x: 0.5625, y: 0.6667 }, // Originally: (450, 400)
+  { x: 0.575, y: 0.5667 }, // Originally: (460, 340)
+  { x: 0.6625, y: 0.5167 }, // Originally: (530, 310)
+  { x: 0.75, y: 0.5 }, // Originally: (600, 300)
+  { x: 0.7875, y: 0.4167 }, // Originally: (630, 250)
+  { x: 0.75, y: 0.3333 }, // Originally: (600, 200)
+  { x: 0.6875, y: 0.2667 }, // Originally: (550, 160)
+  { x: 0.6125, y: 0.2833 }, // Originally: (490, 170)
+  { x: 0.5375, y: 0.4167 }, // Originally: (430, 250)
 ];
+
+// Helper function to convert ratio waypoints to absolute coordinates
+function scaleWaypointsToCanvas(
+  ratios: Point[],
+  width: number,
+  height: number
+): Point[] {
+  return ratios.map((p) => ({
+    x: p.x * width,
+    y: p.y * height,
+  }));
+}
 
 export const CONFIG = {
   canvas: {
     width: canvas_width,
     height: canvas_height,
-    backgroundColor: '#4a7c4e',
   },
 
   track: {
     halfWidth: 40,
     segmentsPerCurve: 10,
     waypoints: {
-      base: track_way_points,
-      mirrored: appendMirroredWaypoints(track_way_points, canvas_width),
+      base: scaleWaypointsToCanvas(
+        track_waypoints_ratios,
+        canvas_width,
+        canvas_height
+      ),
+      mirrored: appendMirroredWaypoints(
+        scaleWaypointsToCanvas(
+          track_waypoints_ratios,
+          canvas_width,
+          canvas_height
+        ),
+        canvas_width
+      ),
     },
     colors: {
-      surface: '#888',
-      boundary: '#464',
+      surface: '#333',
+      boundary: '#000',
       centerline: '#fbbf24',
       startFinishLine: '#aaa',
     },
     lineWidths: {
-      boundary: 2,
+      boundary: 3,
       centerline: 2,
       startFinishLine: 10,
     },
