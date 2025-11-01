@@ -42,8 +42,9 @@ const canvas_height = 9 * multiplier;
 // To get absolute coordinates: x_absolute = x_ratio * canvas_width, y_absolute = y_ratio * canvas_height
 export const track_waypoints_ratios: Point[] = [
   { x: 0.5, y: 0.1 },
-  { x: 0.875, y: 0.1667 },
-  { x: 0.875, y: 0.8333 },
+  { x: 0.85, y: 0.12 },
+  { x: 0.95, y: 0.5 },
+  { x: 0.80, y: 0.9 },
   { x: 0.6125, y: 0.8333 },
   { x: 0.5625, y: 0.6667 },
   { x: 0.63, y: 0.56 },
@@ -51,7 +52,7 @@ export const track_waypoints_ratios: Point[] = [
   { x: 0.81, y: 0.5 },
   { x: 0.8, y: 0.35 },
   { x: 0.6875, y: 0.2667 },
-  { x: 0.6125, y: 0.2833 },
+  { x: 0.6125, y: 0.32 },
   { x: 0.5375, y: 0.4167 },
 ];
 
@@ -75,7 +76,7 @@ export const CONFIG = {
 
   track: {
     halfWidth: 70,
-    segmentsPerCurve: 6,
+    segmentsPerCurve: 4,
     waypoints: {
       base: scaleWaypointsToCanvas(
         track_waypoints_ratios,
@@ -112,7 +113,7 @@ export const CONFIG = {
     },
     dimensions: {
       width: 30,
-      height: 60,
+      height: 50,
     },
     spawn: {
       angleWiggle: Math.PI / 20,
@@ -230,7 +231,7 @@ export const CONFIG = {
 
   visualization: {
     showCarPercentages: false,
-    debugShowWaypoints: false,
+    debugShowWaypoints: true,
     waypoints: {
       fontSize: 34,
       radius: 8,
@@ -243,6 +244,8 @@ export const CONFIG = {
     },
     generationMarker: {
       radius: 6,
+      fontSize: 40,
+      textOffset: -2,
       maxHistory: 10,
     },
     graph: {
@@ -256,7 +259,7 @@ export const CONFIG = {
     mutationByDistance: true,
     delayedSteering: true,
     speedMultiplier: 1 as SpeedMultiplier,
-    showRays: false,
+    showRays: true,
   },
 
   logging: {

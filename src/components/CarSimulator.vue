@@ -985,7 +985,7 @@ const render = (ctx: CanvasRenderingContext2D) => {
   }
 
   // Render generation markers dynamically for active configs
-  ctx.font = 'bold 16px monospace';
+  ctx.font = `bold ${CONFIG.visualization.generationMarker.fontSize}px monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
 
@@ -1001,7 +1001,7 @@ const render = (ctx: CanvasRenderingContext2D) => {
       ctx.fillText(
         marker.generation.toString(),
         marker.x,
-        marker.y - CONFIG.visualization.generationMarker.radius - 2
+        marker.y - CONFIG.visualization.generationMarker.radius + CONFIG.visualization.generationMarker.textOffset
       );
     }
   }
