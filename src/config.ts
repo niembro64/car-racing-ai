@@ -32,7 +32,7 @@ export function appendMirroredWaypoints(
   return [...waypoints, ...mirroredTail];
 }
 
-export const wp: Point[] = [
+export const track_way_points: Point[] = [
   { x: 400, y: 60 },
   { x: 700, y: 100 },
   { x: 700, y: 500 },
@@ -48,10 +48,13 @@ export const wp: Point[] = [
   { x: 430, y: 250 },
 ];
 
+const canvas_width = 800;
+const canvas_height = 600;
+
 export const CONFIG = {
   canvas: {
-    width: 800,
-    height: 600,
+    width: canvas_width,
+    height: canvas_height,
     backgroundColor: '#4a7c4e',
   },
 
@@ -59,17 +62,17 @@ export const CONFIG = {
     halfWidth: 40,
     segmentsPerCurve: 10,
     waypoints: {
-      base: wp,
-      mirrored: appendMirroredWaypoints(wp, 800),
+      base: track_way_points,
+      mirrored: appendMirroredWaypoints(track_way_points, canvas_width),
     },
     colors: {
       surface: '#888',
-      boundary: '#ffffff',
+      boundary: '#464',
       centerline: '#fbbf24',
       startFinishLine: '#ffffff',
     },
     lineWidths: {
-      boundary: 3,
+      boundary: 2,
       centerline: 2,
       startFinishLine: 20,
     },
@@ -304,7 +307,9 @@ export function getMutationRate(
 
   const easingValue = bezierYForX(trackProgress, p0, p1, p2, p3);
   const decayFactor = 1 - easingValue;
-  const range = CONFIG.geneticAlgorithm.mutation.base - CONFIG.geneticAlgorithm.mutation.min;
+  const range =
+    CONFIG.geneticAlgorithm.mutation.base -
+    CONFIG.geneticAlgorithm.mutation.min;
 
   return CONFIG.geneticAlgorithm.mutation.min + range * decayFactor;
 }
@@ -333,7 +338,9 @@ export function getParameterBasedMutationScale(
   const normalized = (parameterCount - minParams) / (maxParams - minParams);
   const scale =
     CONFIG.geneticAlgorithm.mutation.parameterScale.max -
-    normalized * (CONFIG.geneticAlgorithm.mutation.parameterScale.max - CONFIG.geneticAlgorithm.mutation.parameterScale.min);
+    normalized *
+      (CONFIG.geneticAlgorithm.mutation.parameterScale.max -
+        CONFIG.geneticAlgorithm.mutation.parameterScale.min);
 
   return scale;
 }
@@ -343,9 +350,11 @@ export function isMobile(): boolean {
     return false;
   }
 
-  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  const userAgent =
+    navigator.userAgent || navigator.vendor || (window as any).opera;
 
-  const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i;
+  const mobileRegex =
+    /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i;
   const isMobileUA = mobileRegex.test(userAgent.toLowerCase());
 
   const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -355,11 +364,16 @@ export function isMobile(): boolean {
 
 export function getPopulationSize(): number {
   if (typeof window === 'undefined') {
-    return CAR_BRAIN_CONFIGS.length * CONFIG.geneticAlgorithm.population.initial.desktop;
+    return (
+      CAR_BRAIN_CONFIGS.length *
+      CONFIG.geneticAlgorithm.population.initial.desktop
+    );
   }
   return isMobile()
-    ? CAR_BRAIN_CONFIGS.length * CONFIG.geneticAlgorithm.population.initial.mobile
-    : CAR_BRAIN_CONFIGS.length * CONFIG.geneticAlgorithm.population.initial.desktop;
+    ? CAR_BRAIN_CONFIGS.length *
+        CONFIG.geneticAlgorithm.population.initial.mobile
+    : CAR_BRAIN_CONFIGS.length *
+        CONFIG.geneticAlgorithm.population.initial.desktop;
 }
 
 export function getCarBrainConfig(
