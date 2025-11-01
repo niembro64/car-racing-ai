@@ -32,26 +32,30 @@ export function appendMirroredWaypoints(
   return [...waypoints, ...mirroredTail];
 }
 
-const canvas_width = 800;
-const canvas_height = 600;
+const multiplier = 100;
+
+const canvas_width = 16 * multiplier;
+const canvas_height = 9 * multiplier;
 
 // Track waypoints defined as ratios (0.0 to 1.0) of canvas dimensions
 // This allows the track to scale proportionally with canvas size
 // To get absolute coordinates: x_absolute = x_ratio * canvas_width, y_absolute = y_ratio * canvas_height
 export const track_waypoints_ratios: Point[] = [
-  { x: 0.5, y: 0.1 }, // Originally: (400, 60)
-  { x: 0.875, y: 0.1667 }, // Originally: (700, 100)
-  { x: 0.875, y: 0.8333 }, // Originally: (700, 500)
-  { x: 0.6125, y: 0.8333 }, // Originally: (490, 500)
-  { x: 0.5625, y: 0.6667 }, // Originally: (450, 400)
-  { x: 0.575, y: 0.5667 }, // Originally: (460, 340)
-  { x: 0.6625, y: 0.5167 }, // Originally: (530, 310)
-  { x: 0.75, y: 0.5 }, // Originally: (600, 300)
-  { x: 0.7875, y: 0.4167 }, // Originally: (630, 250)
-  { x: 0.75, y: 0.3333 }, // Originally: (600, 200)
-  { x: 0.6875, y: 0.2667 }, // Originally: (550, 160)
-  { x: 0.6125, y: 0.2833 }, // Originally: (490, 170)
-  { x: 0.5375, y: 0.4167 }, // Originally: (430, 250)
+  { x: 0.5, y: 0.1 },
+  { x: 0.875, y: 0.1667 },
+  { x: 0.875, y: 0.8333 },
+  { x: 0.6125, y: 0.8333 },
+  { x: 0.5625, y: 0.6667 },
+  { x: 0.6, y: 0.55 },
+  // { x: 0.575, y: 0.5667 },
+  // { x: 0.6, y: 0.5 },
+  { x: 0.75, y: 0.57 },
+  { x: 0.80, y: 0.50 },
+  { x: 0.80, y: 0.35 },
+  // { x: 0.75, y: 0.3333 },
+  { x: 0.6875, y: 0.2667 },
+  { x: 0.6125, y: 0.2833 },
+  { x: 0.5375, y: 0.4167 },
 ];
 
 // Helper function to convert ratio waypoints to absolute coordinates
@@ -73,7 +77,7 @@ export const CONFIG = {
   },
 
   track: {
-    halfWidth: 40,
+    halfWidth: 70,
     segmentsPerCurve: 10,
     waypoints: {
       base: scaleWaypointsToCanvas(
