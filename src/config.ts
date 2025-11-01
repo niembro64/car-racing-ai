@@ -78,7 +78,7 @@ export const CONFIG = {
 
   track: {
     halfWidth: 70,
-    segmentsPerCurve: 10,
+    segmentsPerCurve: 20,
     waypoints: {
       base: scaleWaypointsToCanvas(
         track_waypoints_ratios,
@@ -97,12 +97,12 @@ export const CONFIG = {
     colors: {
       surface: '#333',
       boundary: '#000',
-      centerline: '#fbbf24',
-      startFinishLine: '#aaa',
+      centerline: '#883',
+      startFinishLine: '#666',
     },
     lineWidths: {
       boundary: 3,
-      centerline: 2,
+      centerline: 3,
       startFinishLine: 10,
     },
   },
@@ -114,22 +114,27 @@ export const CONFIG = {
       steeringDelaySeconds: 0.2,
     },
     dimensions: {
-      width: 10,
-      height: 20,
+      width: 30,
+      height: 60,
     },
     spawn: {
       angleWiggle: Math.PI / 20,
     },
     colors: {
       labelAlive: '#ffffff',
-      labelDead: '#9ca3af',
+      labelDead: '#333',
+      bodyAliveStroke: '#1f2937',
+      bodyDead: '#444',
+      bodyDeadStroke: '#222',
+      directionIndicatorAlive: '#ffffff',
+      directionIndicatorDead: '#666',
     },
   },
 
   sensors: {
     visualization: {
-      rayWidth: 0.2,
-      hitRadius: 1,
+      rayWidth: 0.5 ,
+      hitRadius: 3,
       centerlineHitColor: '#ffffff',
     },
   },

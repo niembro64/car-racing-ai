@@ -363,10 +363,10 @@ export class Car {
     // Car color based on state
     if (this.alive) {
       ctx.fillStyle = this.color;
-      ctx.strokeStyle = '#1f2937';
+      ctx.strokeStyle = CONFIG.car.colors.bodyAliveStroke;
     } else {
-      ctx.fillStyle = '#9ca3af';
-      ctx.strokeStyle = '#6b7280';
+      ctx.fillStyle = CONFIG.car.colors.bodyDead;
+      ctx.strokeStyle = CONFIG.car.colors.bodyDeadStroke;
     }
 
     ctx.lineWidth = 1;
@@ -386,7 +386,7 @@ export class Car {
     );
 
     // Draw direction indicator (white stripe at front)
-    ctx.fillStyle = this.alive ? '#ffffff' : '#d1d5db';
+    ctx.fillStyle = this.alive ? CONFIG.car.colors.directionIndicatorAlive : CONFIG.car.colors.directionIndicatorDead;
     ctx.fillRect(-scaledWidth / 4, scaledHeight / 2 - 4, scaledWidth / 2, 4);
 
     ctx.restore();
