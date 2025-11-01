@@ -47,12 +47,9 @@ export const track_waypoints_ratios: Point[] = [
   { x: 0.6125, y: 0.8333 },
   { x: 0.5625, y: 0.6667 },
   { x: 0.63, y: 0.56 },
-  // { x: 0.575, y: 0.5667 },
-  // { x: 0.6, y: 0.5 },
-  { x: 0.75, y: 0.60 },
-  { x: 0.810, y: 0.50 },
-  { x: 0.80, y: 0.35 },
-  // { x: 0.75, y: 0.3333 },
+  { x: 0.75, y: 0.6 },
+  { x: 0.81, y: 0.5 },
+  { x: 0.8, y: 0.35 },
   { x: 0.6875, y: 0.2667 },
   { x: 0.6125, y: 0.2833 },
   { x: 0.5375, y: 0.4167 },
@@ -133,7 +130,7 @@ export const CONFIG = {
 
   sensors: {
     visualization: {
-      rayWidth: 0.5 ,
+      rayWidth: 0.5,
       hitRadius: 3,
       centerlineHitColor: '#ffffff',
     },
