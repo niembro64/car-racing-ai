@@ -133,11 +133,10 @@ export const CONFIG = {
       },
     },
     population: {
-      sizePerType: {
+      initial: {
         desktop: 20,
         mobile: 10,
       },
-      initial: CAR_BRAIN_CONFIGS.length * 20,
       bounds: {
         min: CAR_BRAIN_CONFIGS.length * 1,
         max: CAR_BRAIN_CONFIGS.length * 50,
@@ -339,13 +338,28 @@ export function getParameterBasedMutationScale(
   return scale;
 }
 
+export function isMobile(): boolean {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return false;
+  }
+
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+
+  const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i;
+  const isMobileUA = mobileRegex.test(userAgent.toLowerCase());
+
+  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  return isMobileUA || (hasTouch && window.innerWidth <= 1024);
+}
+
 export function getPopulationSize(): number {
   if (typeof window === 'undefined') {
-    return CAR_BRAIN_CONFIGS.length * CONFIG.geneticAlgorithm.population.sizePerType.desktop;
+    return CAR_BRAIN_CONFIGS.length * CONFIG.geneticAlgorithm.population.initial.desktop;
   }
-  return window.innerWidth <= 768
-    ? CAR_BRAIN_CONFIGS.length * CONFIG.geneticAlgorithm.population.sizePerType.mobile
-    : CAR_BRAIN_CONFIGS.length * CONFIG.geneticAlgorithm.population.sizePerType.desktop;
+  return isMobile()
+    ? CAR_BRAIN_CONFIGS.length * CONFIG.geneticAlgorithm.population.initial.mobile
+    : CAR_BRAIN_CONFIGS.length * CONFIG.geneticAlgorithm.population.initial.desktop;
 }
 
 export function getCarBrainConfig(

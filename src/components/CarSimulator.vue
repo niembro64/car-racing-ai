@@ -54,16 +54,16 @@
           >
             <thead>
               <tr>
-                <th v-if="!isMobile">Score</th>
+                <th v-if="!isMobile()">Score</th>
                 <th>Type</th>
                 <th>Gen</th>
-                <th>{{ isMobile ? 'MUT' : 'NEXT MUT' }}</th>
+                <th>{{ isMobile() ? 'MUT' : 'NEXT MUT' }}</th>
                 <th>Mean</th>
                 <th>Best</th>
                 <th>Duration</th>
                 <th>Hidden</th>
-                <th>{{ isMobile ? 'A' : 'Activ' }}</th>
-                <th>{{ isMobile ? 'I' : 'Input' }}</th>
+                <th>{{ isMobile() ? 'A' : 'Activ' }}</th>
+                <th>{{ isMobile() ? 'I' : 'Input' }}</th>
               </tr>
             </thead>
             <tbody>
@@ -72,7 +72,7 @@
                 :key="config.shortName"
                 :style="{ backgroundColor: config.colors.dark }"
               >
-                <td v-if="!isMobile">
+                <td v-if="!isMobile()">
                   <PercentageBar
                     :percentage="scoreByConfigId.get(config.shortName) ?? 0"
                     variant="white"
@@ -80,7 +80,7 @@
                   />
                 </td>
                 <td style="font-weight: bold">
-                  {{ isMobile ? config.shortName : config.displayName }}
+                  {{ isMobile() ? config.shortName : config.displayName }}
                 </td>
                 <td>
                   {{ ga.getGeneration(config.shortName) }}
@@ -122,7 +122,7 @@
                   }"
                 >
                   {{
-                    isMobile
+                    isMobile()
                       ? config.nn.activationType.charAt(0)
                       : config.nn.activationType
                   }}
@@ -133,7 +133,7 @@
                   }"
                 >
                   {{
-                    isMobile
+                    isMobile()
                       ? config.nn.inputModification.charAt(0)
                       : config.nn.inputModification
                   }}
@@ -329,6 +329,8 @@ import {
   getMutationRate,
   countTrainableParameters,
   getParameterBasedMutationScale,
+  isMobile,
+  getPopulationSize,
 } from '@/config';
 import {
   CAR_BRAIN_CONFIGS,
@@ -369,12 +371,6 @@ const frameCounter = ref(0);
 const viewMode = ref<'table' | 'graph' | 'performance'>('table');
 const graphCanvasRef = ref<HTMLCanvasElement | null>(null);
 
-// Check if mobile for responsive formatting
-const isMobile = computed(() => {
-  return typeof window !== 'undefined' && window.innerWidth <= 768;
-});
-
-// Active car configs based on toggle
 const activeCarConfigs = computed(() => {
   return useAllCarTypes.value ? CAR_BRAIN_CONFIGS_DEFINED : CAR_BRAIN_CONFIGS;
 });
@@ -396,7 +392,7 @@ const populationController = new PopulationController(
     targetFps: CONFIG.performance.targetFPS,
     minPopulation: CONFIG.geneticAlgorithm.population.bounds.min,
     maxPopulation: CONFIG.geneticAlgorithm.population.bounds.max,
-    initialPopulation: CONFIG.geneticAlgorithm.population.initial,
+    initialPopulation: getPopulationSize(),
     maxChangeRate: CONFIG.geneticAlgorithm.population.adjustment.maxChangeRate,
     adjustmentInterval: CONFIG.geneticAlgorithm.population.adjustment.intervalFrames,
   },
@@ -406,18 +402,18 @@ const populationController = new PopulationController(
 // UI state (for reactive display)
 const currentFps = ref(60);
 const performanceTargetCarsPerType = ref(
-  CONFIG.geneticAlgorithm.population.initial / CAR_BRAIN_CONFIGS.length
+  getPopulationSize() / CAR_BRAIN_CONFIGS.length
 );
 const averageCarsPerType = ref(CONFIG.geneticAlgorithm.population.average.initial);
-let averageCarsPerTypeFrameCounter = 0; // Frame counter for average update interval
+let averageCarsPerTypeFrameCounter = 0;
 const performanceTargetCarsPerTypeDown = computed(
-  () => averageCarsPerType.value * 0.9 // 10% below average
+  () => averageCarsPerType.value * 0.9
 );
 const actualPerformanceTargetPerType = ref(
-  CONFIG.geneticAlgorithm.population.initial / CAR_BRAIN_CONFIGS.length
+  getPopulationSize() / CAR_BRAIN_CONFIGS.length
 );
 const savedPerformanceTargetPerType = ref(
-  CONFIG.geneticAlgorithm.population.initial / CAR_BRAIN_CONFIGS.length
+  getPopulationSize() / CAR_BRAIN_CONFIGS.length
 );
 const targetPopulationTotal = computed(
   () => performanceTargetCarsPerType.value * activeCarConfigs.value.length
@@ -1373,11 +1369,11 @@ const reset = () => {
 
   // Reset target population to initial value
   performanceTargetCarsPerType.value =
-    CONFIG.geneticAlgorithm.population.initial / activeCarConfigs.value.length;
+    getPopulationSize() / activeCarConfigs.value.length;
   actualPerformanceTargetPerType.value =
-    CONFIG.geneticAlgorithm.population.initial / activeCarConfigs.value.length;
+    getPopulationSize() / activeCarConfigs.value.length;
   savedPerformanceTargetPerType.value =
-    CONFIG.geneticAlgorithm.population.initial / activeCarConfigs.value.length;
+    getPopulationSize() / activeCarConfigs.value.length;
   // Reset average cars per type to initial configured value
   averageCarsPerType.value = CONFIG.geneticAlgorithm.population.average.initial;
   averageCarsPerTypeFrameCounter = 0;
@@ -1660,7 +1656,7 @@ watch(useAllCarTypes, () => {
   );
 
   // Update population controller with new car type count
-  populationController.setPopulation(CONFIG.geneticAlgorithm.population.initial);
+  populationController.setPopulation(getPopulationSize());
 
   // Reset and reinitialize with new car types
   reset();
