@@ -46,11 +46,11 @@ export const track_waypoints_ratios: Point[] = [
   { x: 0.875, y: 0.8333 },
   { x: 0.6125, y: 0.8333 },
   { x: 0.5625, y: 0.6667 },
-  { x: 0.6, y: 0.55 },
+  { x: 0.63, y: 0.56 },
   // { x: 0.575, y: 0.5667 },
   // { x: 0.6, y: 0.5 },
-  { x: 0.75, y: 0.57 },
-  { x: 0.80, y: 0.50 },
+  { x: 0.75, y: 0.60 },
+  { x: 0.810, y: 0.50 },
   { x: 0.80, y: 0.35 },
   // { x: 0.75, y: 0.3333 },
   { x: 0.6875, y: 0.2667 },
@@ -78,7 +78,7 @@ export const CONFIG = {
 
   track: {
     halfWidth: 70,
-    segmentsPerCurve: 20,
+    segmentsPerCurve: 6,
     waypoints: {
       base: scaleWaypointsToCanvas(
         track_waypoints_ratios,
@@ -233,7 +233,17 @@ export const CONFIG = {
 
   visualization: {
     showCarPercentages: false,
-    debugShowWaypoints: false,
+    debugShowWaypoints: true,
+    waypoints: {
+      fontSize: 34,
+      radius: 8,
+      textOffset: -12,
+      colors: {
+        marker: '#ff0000',
+        text: '#ffffff',
+        textStroke: '#000000',
+      },
+    },
     generationMarker: {
       radius: 6,
       maxHistory: 10,
@@ -249,6 +259,7 @@ export const CONFIG = {
     mutationByDistance: true,
     delayedSteering: true,
     speedMultiplier: 1 as SpeedMultiplier,
+    showRays: false,
   },
 
   logging: {

@@ -13,15 +13,6 @@
         <button @click="nextGeneration">SYNC</button>
         <button @click="reset">RESTART</button>
         <button
-          @click="toggleDieOnBackwards"
-          :class="{ active: dieOnBackwards }"
-        >
-          DIE REV
-        </button>
-        <button @click="toggleKillSlowCars" :class="{ active: killSlowCars }">
-          DIE SLOW
-        </button>
-        <button
           @click="toggleMutationByDistance"
           :class="{ active: mutationByDistance }"
         >
@@ -35,6 +26,9 @@
         </button>
         <button @click="toggleAllCarTypes" :class="{ active: useAllCarTypes }">
           ALL TYPES
+        </button>
+        <button @click="toggleShowRays" :class="{ active: showRays }">
+          SHOW RAYS
         </button>
         <button
           @click="toggleCarSpeed"
@@ -331,6 +325,7 @@ import {
   getParameterBasedMutationScale,
   isMobile,
   getPopulationSize,
+  track_waypoints_ratios,
 } from '@/config';
 import {
   CAR_BRAIN_CONFIGS,
@@ -359,11 +354,9 @@ let randomSeed = Date.now() + Math.random() * 1000000;
 const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed));
 
 const population = ref<Car[]>([]) as Ref<Car[]>;
-const showRays = ref(true);
+const showRays = ref(CONFIG.defaults.showRays);
 const speedMultiplier = ref(1);
 const carSpeedMultiplier = ref<SpeedMultiplier>(CONFIG.defaults.speedMultiplier);
-const dieOnBackwards = ref(CONFIG.defaults.dieOnBackwards);
-const killSlowCars = ref(CONFIG.defaults.killSlowCars);
 const mutationByDistance = ref(CONFIG.defaults.mutationByDistance);
 const delayedSteering = ref(CONFIG.defaults.delayedSteering);
 const useAllCarTypes = ref(false); // Toggle between active cars only and all cars
@@ -898,14 +891,14 @@ const updatePhysics = (dt: number) => {
         return; // Stop processing this frame
       }
 
-      // Kill car if it has gone backwards (when Kill Backwards is enabled)
-      if (dieOnBackwards.value && car.alive && car.hasGoneBackwards()) {
+      // Kill car if it has gone backwards
+      if (car.alive && car.hasGoneBackwards()) {
         car.alive = false;
         car.speed = 0;
       }
 
-      // Kill car if it hasn't made minimum progress after 1 second (when Kill Slow is enabled)
-      if (killSlowCars.value && car.alive && car.hasFailedMinimumProgress()) {
+      // Kill car if it hasn't made minimum progress after 1 second
+      if (car.alive && car.hasFailedMinimumProgress()) {
         car.alive = false;
         car.speed = 0;
       }
@@ -967,23 +960,27 @@ const render = (ctx: CanvasRenderingContext2D) => {
 
   // Render waypoint debug markers
   if (CONFIG.visualization.debugShowWaypoints) {
-    ctx.fillStyle = '#ff0000';
-    ctx.font = 'bold 14px monospace';
+    ctx.fillStyle = CONFIG.visualization.waypoints.colors.marker;
+    ctx.font = `bold ${CONFIG.visualization.waypoints.fontSize}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
 
-    for (const point of CONFIG.track.waypoints.base) {
+    // Iterate over ratio waypoints and scaled waypoints in parallel
+    for (let i = 0; i < track_waypoints_ratios.length; i++) {
+      const ratioPoint = track_waypoints_ratios[i];
+      const scaledPoint = CONFIG.track.waypoints.base[i];
+
       ctx.beginPath();
-      ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
+      ctx.arc(scaledPoint.x, scaledPoint.y, CONFIG.visualization.waypoints.radius, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#000000';
+      ctx.fillStyle = CONFIG.visualization.waypoints.colors.text;
+      ctx.strokeStyle = CONFIG.visualization.waypoints.colors.textStroke;
       ctx.lineWidth = 3;
-      const coordText = `(${Math.round(point.x)}, ${Math.round(point.y)})`;
-      ctx.strokeText(coordText, point.x, point.y - 12);
-      ctx.fillText(coordText, point.x, point.y - 12);
-      ctx.fillStyle = '#ff0000';
+      const coordText = `(${ratioPoint.x.toFixed(4)}, ${ratioPoint.y.toFixed(4)})`;
+      ctx.strokeText(coordText, scaledPoint.x, scaledPoint.y + CONFIG.visualization.waypoints.textOffset);
+      ctx.fillText(coordText, scaledPoint.x, scaledPoint.y + CONFIG.visualization.waypoints.textOffset);
+      ctx.fillStyle = CONFIG.visualization.waypoints.colors.marker;
     }
   }
 
@@ -1379,14 +1376,9 @@ const reset = () => {
   averageCarsPerTypeFrameCounter = 0;
 };
 
-// Toggle Kill Backwards mode
-const toggleDieOnBackwards = () => {
-  dieOnBackwards.value = !dieOnBackwards.value;
-};
-
-// Toggle Kill Slow mode
-const toggleKillSlowCars = () => {
-  killSlowCars.value = !killSlowCars.value;
+// Toggle Show Rays mode
+const toggleShowRays = () => {
+  showRays.value = !showRays.value;
 };
 
 // Toggle Mutation by Distance mode
