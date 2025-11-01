@@ -231,7 +231,7 @@ export const CONFIG = {
 
   visualization: {
     showCarPercentages: false,
-    debugShowWaypoints: true,
+    debugShowWaypoints: false,
     waypoints: {
       fontSize: 34,
       radius: 8,
