@@ -152,7 +152,7 @@ export function closestPointOnPolyline(
   return bestDistance;
 }
 
-// Compute cumulative arc lengths for a polyline
+// Compute cumulative arc lengths for a polyline (closed loop)
 export function computeCumulativeLengths(polyline: Point[]): number[] {
   const lengths: number[] = [0];
   let cumulative = 0;
@@ -161,6 +161,10 @@ export function computeCumulativeLengths(polyline: Point[]): number[] {
     cumulative += distance(polyline[i], polyline[i + 1]);
     lengths.push(cumulative);
   }
+
+  // Add the wrap-around segment from last point back to first point for closed loop
+  cumulative += distance(polyline[polyline.length - 1], polyline[0]);
+  lengths.push(cumulative);
 
   return lengths;
 }

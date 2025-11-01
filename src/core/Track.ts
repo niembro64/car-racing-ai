@@ -228,6 +228,7 @@ export class Track {
     for (let i = 1; i < this.centerline.length; i++) {
       ctx.lineTo(this.centerline[i].x, this.centerline[i].y);
     }
+    ctx.closePath(); // Close the loop back to the start
     ctx.stroke();
     ctx.setLineDash([]);
 
