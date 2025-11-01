@@ -32,6 +32,9 @@ export function appendMirroredWaypoints(
   return [...waypoints, ...mirroredTail];
 }
 
+const canvas_width = 800;
+const canvas_height = 600;
+
 export const track_way_points: Point[] = [
   { x: 400, y: 60 },
   { x: 700, y: 100 },
@@ -47,9 +50,6 @@ export const track_way_points: Point[] = [
   { x: 490, y: 170 },
   { x: 430, y: 250 },
 ];
-
-const canvas_width = 800;
-const canvas_height = 600;
 
 export const CONFIG = {
   canvas: {
