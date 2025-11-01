@@ -10,18 +10,7 @@
  * All configuration values imported from config.ts
  */
 
-import {
-  PERF_INITIAL_SMOOTHED_FPS,
-  PERF_SMOOTHING_FACTOR,
-  PERF_TREND_WINDOW_SIZE,
-  PERF_MAX_VALID_FRAME_TIME_MS,
-  PERF_MAX_ACCEPTABLE_VARIANCE_MS,
-  PERF_HEADROOM_FACTOR,
-  PERF_MIN_TREND_SAMPLES,
-  PERF_MAX_TREND_SLOPE,
-  PERF_CALIBRATION_MIN_FRAMES,
-  PERF_CALIBRATION_HISTORY_RATIO,
-} from '@/config';
+import { CONFIG } from '@/config';
 
 export interface PerformanceMetrics {
   currentFps: number;
@@ -50,10 +39,10 @@ export class PerformanceMonitor {
   private lastFrameTime: number = performance.now();
 
   // Smoothing and trend tracking
-  private smoothedFps: number = PERF_INITIAL_SMOOTHED_FPS;
-  private smoothingFactor: number = PERF_SMOOTHING_FACTOR;
+  private smoothedFps: number = CONFIG.performance.monitoring.initialSmoothedFPS;
+  private smoothingFactor: number = CONFIG.performance.monitoring.smoothingFactor;
   private trendWindow: number[] = [];
-  private readonly trendWindowSize: number = PERF_TREND_WINDOW_SIZE;
+  private readonly trendWindowSize: number = CONFIG.performance.monitoring.trendWindowSize;
 
   constructor(targetFps: number = 60, historySize: number = 120) {
     this.targetFps = targetFps;
@@ -68,7 +57,7 @@ export class PerformanceMonitor {
     const frameTime = now - this.lastFrameTime;
     this.lastFrameTime = now;
 
-    if (frameTime > 0 && frameTime < PERF_MAX_VALID_FRAME_TIME_MS) { // Ignore invalid measurements
+    if (frameTime > 0 && frameTime < CONFIG.performance.monitoring.maxValidFrameTimeMs) { // Ignore invalid measurements
       const fps = 1000 / frameTime;
 
       // Update FPS history
@@ -126,11 +115,11 @@ export class PerformanceMonitor {
 
     // Stability (0 to 1, based on variance)
     // Lower variance = more stable
-    const stability = Math.max(0, 1 - (frameTimeVariance / PERF_MAX_ACCEPTABLE_VARIANCE_MS));
+    const stability = Math.max(0, 1 - (frameTimeVariance / CONFIG.performance.monitoring.maxAcceptableVarianceMs));
 
     // Headroom (how much capacity we have)
     // Based on how far we are from target FPS
-    const headroom = Math.min(1, Math.max(0, (this.smoothedFps - this.targetFps * PERF_HEADROOM_FACTOR) / (this.targetFps * PERF_HEADROOM_FACTOR)));
+    const headroom = Math.min(1, Math.max(0, (this.smoothedFps - this.targetFps * CONFIG.performance.monitoring.headroomFactor) / (this.targetFps * CONFIG.performance.monitoring.headroomFactor)));
 
     return {
       currentFps: this.smoothedFps,
@@ -157,7 +146,7 @@ export class PerformanceMonitor {
    * Uses linear regression on recent FPS samples
    */
   private calculateTrend(): number {
-    if (this.trendWindow.length < PERF_MIN_TREND_SAMPLES) {
+    if (this.trendWindow.length < CONFIG.performance.monitoring.minTrendSamples) {
       return 0;
     }
 
@@ -171,7 +160,7 @@ export class PerformanceMonitor {
     const slope = (n * xySum - xSum * ySum) / (n * x2Sum - xSum * xSum);
 
     // Normalize slope to -1 to 1 range
-    return Math.max(-1, Math.min(1, slope / PERF_MAX_TREND_SLOPE));
+    return Math.max(-1, Math.min(1, slope / CONFIG.performance.monitoring.maxTrendSlope));
   }
 
   /**
@@ -221,6 +210,6 @@ export class PerformanceMonitor {
    * Check if we have enough data for reliable metrics
    */
   isCalibrated(): boolean {
-    return this.fpsHistory.length >= Math.min(PERF_CALIBRATION_MIN_FRAMES, this.maxHistorySize * PERF_CALIBRATION_HISTORY_RATIO);
+    return this.fpsHistory.length >= Math.min(CONFIG.performance.calibration.minFrames, this.maxHistorySize * CONFIG.performance.calibration.historyRatio);
   }
 }

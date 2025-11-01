@@ -1,19 +1,14 @@
 import type { Point, Segment, RayHit, RayCastResult } from '@/types';
 import { castRay } from './math/geom';
-import { SENSOR_RAY_ANGLES } from '@/config';
+import { CONFIG } from '@/config';
 
 export class RayCaster {
 
-  // Very large casting distance to ensure we always hit a wall
   private readonly CAST_DISTANCE = 10000;
-  // Normalization factor based on reasonable maximum distance
   private readonly NORMALIZE_DISTANCE = 1000;
 
-  constructor() {
-    // No parameters needed - rays always hit walls on closed track
-  }
+  constructor() {}
 
-  // Cast all rays from a position with given heading angle
   castRays(
     position: Point,
     heading: number,
@@ -22,7 +17,7 @@ export class RayCaster {
     const distances: number[] = [];
     const hits: (RayHit | null)[] = [];
 
-    for (const relativeAngle of SENSOR_RAY_ANGLES) {
+    for (const relativeAngle of CONFIG.neuralNetwork.sensorRays.angles) {
       const rayAngle = heading + relativeAngle;
       const direction: Point = {
         x: Math.cos(rayAngle),

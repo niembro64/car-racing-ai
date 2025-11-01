@@ -4,17 +4,7 @@ import {
   computeCumulativeLengths,
   closestPointOnPolyline,
 } from './math/geom';
-import {
-  TRACK_SURFACE_COLOR,
-  TRACK_BOUNDARY_COLOR,
-  TRACK_CENTERLINE_COLOR,
-  START_FINISH_LINE_COLOR,
-  TRACK_BOUNDARY_WIDTH,
-  TRACK_CENTERLINE_WIDTH,
-  START_FINISH_LINE_WIDTH,
-  WAYPOINTS,
-  SEGMENTS_PER_CURVE,
-} from '@/config';
+import { CONFIG } from '@/config';
 
 export class Track {
   centerline: Point[];
@@ -122,7 +112,7 @@ export class Track {
   // Create a complex race track with multiple corner types
   private createComplexTrack(): Point[] {
     // High interpolation for ultra-smooth curves
-    const result = this.interpolateWaypoints(WAYPOINTS, SEGMENTS_PER_CURVE);
+    const result = this.interpolateWaypoints(CONFIG.track.waypoints.mirrored, CONFIG.track.segmentsPerCurve);
     return result;
   }
 
@@ -194,7 +184,7 @@ export class Track {
   // Render track on canvas
   render(ctx: CanvasRenderingContext2D): void {
     // Fill track area with asphalt
-    ctx.fillStyle = TRACK_SURFACE_COLOR;
+    ctx.fillStyle = CONFIG.track.colors.surface;
     ctx.beginPath();
     ctx.moveTo(this.outerWall[0].x, this.outerWall[0].y);
     for (let i = 1; i < this.outerWall.length; i++) {
@@ -210,8 +200,8 @@ export class Track {
     ctx.fill('evenodd');
 
     // Draw outer wall
-    ctx.strokeStyle = TRACK_BOUNDARY_COLOR;
-    ctx.lineWidth = TRACK_BOUNDARY_WIDTH;
+    ctx.strokeStyle = CONFIG.track.colors.boundary;
+    ctx.lineWidth = CONFIG.track.lineWidths.boundary;
     ctx.beginPath();
     ctx.moveTo(this.outerWall[0].x, this.outerWall[0].y);
     for (let i = 1; i < this.outerWall.length; i++) {
@@ -230,8 +220,8 @@ export class Track {
     ctx.stroke();
 
     // Draw centerline (dashed)
-    ctx.strokeStyle = TRACK_CENTERLINE_COLOR;
-    ctx.lineWidth = TRACK_CENTERLINE_WIDTH;
+    ctx.strokeStyle = CONFIG.track.colors.centerline;
+    ctx.lineWidth = CONFIG.track.lineWidths.centerline;
     ctx.setLineDash([10, 10]);
     ctx.beginPath();
     ctx.moveTo(this.centerline[0].x, this.centerline[0].y);
@@ -252,8 +242,8 @@ export class Track {
     const nx = -dy / len;
     const ny = dx / len;
 
-    ctx.strokeStyle = START_FINISH_LINE_COLOR;
-    ctx.lineWidth = START_FINISH_LINE_WIDTH;
+    ctx.strokeStyle = CONFIG.track.colors.startFinishLine;
+    ctx.lineWidth = CONFIG.track.lineWidths.startFinishLine;
     ctx.beginPath();
     ctx.moveTo(p1.x + nx * this.halfWidth, p1.y + ny * this.halfWidth);
     ctx.lineTo(p1.x - nx * this.halfWidth, p1.y - ny * this.halfWidth);

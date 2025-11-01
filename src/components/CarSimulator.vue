@@ -324,42 +324,11 @@ import type {
 } from '@/types';
 import { SPEED_MULTIPLIERS } from '@/types';
 import {
-  TRACK_WIDTH_HALF,
-  CANVAS_WIDTH,
-  CANVAS_HEIGHT,
-  GENERATION_MARKER_RADIUS,
-  GENERATION_MARKERS_MAX_HISTORY,
-  LAP_COMPLETION_THRESHOLD,
-  DEFAULT_DIE_ON_BACKWARDS,
-  DEFAULT_KILL_SLOW_CARS,
-  DEFAULT_MUTATION_BY_DISTANCE,
-  DEFAULT_DELAYED_STEERING,
-  DEFAULT_SPEED_MULTIPLIER,
-  CAR_STEERING_DELAY_SECONDS,
-  CAR_START_ANGLE_WIGGLE,
+  CONFIG,
+  print,
   getMutationRate,
   countTrainableParameters,
   getParameterBasedMutationScale,
-  GA_MUTATION_BASE,
-  DEBUG_SHOW_WAYPOINTS,
-  PERFORMANCE_MANAGEMENT_ENABLED,
-  PERF_TARGET_FPS,
-  PERF_HISTORY_SIZE,
-  PERF_UI_UPDATE_INTERVAL,
-  FPS_CALC_SAVED_WEIGHT,
-  POP_INITIAL,
-  POP_MIN,
-  POP_MAX,
-  POP_MAX_CHANGE_RATE,
-  POP_ADJUSTMENT_INTERVAL,
-  POP_THRESHOLD_FPS,
-  POP_AVERAGE_INITIAL,
-  POP_AVERAGE_UPDATE_INTERVAL,
-  POP_AVERAGE_SAVED_WEIGHT,
-  GRAPH_GENERATION_USE_LOG_SCALE,
-  COMPREHENSIVE_SCORE_WEIGHTS,
-  print,
-  wp,
 } from '@/config';
 import {
   CAR_BRAIN_CONFIGS,
@@ -368,10 +337,10 @@ import {
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
-const canvasWidth = CANVAS_WIDTH;
-const canvasHeight = CANVAS_HEIGHT;
+const canvasWidth = CONFIG.canvas.width;
+const canvasHeight = CONFIG.canvas.height;
 
-const track = new Track(TRACK_WIDTH_HALF);
+const track = new Track(CONFIG.track.halfWidth);
 
 // Calculate min/max trainable parameters across all car brain architectures
 // Used for parameter-based mutation scaling
@@ -390,11 +359,11 @@ const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed));
 const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(true);
 const speedMultiplier = ref(1);
-const carSpeedMultiplier = ref<SpeedMultiplier>(DEFAULT_SPEED_MULTIPLIER);
-const dieOnBackwards = ref(DEFAULT_DIE_ON_BACKWARDS);
-const killSlowCars = ref(DEFAULT_KILL_SLOW_CARS);
-const mutationByDistance = ref(DEFAULT_MUTATION_BY_DISTANCE);
-const delayedSteering = ref(DEFAULT_DELAYED_STEERING);
+const carSpeedMultiplier = ref<SpeedMultiplier>(CONFIG.defaults.speedMultiplier);
+const dieOnBackwards = ref(CONFIG.defaults.dieOnBackwards);
+const killSlowCars = ref(CONFIG.defaults.killSlowCars);
+const mutationByDistance = ref(CONFIG.defaults.mutationByDistance);
+const delayedSteering = ref(CONFIG.defaults.delayedSteering);
 const useAllCarTypes = ref(false); // Toggle between active cars only and all cars
 const frameCounter = ref(0);
 const viewMode = ref<'table' | 'graph' | 'performance'>('table');
@@ -417,19 +386,19 @@ const activeCarConfigs = computed(() => {
 
 // Performance Monitor: Tracks FPS, stability, trends, and other metrics
 const performanceMonitor = new PerformanceMonitor(
-  PERF_TARGET_FPS,
-  PERF_HISTORY_SIZE
+  CONFIG.performance.targetFPS,
+  CONFIG.performance.monitoring.historySize
 );
 
 // Population Controller: Single-threshold adaptive population management (works with cars per type)
 const populationController = new PopulationController(
   {
-    targetFps: PERF_TARGET_FPS,
-    minPopulation: POP_MIN,
-    maxPopulation: POP_MAX,
-    initialPopulation: POP_INITIAL,
-    maxChangeRate: POP_MAX_CHANGE_RATE,
-    adjustmentInterval: POP_ADJUSTMENT_INTERVAL,
+    targetFps: CONFIG.performance.targetFPS,
+    minPopulation: CONFIG.geneticAlgorithm.population.bounds.min,
+    maxPopulation: CONFIG.geneticAlgorithm.population.bounds.max,
+    initialPopulation: CONFIG.geneticAlgorithm.population.initial,
+    maxChangeRate: CONFIG.geneticAlgorithm.population.adjustment.maxChangeRate,
+    adjustmentInterval: CONFIG.geneticAlgorithm.population.adjustment.intervalFrames,
   },
   CAR_BRAIN_CONFIGS.length
 ); // Initial setup uses default active configs
@@ -437,18 +406,18 @@ const populationController = new PopulationController(
 // UI state (for reactive display)
 const currentFps = ref(60);
 const performanceTargetCarsPerType = ref(
-  POP_INITIAL / CAR_BRAIN_CONFIGS.length
+  CONFIG.geneticAlgorithm.population.initial / CAR_BRAIN_CONFIGS.length
 );
-const averageCarsPerType = ref(POP_AVERAGE_INITIAL);
+const averageCarsPerType = ref(CONFIG.geneticAlgorithm.population.average.initial);
 let averageCarsPerTypeFrameCounter = 0; // Frame counter for average update interval
 const performanceTargetCarsPerTypeDown = computed(
   () => averageCarsPerType.value * 0.9 // 10% below average
 );
 const actualPerformanceTargetPerType = ref(
-  POP_INITIAL / CAR_BRAIN_CONFIGS.length
+  CONFIG.geneticAlgorithm.population.initial / CAR_BRAIN_CONFIGS.length
 );
 const savedPerformanceTargetPerType = ref(
-  POP_INITIAL / CAR_BRAIN_CONFIGS.length
+  CONFIG.geneticAlgorithm.population.initial / CAR_BRAIN_CONFIGS.length
 );
 const targetPopulationTotal = computed(
   () => performanceTargetCarsPerType.value * activeCarConfigs.value.length
@@ -469,7 +438,7 @@ const renderTimeHistory: number[] = [];
 const HISTORY_SIZE = 60;
 
 // Population control state
-const adaptivePopulation = ref(PERFORMANCE_MANAGEMENT_ENABLED);
+const adaptivePopulation = ref(CONFIG.performance.enabled);
 const fpsTarget = ref(0); // Will be set dynamically based on 0.1% high (99.9th percentile)
 const fps1PercentHigh = ref(0); // 99th percentile (1% high)
 const fps5PercentHigh = ref(0); // 95th percentile (5% high)
@@ -531,20 +500,20 @@ const calculateComprehensiveScore = (shortName: string): number => {
     if (maxLapTime > minLapTime) {
       // Scale: fastest gets 100, slowest gets 0
       const speedRaw = 100 * (1 - (lapTime - minLapTime) / (maxLapTime - minLapTime));
-      speedScore = speedRaw * COMPREHENSIVE_SCORE_WEIGHTS.lapSpeedBonus;
+      speedScore = speedRaw * CONFIG.scoring.weights.lapSpeedBonus;
     } else {
       // All lap times are equal
-      speedScore = 100 * COMPREHENSIVE_SCORE_WEIGHTS.lapSpeedBonus;
+      speedScore = 100 * CONFIG.scoring.weights.lapSpeedBonus;
     }
   }
 
   // Component 2: Mean Performance - Consistent track completion
   const meanCompletion = getMeanFitnessPercentRaw(shortName); // 0-100
-  const meanScore = meanCompletion * COMPREHENSIVE_SCORE_WEIGHTS.meanPerformance;
+  const meanScore = meanCompletion * CONFIG.scoring.weights.meanPerformance;
 
   // Component 3: Best Performance - Peak capability achieved
   const bestCompletion = getBestFitnessPercentRaw(shortName); // 0-100
-  const bestScore = bestCompletion * COMPREHENSIVE_SCORE_WEIGHTS.bestPerformance;
+  const bestScore = bestCompletion * CONFIG.scoring.weights.bestPerformance;
 
   // Component 4: Learning Efficiency - Relative to all car types
   let efficiencyScore = 0;
@@ -556,10 +525,10 @@ const calculateComprehensiveScore = (shortName: string): number => {
   if (maxGenerations > minGenerations) {
     // Scale: fewest generations gets 100, most gets 0
     const efficiencyRaw = 100 * (1 - (generations - minGenerations) / (maxGenerations - minGenerations));
-    efficiencyScore = efficiencyRaw * COMPREHENSIVE_SCORE_WEIGHTS.learningEfficiency;
+    efficiencyScore = efficiencyRaw * CONFIG.scoring.weights.learningEfficiency;
   } else {
     // All have same generation count
-    efficiencyScore = 100 * COMPREHENSIVE_SCORE_WEIGHTS.learningEfficiency;
+    efficiencyScore = 100 * CONFIG.scoring.weights.learningEfficiency;
   }
 
   // Total weighted score (0-100)
@@ -645,8 +614,8 @@ const mutationRatePercentByConfigId = computed(() => {
     );
     const scaledRate = baseRate * paramScale;
 
-    // Normalize to 0-100% range (GA_MUTATION_BASE is max)
-    const normalizedPercent = (scaledRate / GA_MUTATION_BASE) * 100;
+    // Normalize to 0-100% range (mutation base is max)
+    const normalizedPercent = (scaledRate / CONFIG.geneticAlgorithm.mutation.base) * 100;
     percentages.set(config.shortName, normalizedPercent);
   }
 
@@ -791,8 +760,8 @@ const evolvePopulationByConfig = (
     });
 
     // Keep only last N markers per config
-    if (markers.length > GENERATION_MARKERS_MAX_HISTORY) {
-      markers.splice(0, markers.length - GENERATION_MARKERS_MAX_HISTORY);
+    if (markers.length > CONFIG.visualization.generationMarker.maxHistory) {
+      markers.splice(0, markers.length - CONFIG.visualization.generationMarker.maxHistory);
     }
 
     generationMarkersByConfigId.value.set(config.shortName, markers);
@@ -804,7 +773,7 @@ const evolvePopulationByConfig = (
 
   // Use "Up" target if above threshold, "Down" target if below threshold
   const targetCarsPerType =
-    fps0_1PercentLow.value >= POP_THRESHOLD_FPS
+    fps0_1PercentLow.value >= CONFIG.geneticAlgorithm.population.adjustment.thresholdFPS
       ? performanceTargetCarsPerType.value
       : performanceTargetCarsPerTypeDown.value;
 
@@ -838,7 +807,7 @@ const updatePhysics = (dt: number) => {
         track.wallSegments,
         track,
         delayedSteering.value,
-        CAR_STEERING_DELAY_SECONDS,
+        CONFIG.car.physics.steeringDelaySeconds,
         carSpeedMultiplier.value
       );
 
@@ -850,20 +819,20 @@ const updatePhysics = (dt: number) => {
       // Diagnostic: Log when cars get close to completion
       if (
         car.currentProgressRatio >= 0.8 &&
-        car.currentProgressRatio < LAP_COMPLETION_THRESHOLD &&
+        car.currentProgressRatio < CONFIG.lap.completionThreshold &&
         frameCounter.value % 60 === 0
       ) {
         print(
           `[CLOSE] ${car.configShortName} at ${(
             car.currentProgressRatio * 100
-          ).toFixed(1)}% (need ${(LAP_COMPLETION_THRESHOLD * 100).toFixed(0)}%)`
+          ).toFixed(1)}% (need ${(CONFIG.lap.completionThreshold * 100).toFixed(0)}%)`
         );
       }
 
       // Check if car completed a lap (reached threshold progress)
       // Use threshold < 1.0 to account for discrete physics updates
       // Cars may not land exactly at the finish line due to frame timing
-      if (car.currentProgressRatio >= LAP_COMPLETION_THRESHOLD) {
+      if (car.currentProgressRatio >= CONFIG.lap.completionThreshold) {
         // Find the config for this car type by shortName (check all defined configs)
         const config = CAR_BRAIN_CONFIGS_DEFINED.find(
           (c) => c.shortName === car.configShortName
@@ -969,7 +938,7 @@ const updatePhysics = (dt: number) => {
       print(
         `[DEBUG] ${config.shortName} max progress: ${(
           maxProgress * 100
-        ).toFixed(2)}% (threshold: ${(LAP_COMPLETION_THRESHOLD * 100).toFixed(
+        ).toFixed(2)}% (threshold: ${(CONFIG.lap.completionThreshold * 100).toFixed(
           1
         )}%)`
       );
@@ -1001,13 +970,13 @@ const render = (ctx: CanvasRenderingContext2D) => {
   track.render(ctx);
 
   // Render waypoint debug markers
-  if (DEBUG_SHOW_WAYPOINTS) {
+  if (CONFIG.visualization.debugShowWaypoints) {
     ctx.fillStyle = '#ff0000';
     ctx.font = 'bold 14px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
 
-    for (const point of wp) {
+    for (const point of CONFIG.track.waypoints.base) {
       ctx.beginPath();
       ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
       ctx.fill();
@@ -1034,12 +1003,12 @@ const render = (ctx: CanvasRenderingContext2D) => {
 
     for (const marker of markers) {
       ctx.beginPath();
-      ctx.arc(marker.x, marker.y, GENERATION_MARKER_RADIUS, 0, Math.PI * 2);
+      ctx.arc(marker.x, marker.y, CONFIG.visualization.generationMarker.radius, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillText(
         marker.generation.toString(),
         marker.x,
-        marker.y - GENERATION_MARKER_RADIUS - 2
+        marker.y - CONFIG.visualization.generationMarker.radius - 2
       );
     }
   }
@@ -1090,14 +1059,14 @@ const updatePerformanceMetrics = (updateTime: number, renderTime: number) => {
     renderTimeHistory.shift();
   }
 
-  // Update UI metrics (configurable interval via PERF_UI_UPDATE_INTERVAL)
-  if (updateTimeHistory.length % PERF_UI_UPDATE_INTERVAL === 0) {
+  // Update UI metrics (configurable interval via performance UI update interval)
+  if (updateTimeHistory.length % CONFIG.performance.ui.updateInterval === 0) {
     const metrics = performanceMonitor.getMetrics();
 
     // FPS Avg: Always use exponential moving average
     currentFps.value =
-      metrics.currentFps * (1 - FPS_CALC_SAVED_WEIGHT) +
-      currentFps.value * FPS_CALC_SAVED_WEIGHT;
+      metrics.currentFps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
+      currentFps.value * CONFIG.performance.fpsCalcSavedWeight;
 
     avgFrameTime.value = metrics.frameTimeMs;
     performanceStability.value = metrics.stability;
@@ -1112,24 +1081,24 @@ const updatePerformanceMetrics = (updateTime: number, renderTime: number) => {
       fps0_1PercentLow.value = metrics.p0_1Fps; // Immediate drop
     } else {
       fps0_1PercentLow.value =
-        metrics.p0_1Fps * (1 - FPS_CALC_SAVED_WEIGHT) +
-        fps0_1PercentLow.value * FPS_CALC_SAVED_WEIGHT; // Gradual rise
+        metrics.p0_1Fps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
+        fps0_1PercentLow.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual rise
     }
 
     if (metrics.p1Fps < fps1PercentLow.value || fps1PercentLow.value === 0) {
       fps1PercentLow.value = metrics.p1Fps; // Immediate drop
     } else {
       fps1PercentLow.value =
-        metrics.p1Fps * (1 - FPS_CALC_SAVED_WEIGHT) +
-        fps1PercentLow.value * FPS_CALC_SAVED_WEIGHT; // Gradual rise
+        metrics.p1Fps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
+        fps1PercentLow.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual rise
     }
 
     if (metrics.p5Fps < fps5PercentLow.value || fps5PercentLow.value === 0) {
       fps5PercentLow.value = metrics.p5Fps; // Immediate drop
     } else {
       fps5PercentLow.value =
-        metrics.p5Fps * (1 - FPS_CALC_SAVED_WEIGHT) +
-        fps5PercentLow.value * FPS_CALC_SAVED_WEIGHT; // Gradual rise
+        metrics.p5Fps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
+        fps5PercentLow.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual rise
     }
 
     // FPS High trackers: Immediately jump to higher values, gradually decay with lower values
@@ -1138,8 +1107,8 @@ const updatePerformanceMetrics = (updateTime: number, renderTime: number) => {
       fpsTarget.value = metrics.p99_9Fps; // Immediate rise
     } else {
       fpsTarget.value =
-        metrics.p99_9Fps * (1 - FPS_CALC_SAVED_WEIGHT) +
-        fpsTarget.value * FPS_CALC_SAVED_WEIGHT; // Gradual decay
+        metrics.p99_9Fps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
+        fpsTarget.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual decay
     }
 
     // FPS 1% High (99th percentile)
@@ -1147,8 +1116,8 @@ const updatePerformanceMetrics = (updateTime: number, renderTime: number) => {
       fps1PercentHigh.value = metrics.p99Fps; // Immediate rise
     } else {
       fps1PercentHigh.value =
-        metrics.p99Fps * (1 - FPS_CALC_SAVED_WEIGHT) +
-        fps1PercentHigh.value * FPS_CALC_SAVED_WEIGHT; // Gradual decay
+        metrics.p99Fps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
+        fps1PercentHigh.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual decay
     }
 
     // FPS 5% High (95th percentile)
@@ -1156,8 +1125,8 @@ const updatePerformanceMetrics = (updateTime: number, renderTime: number) => {
       fps5PercentHigh.value = metrics.p95Fps; // Immediate rise
     } else {
       fps5PercentHigh.value =
-        metrics.p95Fps * (1 - FPS_CALC_SAVED_WEIGHT) +
-        fps5PercentHigh.value * FPS_CALC_SAVED_WEIGHT; // Gradual decay
+        metrics.p95Fps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
+        fps5PercentHigh.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual decay
     }
 
     avgUpdateTime.value =
@@ -1244,22 +1213,22 @@ const animate = () => {
   // Update average cars per type using exponential moving average
   // Only update based on configured interval
   averageCarsPerTypeFrameCounter++;
-  if (averageCarsPerTypeFrameCounter >= POP_AVERAGE_UPDATE_INTERVAL) {
+  if (averageCarsPerTypeFrameCounter >= CONFIG.geneticAlgorithm.population.average.updateInterval) {
     averageCarsPerTypeFrameCounter = 0;
     // Calculate actual alive cars per type from alive car count
     const currentAliveCarsPerType =
       aliveCars.value / activeCarConfigs.value.length;
     // Formula: saved_average = new_value * NEW_WEIGHT + saved_average * SAVED_WEIGHT
     averageCarsPerType.value =
-      currentAliveCarsPerType * (1 - POP_AVERAGE_SAVED_WEIGHT) +
-      averageCarsPerType.value * POP_AVERAGE_SAVED_WEIGHT;
+      currentAliveCarsPerType * (1 - CONFIG.geneticAlgorithm.population.average.savedWeight) +
+      averageCarsPerType.value * CONFIG.geneticAlgorithm.population.average.savedWeight;
   }
 
   // Update saved performance target per type every frame using exponential moving average
   // Formula: saved = new * (1 - SAVED_WEIGHT) + saved * SAVED_WEIGHT
   savedPerformanceTargetPerType.value =
-    actualPerformanceTargetPerType.value * (1 - POP_AVERAGE_SAVED_WEIGHT) +
-    savedPerformanceTargetPerType.value * POP_AVERAGE_SAVED_WEIGHT;
+    actualPerformanceTargetPerType.value * (1 - CONFIG.geneticAlgorithm.population.average.savedWeight) +
+    savedPerformanceTargetPerType.value * CONFIG.geneticAlgorithm.population.average.savedWeight;
 
   // Increment frame counter for Vue reactivity
   frameCounter.value++;
@@ -1324,7 +1293,7 @@ const restartCurrentGeneration = (config: CarBrainConfig) => {
 
   // Create cars: 1 elite + (carsPerType - 1) mutations
   for (let i = 0; i < carsPerType; i++) {
-    const angleWiggle = (Math.random() - 0.5) * 2 * CAR_START_ANGLE_WIGGLE;
+    const angleWiggle = (Math.random() - 0.5) * 2 * CONFIG.car.spawn.angleWiggle;
     const startAngle = track.startAngle + angleWiggle;
 
     if (i === 0) {
@@ -1404,13 +1373,13 @@ const reset = () => {
 
   // Reset target population to initial value
   performanceTargetCarsPerType.value =
-    POP_INITIAL / activeCarConfigs.value.length;
+    CONFIG.geneticAlgorithm.population.initial / activeCarConfigs.value.length;
   actualPerformanceTargetPerType.value =
-    POP_INITIAL / activeCarConfigs.value.length;
+    CONFIG.geneticAlgorithm.population.initial / activeCarConfigs.value.length;
   savedPerformanceTargetPerType.value =
-    POP_INITIAL / activeCarConfigs.value.length;
+    CONFIG.geneticAlgorithm.population.initial / activeCarConfigs.value.length;
   // Reset average cars per type to initial configured value
-  averageCarsPerType.value = POP_AVERAGE_INITIAL;
+  averageCarsPerType.value = CONFIG.geneticAlgorithm.population.average.initial;
   averageCarsPerTypeFrameCounter = 0;
 };
 
@@ -1523,7 +1492,7 @@ const renderGraph = () => {
 
   // Scale helper: map generation to x position
   const genToX = (gen: number): number => {
-    if (GRAPH_GENERATION_USE_LOG_SCALE && maxGeneration > 1) {
+    if (CONFIG.visualization.graph.useLogScale && maxGeneration > 1) {
       const maxLog = Math.log10(maxGeneration + 1);
       const logPos = Math.log10(gen + 1) / maxLog;
       return padding + logPos * graphWidth;
@@ -1571,7 +1540,7 @@ const renderGraph = () => {
   }
 
   // X-axis grid
-  if (GRAPH_GENERATION_USE_LOG_SCALE) {
+  if (CONFIG.visualization.graph.useLogScale) {
     // Logarithmic generations: 1, 10, 100, 1000, etc.
     let power = 0;
     while (Math.pow(10, power) - 1 <= maxGeneration) {
@@ -1691,7 +1660,7 @@ watch(useAllCarTypes, () => {
   );
 
   // Update population controller with new car type count
-  populationController.setPopulation(POP_INITIAL);
+  populationController.setPopulation(CONFIG.geneticAlgorithm.population.initial);
 
   // Reset and reinitialize with new car types
   reset();

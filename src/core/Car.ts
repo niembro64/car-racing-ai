@@ -13,19 +13,7 @@ import {
 } from './math/geom';
 import { NeuralNetwork } from './Neural';
 import { RayCaster } from './Ray';
-import {
-  CAR_FORWARD_SPEED,
-  CAR_STEERING_SENSITIVITY,
-  CAR_WIDTH,
-  CAR_HEIGHT,
-  CAR_LABEL_COLOR_ALIVE,
-  CAR_LABEL_COLOR_DEAD,
-  CENTERLINE_RAY_HIT_COLOR,
-  SENSOR_RAY_PAIRS,
-  SHOW_CAR_PERCENTAGES,
-  RAY_VISUALIZATION_WIDTH,
-  RAY_VISUALIZATION_HIT_RADIUS,
-} from '@/config';
+import { CONFIG } from '@/config';
 import { CAR_BRAIN_CONFIGS_DEFINED } from './config_cars';
 
 export class Car {
@@ -48,8 +36,8 @@ export class Car {
   elapsedTime: number; // Total time this car has been alive (in seconds)
 
   // Dimensions
-  width: number = CAR_WIDTH;
-  height: number = CAR_HEIGHT;
+  width: number = CONFIG.car.dimensions.width;
+  height: number = CONFIG.car.dimensions.height;
   sizeMultiplier: number = 1.0; // Scale factor for elite cars
 
   // Neural network
@@ -145,7 +133,7 @@ export class Car {
       inputRays = [distances[0]]; // Forward ray (index 0)
 
       // Add differential pairs (left - right)
-      for (const [leftIdx, rightIdx] of SENSOR_RAY_PAIRS) {
+      for (const [leftIdx, rightIdx] of CONFIG.neuralNetwork.sensorRays.pairs) {
         const differential = distances[leftIdx] - distances[rightIdx];
         inputRays.push(differential);
       }
@@ -183,7 +171,7 @@ export class Car {
     speedMultiplier: number = 1
   ): void {
     // Constant forward speed (with optional multiplier)
-    this.speed = CAR_FORWARD_SPEED * speedMultiplier;
+    this.speed = CONFIG.car.physics.forwardSpeed * speedMultiplier;
 
     // Update position
     const headingX = Math.cos(this.angle);
@@ -192,7 +180,7 @@ export class Car {
     this.y += headingY * this.speed * dt;
 
     // Turning is proportional to speed (direction from neural network)
-    this.angle += output.direction * this.speed * CAR_STEERING_SENSITIVITY * dt;
+    this.angle += output.direction * this.speed * CONFIG.car.physics.steeringSensitivity * dt;
     this.angle = normalizeAngle(this.angle);
 
     // Prevent NaN propagation
@@ -299,9 +287,9 @@ export class Car {
       // Render centerline ray (showing distance from car to track center)
       if (this.lastCenterlinePoint) {
         const rayColor = config.colors.light;
-        const hitColor = CENTERLINE_RAY_HIT_COLOR;
-        const lineWidth = RAY_VISUALIZATION_WIDTH;
-        const hitRadius = RAY_VISUALIZATION_HIT_RADIUS;
+        const hitColor = CONFIG.sensors.visualization.centerlineHitColor;
+        const lineWidth = CONFIG.sensors.visualization.rayWidth;
+        const hitRadius = CONFIG.sensors.visualization.hitRadius;
 
         ctx.save();
         // Draw line to centerline
@@ -331,8 +319,8 @@ export class Car {
       // Use colors and settings from config
       const rayColor = config.colors.light;
       const hitColor = config.colors.light;
-      const lineWidth = RAY_VISUALIZATION_WIDTH;
-      const hitRadius = RAY_VISUALIZATION_HIT_RADIUS;
+      const lineWidth = CONFIG.sensors.visualization.rayWidth;
+      const hitRadius = CONFIG.sensors.visualization.hitRadius;
 
       this.rayCaster.renderRays(
         ctx,
@@ -347,13 +335,13 @@ export class Car {
 
     // Render percentage label above car (shows current progress including negative)
     // Progress ratio: 0.0 at start, 0.5 at halfway through first lap, 1.0 at first lap complete, etc.
-    if (SHOW_CAR_PERCENTAGES) {
+    if (CONFIG.visualization.showCarPercentages) {
       const percentage = this.currentProgressRatio * 100;
       const sign = percentage >= 0 ? '+' : '-';
       const absValue = Math.abs(percentage);
       const formatted = absValue.toFixed(1).padStart(4, ' '); // "XX.X" format
       ctx.save();
-      ctx.fillStyle = this.alive ? CAR_LABEL_COLOR_ALIVE : CAR_LABEL_COLOR_DEAD;
+      ctx.fillStyle = this.alive ? CONFIG.car.colors.labelAlive : CONFIG.car.colors.labelDead;
       ctx.font = 'bold 16px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';

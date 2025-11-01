@@ -29,7 +29,13 @@ export interface NeuralOutput {
   direction: number; // Steering direction (negative = left, positive = right)
 }
 
-export type ActivationType = 'relu' | 'linear' | 'gelu' | 'step' | 'swiglu' | '-';
+export type ActivationType =
+  | 'relu'
+  | 'linear'
+  | 'gelu'
+  | 'step'
+  | 'swiglu'
+  | '-';
 
 export type InputModificationType = 'dir' | 'pair';
 
@@ -59,7 +65,7 @@ export interface GenomeData {
 }
 
 // Speed multiplier options - type is derived from this array
-export const SPEED_MULTIPLIERS = [1, 2, 4, 8, 16] as const;
+export const SPEED_MULTIPLIERS = [0.25, 0.5, 1, 2, 3, 4] as const;
 export type SpeedMultiplier = (typeof SPEED_MULTIPLIERS)[number];
 // ============================================================================
 // CAR BRAIN CONFIGURATION TYPES

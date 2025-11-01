@@ -15,12 +15,7 @@
  */
 
 import type { PerformanceMetrics } from './PerformanceMonitor';
-import {
-  POP_THRESHOLD_FPS,
-  POP_INCREASE_PERCENTAGE,
-  POP_DECREASE_PERCENTAGE,
-  POP_MINIMUM_ESCAPE_MULTIPLIER,
-} from '@/config';
+import { CONFIG } from '@/config';
 
 export interface PopulationControllerConfig {
   targetFps: number;            // Used for display/metrics only (not for logic)
@@ -91,20 +86,20 @@ export class PopulationController {
     const isAtMinimumCarsPerType = this.currentCarsPerType <= minCarsPerType;
 
     // DECREASE: 0.1% low is below threshold
-    if (pointOnePercentLowFps < POP_THRESHOLD_FPS) {
-      carsPerTypeChangeAmount = -(this.currentCarsPerType * POP_DECREASE_PERCENTAGE);
-      adjustmentReason = `0.1% low below threshold (0.1%: ${pointOnePercentLowFps.toFixed(1)}, Threshold: ${POP_THRESHOLD_FPS})`;
+    if (pointOnePercentLowFps < CONFIG.geneticAlgorithm.population.adjustment.thresholdFPS) {
+      carsPerTypeChangeAmount = -(this.currentCarsPerType * CONFIG.geneticAlgorithm.population.adjustment.decreasePercentage);
+      adjustmentReason = `0.1% low below threshold (0.1%: ${pointOnePercentLowFps.toFixed(1)}, Threshold: ${CONFIG.geneticAlgorithm.population.adjustment.thresholdFPS})`;
     }
     // INCREASE: 0.1% low is at or above threshold
     else {
       if (isAtMinimumCarsPerType) {
         // At minimum: add fixed amount to escape quickly
-        carsPerTypeChangeAmount = POP_MINIMUM_ESCAPE_MULTIPLIER;
-        adjustmentReason = `0.1% low above threshold, escaping minimum (0.1%: ${pointOnePercentLowFps.toFixed(1)}, Threshold: ${POP_THRESHOLD_FPS})`;
+        carsPerTypeChangeAmount = CONFIG.geneticAlgorithm.population.adjustment.minimumEscapeMultiplier;
+        adjustmentReason = `0.1% low above threshold, escaping minimum (0.1%: ${pointOnePercentLowFps.toFixed(1)}, Threshold: ${CONFIG.geneticAlgorithm.population.adjustment.thresholdFPS})`;
       } else {
         // Normal: add percentage
-        carsPerTypeChangeAmount = this.currentCarsPerType * POP_INCREASE_PERCENTAGE;
-        adjustmentReason = `0.1% low above threshold (0.1%: ${pointOnePercentLowFps.toFixed(1)}, Threshold: ${POP_THRESHOLD_FPS})`;
+        carsPerTypeChangeAmount = this.currentCarsPerType * CONFIG.geneticAlgorithm.population.adjustment.increasePercentage;
+        adjustmentReason = `0.1% low above threshold (0.1%: ${pointOnePercentLowFps.toFixed(1)}, Threshold: ${CONFIG.geneticAlgorithm.population.adjustment.thresholdFPS})`;
       }
     }
 
@@ -142,7 +137,7 @@ export class PopulationController {
       reason: finalReason,
       metrics: {
         fps: metrics.currentFps,
-        error: (POP_THRESHOLD_FPS - pointOnePercentLowFps) / POP_THRESHOLD_FPS,
+        error: (CONFIG.geneticAlgorithm.population.adjustment.thresholdFPS - pointOnePercentLowFps) / CONFIG.geneticAlgorithm.population.adjustment.thresholdFPS,
         stability: metrics.stability,
         trend: metrics.trend,
         headroom: metrics.headroom
@@ -166,7 +161,7 @@ export class PopulationController {
       reason,
       metrics: {
         fps: metrics.currentFps,
-        error: (POP_THRESHOLD_FPS - metrics.p0_1Fps) / POP_THRESHOLD_FPS,
+        error: (CONFIG.geneticAlgorithm.population.adjustment.thresholdFPS - metrics.p0_1Fps) / CONFIG.geneticAlgorithm.population.adjustment.thresholdFPS,
         stability: metrics.stability,
         trend: metrics.trend,
         headroom: metrics.headroom

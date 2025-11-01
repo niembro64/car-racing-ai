@@ -4,14 +4,11 @@ import { Track } from './Track';
 import { SeededRandom } from './math/geom';
 import type { CarBrainConfig, ConfigEvolutionState } from '@/types';
 import {
+  CONFIG,
   getPopulationSize,
   getMutationRate,
   countTrainableParameters,
   getParameterBasedMutationScale,
-  GA_MUTATION_MIN_MULTIPLIER,
-  GA_MUTATION_MAX_MULTIPLIER,
-  GA_MUTATION_CURVE_POWER,
-  CAR_START_ANGLE_WIGGLE,
 } from '@/config';
 import { CAR_BRAIN_CONFIGS, CAR_BRAIN_CONFIGS_DEFINED } from './config_cars';
 
@@ -69,12 +66,11 @@ export class GeneticAlgorithm {
       return 0; // Elite car - no mutation
     }
 
-    // Exponential curve from GA_MUTATION_MIN_MULTIPLIER to GA_MUTATION_MAX_MULTIPLIER
     const progress = (index - 1) / (subPopSize - 2);
-    const range = GA_MUTATION_MAX_MULTIPLIER - GA_MUTATION_MIN_MULTIPLIER;
+    const range = CONFIG.geneticAlgorithm.mutation.rankMultiplier.max - CONFIG.geneticAlgorithm.mutation.rankMultiplier.min;
     return (
-      GA_MUTATION_MIN_MULTIPLIER +
-      range * Math.pow(progress, GA_MUTATION_CURVE_POWER)
+      CONFIG.geneticAlgorithm.mutation.rankMultiplier.min +
+      range * Math.pow(progress, CONFIG.geneticAlgorithm.mutation.rankMultiplier.curvePower)
     );
   }
 
@@ -97,7 +93,7 @@ export class GeneticAlgorithm {
           config.nn.activationType
         );
 
-        const angleWiggle = (Math.random() - 0.5) * 2 * CAR_START_ANGLE_WIGGLE;
+        const angleWiggle = (Math.random() - 0.5) * 2 * CONFIG.car.spawn.angleWiggle;
         const startAngle = track.startAngle + angleWiggle;
 
         const car = new Car(
@@ -193,7 +189,7 @@ export class GeneticAlgorithm {
 
     // Create cars: 1 elite + (carsPerType - 1) mutations
     for (let i = 0; i < carsPerType; i++) {
-      const angleWiggle = (this.rng.next() - 0.5) * 2 * CAR_START_ANGLE_WIGGLE;
+      const angleWiggle = (this.rng.next() - 0.5) * 2 * CONFIG.car.spawn.angleWiggle;
       const startAngle = track.startAngle + angleWiggle;
 
       if (i === 0) {
