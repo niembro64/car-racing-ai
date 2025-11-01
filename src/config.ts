@@ -69,12 +69,12 @@ export const CONFIG = {
       surface: '#888',
       boundary: '#464',
       centerline: '#fbbf24',
-      startFinishLine: '#ffffff',
+      startFinishLine: '#aaa',
     },
     lineWidths: {
       boundary: 2,
       centerline: 2,
-      startFinishLine: 20,
+      startFinishLine: 10,
     },
   },
 
