@@ -124,8 +124,8 @@ export const CONFIG = {
 
   sensors: {
     visualization: {
-      rayWidth: 0.5,
-      hitRadius: 3,
+      rayWidth: 0.2,
+      hitRadius: 1,
       centerlineHitColor: '#ffffff',
     },
   },
