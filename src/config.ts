@@ -46,7 +46,7 @@ export const track_waypoints_ratios: Point[] = [
   { x: 0.5, y: 0.1 },
   { x: 0.85, y: 0.12 },
   { x: 0.95, y: 0.5 },
-  { x: 0.80, y: 0.9 },
+  { x: 0.8, y: 0.9 },
   { x: 0.6125, y: 0.8333 },
   { x: 0.5625, y: 0.6667 },
   { x: 0.63, y: 0.56 },
@@ -78,7 +78,7 @@ export const CONFIG: Config = {
 
   track: {
     halfWidth: 70,
-    segmentsPerCurve: 4,
+    segmentsPerCurve: 8,
     waypoints: {
       base: scaleWaypointsToCanvas(
         track_waypoints_ratios,
@@ -193,12 +193,7 @@ export const CONFIG: Config = {
       },
     },
     brainSelection: {
-      // Default brain selection strategy for evolution
-      // Options:
-      //   'generation' - Always save current generation's best (aggressive exploration, can regress)
-      //   'alltime'    - Only save if equal or better than all-time best (stable, guaranteed progress)
-      //   'averaging'  - Average saved brain with current best (genetic diversity, sexual reproduction)
-      defaultStrategy: 'alltime' as import('@/types').BrainSelectionStrategy,
+      defaultStrategy: 'averaging',
     },
   },
 
@@ -253,8 +248,8 @@ export const CONFIG: Config = {
       },
     },
     generationMarker: {
-      radius: 6,
-      fontSize: 40,
+      radius: 8,
+      fontSize: 20,
       textOffset: -2,
       maxHistory: 10,
     },

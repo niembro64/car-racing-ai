@@ -1,3 +1,5 @@
+import { TEXT_CHARACTER } from './core/config_text';
+
 // ============================================================================
 // GEOMETRY TYPES
 // ============================================================================
@@ -130,19 +132,19 @@ export const BRAIN_SELECTION_STRATEGIES: StrategyInfo[] = [
     id: 'generation',
     name: 'GEN',
     description: 'Always save current generation\'s best',
-    emoji: '🔄'
+    emoji: TEXT_CHARACTER.repeat
   },
   {
     id: 'alltime',
     name: 'BEST',
     description: 'Only save if equal or better than all-time best',
-    emoji: '🏆'
+    emoji: TEXT_CHARACTER.trophy
   },
   {
     id: 'averaging',
     name: 'AVG',
     description: 'Average saved brain with current generation\'s best',
-    emoji: '🧬'
+    emoji: TEXT_CHARACTER.sexual
   }
 ];
 
@@ -167,4 +169,14 @@ export interface CenterlinePointResult {
 export interface RayCastResult {
   distances: number[];
   hits: (RayHit | null)[];
+}
+
+// Type for generation marker metadata
+export interface GenerationMarker {
+  x: number;
+  y: number;
+  generation: number;
+  fitness: number;
+  isAllTimeBest: boolean;  // Maps to bestWeightsAllTime brain (trophy emoji)
+  isLastGenBest: boolean;  // Maps to bestWeightsLastGeneration brain (repeat emoji)
 }

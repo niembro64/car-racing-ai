@@ -5,11 +5,16 @@ export const TEXT_CHARACTER = {
   success: '✅',
   up: '↗',
   down: '↘',
+  neutral: '→',
   car: '🚗',
   target: '🎯',
   number: '#',
   per: '/',
   type: '🆔',
+  brain: '🧠',
+  repeat: '🔁',
+  sexual: '💑',
+  trophy: '🏆',
 };
 
 export const TEXT_TARGET_NUMBER_PER_CAR =

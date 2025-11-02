@@ -37,8 +37,12 @@
           {{ carSpeedMultiplier }}x SPEED
         </button>
         <button @click="cycleBrainStrategy" class="brain-strategy-button">
-          {{ BRAIN_SELECTION_STRATEGIES.find(s => s.id === brainSelectionStrategy)?.emoji }}
-          {{ BRAIN_SELECTION_STRATEGIES.find(s => s.id === brainSelectionStrategy)?.name }}
+          {{ TEXT_CHARACTER.brain }}:
+          {{
+            BRAIN_SELECTION_STRATEGIES.find(
+              (s) => s.id === brainSelectionStrategy
+            )?.emoji
+          }}
         </button>
       </div>
 
@@ -282,7 +286,7 @@
                           ? TEXT_CHARACTER.up
                           : performanceTrend < 0
                           ? TEXT_CHARACTER.down
-                          : '→'
+                          : TEXT_CHARACTER.neutral
                       }}
                       {{ performanceTrend >= 0 ? '+' : ''
                       }}{{ (performanceTrend * 100).toFixed(0) }}%
@@ -321,6 +325,7 @@ import type {
   ActivationType,
   SpeedMultiplier,
   BrainSelectionStrategy,
+  GenerationMarker,
 } from '@/types';
 import { BRAIN_SELECTION_STRATEGIES } from '@/types';
 import { SPEED_MULTIPLIERS } from '@/types';
@@ -451,9 +456,9 @@ const adaptivePopulation = ref(CONFIG.performance.enabled);
 
 // Dynamic generation tracking for all config types
 const generationTimeByConfigId = ref<Map<string, number>>(new Map());
-const generationMarkersByConfigId = ref<
-  Map<string, { x: number; y: number; generation: number; fitness: number }[]>
->(new Map());
+const generationMarkersByConfigId = ref<Map<string, GenerationMarker[]>>(
+  new Map()
+);
 const lapCompletionTimeByConfigId = ref<Map<string, number>>(new Map()); // Current generation lap time
 const bestLapTimeByConfigId = ref<Map<string, number>>(new Map()); // Best lap time ever (across all generations)
 
@@ -764,11 +769,15 @@ const evolvePopulationByConfig = (
   if (bestCar) {
     const markers =
       generationMarkersByConfigId.value.get(config.shortName) ?? [];
+
+    // Add new marker with temporary flags
     markers.push({
       x: bestCar.x,
       y: bestCar.y,
       generation: ga.value.getGeneration(config.shortName),
       fitness: bestCar.maxDistanceReached,
+      isAllTimeBest: false, // Will be calculated below
+      isLastGenBest: true, // This is the most recent generation
     });
 
     // Keep only last N markers per config
@@ -777,6 +786,27 @@ const evolvePopulationByConfig = (
         0,
         markers.length - CONFIG.visualization.generationMarker.maxHistory
       );
+    }
+
+    // Update flags for all markers
+    // 1. Set all previous markers' isLastGenBest to false
+    for (let i = 0; i < markers.length - 1; i++) {
+      markers[i].isLastGenBest = false;
+    }
+
+    // 2. Find the marker with highest fitness and mark it as all-time best
+    let maxFitness = -Infinity;
+    let maxFitnessIndex = -1;
+    for (let i = 0; i < markers.length; i++) {
+      if (markers[i].fitness > maxFitness) {
+        maxFitness = markers[i].fitness;
+        maxFitnessIndex = i;
+      }
+    }
+
+    // 3. Update all markers' isAllTimeBest flag
+    for (let i = 0; i < markers.length; i++) {
+      markers[i].isAllTimeBest = i === maxFitnessIndex;
     }
 
     generationMarkersByConfigId.value.set(config.shortName, markers);
@@ -893,7 +923,7 @@ const updatePhysics = (dt: number) => {
             if (completionTime < bestLapTime) {
               bestLapTimeByConfigId.value.set(config.shortName, completionTime);
               print(
-                `[Lap Complete] 🏆 ${
+                `[Lap Complete] ${TEXT_CHARACTER.trophy} ${
                   config.displayName
                 } NEW BEST: ${completionTime.toFixed(2)}s (prev: ${
                   bestLapTime === Infinity ? '-' : bestLapTime.toFixed(2) + 's'
@@ -1041,9 +1071,11 @@ const render = (ctx: CanvasRenderingContext2D) => {
   for (const config of activeCarConfigs.value) {
     const markers =
       generationMarkersByConfigId.value.get(config.shortName) ?? [];
+
     ctx.fillStyle = config.colors.dark;
 
     for (const marker of markers) {
+      // Draw the marker dot
       ctx.beginPath();
       ctx.arc(
         marker.x,
@@ -1053,6 +1085,8 @@ const render = (ctx: CanvasRenderingContext2D) => {
         Math.PI * 2
       );
       ctx.fill();
+
+      // Draw generation number above the dot
       ctx.fillText(
         marker.generation.toString(),
         marker.x,
@@ -1060,6 +1094,24 @@ const render = (ctx: CanvasRenderingContext2D) => {
           CONFIG.visualization.generationMarker.radius +
           CONFIG.visualization.generationMarker.textOffset
       );
+
+      // Draw repeat emoji to the left if this is last generation's best
+      if (marker.isLastGenBest) {
+        ctx.fillText(
+          TEXT_CHARACTER.repeat,
+          marker.x - CONFIG.visualization.generationMarker.radius * 3,
+          marker.y
+        );
+      }
+
+      // Draw trophy emoji to the right if this is all-time best
+      if (marker.isAllTimeBest) {
+        ctx.fillText(
+          TEXT_CHARACTER.trophy,
+          marker.x + CONFIG.visualization.generationMarker.radius * 3,
+          marker.y
+        );
+      }
     }
   }
 
@@ -1195,10 +1247,10 @@ const adjustPopulationSize = () => {
         `Stability: ${(adjustment.metrics.stability * 100).toFixed(0)}% | ` +
         `Trend: ${
           adjustment.metrics.trend > 0
-            ? '↗'
+            ? TEXT_CHARACTER.up
             : adjustment.metrics.trend < 0
-            ? '↘'
-            : '→'
+            ? TEXT_CHARACTER.down
+            : TEXT_CHARACTER.neutral
         } ${(adjustment.metrics.trend * 100).toFixed(0)}% | ` +
         `Headroom: ${(adjustment.metrics.headroom * 100).toFixed(0)}%`
     );
@@ -1457,7 +1509,11 @@ const toggleCarSpeed = () => {
 
 // Cycle through brain selection strategies
 const cycleBrainStrategy = () => {
-  const strategies: BrainSelectionStrategy[] = ['generation', 'alltime', 'averaging'];
+  const strategies: BrainSelectionStrategy[] = [
+    'generation',
+    'alltime',
+    'averaging',
+  ];
   const currentIndex = strategies.indexOf(brainSelectionStrategy.value);
   const nextIndex = (currentIndex + 1) % strategies.length;
   brainSelectionStrategy.value = strategies[nextIndex];
@@ -1465,8 +1521,12 @@ const cycleBrainStrategy = () => {
   // Persist to localStorage
   localStorage.setItem('brainSelectionStrategy', brainSelectionStrategy.value);
 
-  const strategyInfo = BRAIN_SELECTION_STRATEGIES.find(s => s.id === brainSelectionStrategy.value);
-  print(`[Strategy] ${strategyInfo?.emoji} Switched to: ${strategyInfo?.name} - ${strategyInfo?.description}`);
+  const strategyInfo = BRAIN_SELECTION_STRATEGIES.find(
+    (s) => s.id === brainSelectionStrategy.value
+  );
+  print(
+    `[Strategy] ${strategyInfo?.emoji} Switched to: ${strategyInfo?.name} - ${strategyInfo?.description}`
+  );
 };
 
 // Render graph
@@ -1723,7 +1783,10 @@ watch(useAllCarTypes, () => {
 onMounted(() => {
   // Load brain selection strategy from localStorage
   const savedStrategy = localStorage.getItem('brainSelectionStrategy');
-  if (savedStrategy && ['generation', 'alltime', 'averaging'].includes(savedStrategy)) {
+  if (
+    savedStrategy &&
+    ['generation', 'alltime', 'averaging'].includes(savedStrategy)
+  ) {
     brainSelectionStrategy.value = savedStrategy as BrainSelectionStrategy;
   }
 
@@ -1834,7 +1897,7 @@ canvas {
 .stats-table th {
   background: rgba(0, 0, 0, 0.8);
   color: #ffffff;
-  padding: 4px 6px;
+  padding: 6px 8px;
   text-align: center;
   font-weight: 700;
   text-transform: uppercase;
@@ -1844,7 +1907,7 @@ canvas {
 }
 
 .stats-table td {
-  padding: 4px 6px;
+  padding: 6px 8px;
   color: #ffffff;
   text-align: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);

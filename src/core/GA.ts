@@ -11,6 +11,7 @@ import {
   getParameterBasedMutationScale,
 } from '@/config';
 import { CAR_BRAIN_CONFIGS, CAR_BRAIN_CONFIGS_DEFINED } from './config_cars';
+import { TEXT_CHARACTER } from './config_text';
 
 export class GeneticAlgorithm {
   // Map from config shortName to evolution state
@@ -178,15 +179,15 @@ export class GeneticAlgorithm {
 
           if (previousAllTime > 0) {
             const improvement = ((bestCar.maxDistanceReached - previousAllTime) / previousAllTime * 100).toFixed(1);
-            console.log(`[${config.shortName}] 🔄 Gen ${state.generation}: Using gen best (${bestCar.maxDistanceReached.toFixed(0)}). New all-time: ${previousAllTime.toFixed(0)} → ${bestCar.maxDistanceReached.toFixed(0)} (+${improvement}%)`);
+            console.log(`[${config.shortName}] ${TEXT_CHARACTER.repeat} Gen ${state.generation}: Using gen best (${bestCar.maxDistanceReached.toFixed(0)}). New all-time: ${previousAllTime.toFixed(0)} ${TEXT_CHARACTER.neutral} ${bestCar.maxDistanceReached.toFixed(0)} (+${improvement}%)`);
           } else {
-            console.log(`[${config.shortName}] 🔄 Gen ${state.generation}: Using gen best (${bestCar.maxDistanceReached.toFixed(0)}). First all-time best.`);
+            console.log(`[${config.shortName}] ${TEXT_CHARACTER.repeat} Gen ${state.generation}: Using gen best (${bestCar.maxDistanceReached.toFixed(0)}). First all-time best.`);
           }
         } else if (state.bestFitnessAllTime > 0) {
           const regression = ((state.bestFitnessAllTime - bestCar.maxDistanceReached) / state.bestFitnessAllTime * 100).toFixed(1);
-          console.log(`[${config.shortName}] 🔄 Gen ${state.generation}: Using gen best (${bestCar.maxDistanceReached.toFixed(0)}, -${regression}% from all-time ${state.bestFitnessAllTime.toFixed(0)})`);
+          console.log(`[${config.shortName}] ${TEXT_CHARACTER.repeat} Gen ${state.generation}: Using gen best (${bestCar.maxDistanceReached.toFixed(0)}, -${regression}% from all-time ${state.bestFitnessAllTime.toFixed(0)})`);
         } else {
-          console.log(`[${config.shortName}] 🔄 Gen ${state.generation}: Using gen best (${bestCar.maxDistanceReached.toFixed(0)})`);
+          console.log(`[${config.shortName}] ${TEXT_CHARACTER.repeat} Gen ${state.generation}: Using gen best (${bestCar.maxDistanceReached.toFixed(0)})`);
         }
         break;
 
@@ -199,12 +200,12 @@ export class GeneticAlgorithm {
 
           if (previousAllTime > 0) {
             const improvement = ((bestCar.maxDistanceReached - previousAllTime) / previousAllTime * 100).toFixed(1);
-            console.log(`[${config.shortName}] 🏆 Gen ${state.generation}: New all-time best! ${previousAllTime.toFixed(0)} → ${bestCar.maxDistanceReached.toFixed(0)} (+${improvement}%)`);
+            console.log(`[${config.shortName}] ${TEXT_CHARACTER.trophy} Gen ${state.generation}: New all-time best! ${previousAllTime.toFixed(0)} ${TEXT_CHARACTER.neutral} ${bestCar.maxDistanceReached.toFixed(0)} (+${improvement}%)`);
           } else {
-            console.log(`[${config.shortName}] 🏆 Gen ${state.generation}: First all-time best: ${bestCar.maxDistanceReached.toFixed(0)}`);
+            console.log(`[${config.shortName}] ${TEXT_CHARACTER.trophy} Gen ${state.generation}: First all-time best: ${bestCar.maxDistanceReached.toFixed(0)}`);
           }
         } else {
-          console.log(`[${config.shortName}] 🏆 Gen ${state.generation}: No improvement (gen: ${bestCar.maxDistanceReached.toFixed(0)}, all-time: ${state.bestFitnessAllTime.toFixed(0)}). Keeping all-time brain.`);
+          console.log(`[${config.shortName}] ${TEXT_CHARACTER.trophy} Gen ${state.generation}: No improvement (gen: ${bestCar.maxDistanceReached.toFixed(0)}, all-time: ${state.bestFitnessAllTime.toFixed(0)}). Keeping all-time brain.`);
         }
 
         brainToSeed = state.bestWeightsAllTime;
@@ -217,7 +218,7 @@ export class GeneticAlgorithm {
           state.bestWeightsAllTime = currentGenBestWeights;
           state.bestFitnessAllTime = bestCar.maxDistanceReached;
           brainToSeed = state.bestWeightsAllTime;
-          console.log(`[${config.shortName}] 🧬 Gen ${state.generation}: First brain: ${bestCar.maxDistanceReached.toFixed(0)}`);
+          console.log(`[${config.shortName}] ${TEXT_CHARACTER.sexual} Gen ${state.generation}: First brain: ${bestCar.maxDistanceReached.toFixed(0)}`);
         } else {
           // Average the two brains
           const averagedWeights = averageNetworkWeights(state.bestWeightsAllTime, currentGenBestWeights);
@@ -228,7 +229,7 @@ export class GeneticAlgorithm {
           const previousMaxFitness = state.bestFitnessAllTime;
           state.bestFitnessAllTime = Math.max(state.bestFitnessAllTime, bestCar.maxDistanceReached);
 
-          console.log(`[${config.shortName}] 🧬 Gen ${state.generation}: Averaged (all-time fitness: ${previousMaxFitness.toFixed(0)}, gen: ${bestCar.maxDistanceReached.toFixed(0)}, max seen: ${state.bestFitnessAllTime.toFixed(0)})`);
+          console.log(`[${config.shortName}] ${TEXT_CHARACTER.sexual} Gen ${state.generation}: Averaged (all-time fitness: ${previousMaxFitness.toFixed(0)}, gen: ${bestCar.maxDistanceReached.toFixed(0)}, max seen: ${state.bestFitnessAllTime.toFixed(0)})`);
         }
         break;
     }
