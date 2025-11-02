@@ -22,7 +22,7 @@ export interface PerformanceMetrics {
   p5Fps: number; // 5% low (worst 5% of frames)
   p50Fps: number; // Median
   p95Fps: number; // 95th percentile
-  p99Fps: number; // 99th percentile
+  p99Fps: number; // 99th percentile (1% high)
   p99_9Fps: number; // 99.9th percentile (0.1% high - best 0.1% of frames)
   frameTimeMs: number;
   frameTimeVariance: number; // Standard deviation
@@ -44,7 +44,7 @@ export class PerformanceMonitor {
   private trendWindow: number[] = [];
   private readonly trendWindowSize: number = CONFIG.performance.monitoring.trendWindowSize;
 
-  constructor(targetFps: number = 60, historySize: number = 120) {
+  constructor(targetFps: number = 60, historySize: number = 1000) {
     this.targetFps = targetFps;
     this.maxHistorySize = historySize;
   }
@@ -102,8 +102,8 @@ export class PerformanceMonitor {
     const p5Fps = this.getPercentile(sortedFps, 0.05); // 5% low
     const p50Fps = this.getPercentile(sortedFps, 0.5);
     const p95Fps = this.getPercentile(sortedFps, 0.95);
-    const p99Fps = this.getPercentile(sortedFps, 0.99);
-    const p99_9Fps = this.getPercentile(sortedFps, 0.999); // 99.9th percentile (0.1% high)
+    const p99Fps = this.getPercentile(sortedFps, 0.99); // 1% high
+    const p99_9Fps = this.getPercentile(sortedFps, 0.999); // 0.1% high
 
     // Frame time variance (standard deviation)
     const avgFrameTime = this.frameTimeHistory.reduce((sum, t) => sum + t, 0) / this.frameTimeHistory.length;

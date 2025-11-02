@@ -177,7 +177,7 @@ export const CONFIG = {
         max: CAR_BRAIN_CONFIGS.length * 50,
       },
       adjustment: {
-        thresholdFPS: 20,
+        thresholdFPS: 30,
         increasePercentage: 0.15,
         decreasePercentage: 0.15,
         minimumEscapeMultiplier: 3,
@@ -213,7 +213,7 @@ export const CONFIG = {
     ui: {
       updateInterval: 1,
     },
-    fpsCalcSavedWeight: 0.99,
+    fpsCalcSavedWeight: 0.999,
   },
 
   lap: {

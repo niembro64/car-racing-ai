@@ -161,32 +161,20 @@
                     <td class="value-cell">{{ currentFps.toFixed(1) }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">FPS 0.1% {{ TEXT_CHARACTER.up }}</td>
-                    <td class="value-cell">{{ fpsTarget.toFixed(1) }}</td>
+                    <td class="label-cell">FPS 99.9%</td>
+                    <td class="value-cell">{{ fps99_9Percent.toFixed(1) }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">FPS 1% {{ TEXT_CHARACTER.up }}</td>
-                    <td class="value-cell">{{ fps1PercentHigh.toFixed(1) }}</td>
+                    <td class="label-cell">FPS 99.0%</td>
+                    <td class="value-cell">{{ fps99Percent.toFixed(1) }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">FPS 5% {{ TEXT_CHARACTER.up }}</td>
-                    <td class="value-cell">{{ fps5PercentHigh.toFixed(1) }}</td>
+                    <td class="label-cell">FPS 1.0%</td>
+                    <td class="value-cell">{{ fps1Percent.toFixed(1) }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">
-                      FPS 0.1% {{ TEXT_CHARACTER.down }}
-                    </td>
-                    <td class="value-cell">
-                      {{ fps0_1PercentLow.toFixed(1) }}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="label-cell">FPS 1% {{ TEXT_CHARACTER.down }}</td>
-                    <td class="value-cell">{{ fps1PercentLow.toFixed(1) }}</td>
-                  </tr>
-                  <tr>
-                    <td class="label-cell">FPS 5% {{ TEXT_CHARACTER.down }}</td>
-                    <td class="value-cell">{{ fps5PercentLow.toFixed(1) }}</td>
+                    <td class="label-cell">FPS 0.1%</td>
+                    <td class="value-cell">{{ fps0_1Percent.toFixed(1) }}</td>
                   </tr>
                   <tr>
                     <td class="label-cell">Frame Time</td>
@@ -213,7 +201,7 @@
                 <tbody>
                   <tr>
                     <td class="label-cell">
-                      {{ TEXT_TARGET_NUMBER_PER_CAR }}
+                      {{ TEXT_TARGET_NUMBER_PER_CAR_TYPE }}
                       {{ TEXT_CHARACTER.saved }}
                     </td>
                     <td class="value-cell">
@@ -222,7 +210,7 @@
                   </tr>
                   <tr>
                     <td class="label-cell">
-                      {{ TEXT_TARGET_NUMBER_PER_CAR }}
+                      {{ TEXT_TARGET_NUMBER_PER_CAR_TYPE }}
                     </td>
                     <td class="value-cell">
                       {{ actualPerformanceTargetPerType.toFixed(1) }}
@@ -230,7 +218,8 @@
                   </tr>
                   <tr>
                     <td class="label-cell">
-                      {{ TEXT_TARGET_NUMBER_PER_CAR }} {{ TEXT_CHARACTER.up }}
+                      {{ TEXT_TARGET_NUMBER_PER_CAR_TYPE }}
+                      {{ TEXT_CHARACTER.up }}
                     </td>
                     <td class="value-cell">
                       {{ performanceTargetCarsPerType.toFixed(1) }}
@@ -238,7 +227,8 @@
                   </tr>
                   <tr>
                     <td class="label-cell">
-                      {{ TEXT_TARGET_NUMBER_PER_CAR }} {{ TEXT_CHARACTER.down }}
+                      {{ TEXT_TARGET_NUMBER_PER_CAR_TYPE }}
+                      {{ TEXT_CHARACTER.down }}
                     </td>
                     <td class="value-cell">
                       {{ performanceTargetCarsPerTypeDown.toFixed(1) }}
@@ -342,7 +332,10 @@ import {
   CAR_BRAIN_CONFIGS,
   CAR_BRAIN_CONFIGS_DEFINED,
 } from '@/core/config_cars';
-import { TEXT_CHARACTER, TEXT_TARGET_NUMBER_PER_CAR } from '@/core/config_text';
+import {
+  TEXT_CHARACTER,
+  TEXT_TARGET_NUMBER_PER_CAR_TYPE,
+} from '@/core/config_text';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
@@ -431,9 +424,10 @@ const targetPopulationTotal = computed(
 const performanceStability = ref(1.0);
 const performanceTrend = ref(0);
 const performanceHeadroom = ref(1.0);
-const fps0_1PercentLow = ref(60);
-const fps1PercentLow = ref(60);
-const fps5PercentLow = ref(60);
+const fps0_1Percent = ref(60); // 0.1% low
+const fps1Percent = ref(60); // 1% low
+const fps99Percent = ref(60); // 99% (1% high)
+const fps99_9Percent = ref(60); // 99.9% (0.1% high)
 
 // Profiling metrics (for display)
 const avgFrameTime = ref(16.67);
@@ -445,9 +439,6 @@ const HISTORY_SIZE = 60;
 
 // Population control state
 const adaptivePopulation = ref(CONFIG.performance.enabled);
-const fpsTarget = ref(0); // Will be set dynamically based on 0.1% high (99.9th percentile)
-const fps1PercentHigh = ref(0); // 99th percentile (1% high)
-const fps5PercentHigh = ref(0); // 95th percentile (5% high)
 
 // Dynamic generation tracking for all config types
 const generationTimeByConfigId = ref<Map<string, number>>(new Map());
@@ -788,7 +779,7 @@ const evolvePopulationByConfig = (
 
   // Use "Up" target if above threshold, "Down" target if below threshold
   const targetCarsPerType =
-    fps0_1PercentLow.value >=
+    fps0_1Percent.value >=
     CONFIG.geneticAlgorithm.population.adjustment.thresholdFPS
       ? performanceTargetCarsPerType.value
       : performanceTargetCarsPerTypeDown.value;
@@ -1123,59 +1114,41 @@ const updatePerformanceMetrics = (updateTime: number, renderTime: number) => {
     performanceHeadroom.value = metrics.headroom;
 
     // FPS Low trackers: Immediately jump to lower values, gradually rise with higher values
-    if (
-      metrics.p0_1Fps < fps0_1PercentLow.value ||
-      fps0_1PercentLow.value === 0
-    ) {
-      fps0_1PercentLow.value = metrics.p0_1Fps; // Immediate drop
+    // 0.1% low
+    if (metrics.p0_1Fps < fps0_1Percent.value || fps0_1Percent.value === 0) {
+      fps0_1Percent.value = metrics.p0_1Fps; // Immediate drop
     } else {
-      fps0_1PercentLow.value =
+      fps0_1Percent.value =
         metrics.p0_1Fps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
-        fps0_1PercentLow.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual rise
+        fps0_1Percent.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual rise
     }
 
-    if (metrics.p1Fps < fps1PercentLow.value || fps1PercentLow.value === 0) {
-      fps1PercentLow.value = metrics.p1Fps; // Immediate drop
+    // 1% low
+    if (metrics.p1Fps < fps1Percent.value || fps1Percent.value === 0) {
+      fps1Percent.value = metrics.p1Fps; // Immediate drop
     } else {
-      fps1PercentLow.value =
+      fps1Percent.value =
         metrics.p1Fps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
-        fps1PercentLow.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual rise
-    }
-
-    if (metrics.p5Fps < fps5PercentLow.value || fps5PercentLow.value === 0) {
-      fps5PercentLow.value = metrics.p5Fps; // Immediate drop
-    } else {
-      fps5PercentLow.value =
-        metrics.p5Fps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
-        fps5PercentLow.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual rise
+        fps1Percent.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual rise
     }
 
     // FPS High trackers: Immediately jump to higher values, gradually decay with lower values
-    // FPS 0.1% High (99.9th percentile)
-    if (metrics.p99_9Fps > fpsTarget.value) {
-      fpsTarget.value = metrics.p99_9Fps; // Immediate rise
+    // 99% (1% high)
+    if (metrics.p99Fps > fps99Percent.value) {
+      fps99Percent.value = metrics.p99Fps; // Immediate rise
     } else {
-      fpsTarget.value =
-        metrics.p99_9Fps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
-        fpsTarget.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual decay
-    }
-
-    // FPS 1% High (99th percentile)
-    if (metrics.p99Fps > fps1PercentHigh.value) {
-      fps1PercentHigh.value = metrics.p99Fps; // Immediate rise
-    } else {
-      fps1PercentHigh.value =
+      fps99Percent.value =
         metrics.p99Fps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
-        fps1PercentHigh.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual decay
+        fps99Percent.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual decay
     }
 
-    // FPS 5% High (95th percentile)
-    if (metrics.p95Fps > fps5PercentHigh.value) {
-      fps5PercentHigh.value = metrics.p95Fps; // Immediate rise
+    // 99.9% (0.1% high)
+    if (metrics.p99_9Fps > fps99_9Percent.value) {
+      fps99_9Percent.value = metrics.p99_9Fps; // Immediate rise
     } else {
-      fps5PercentHigh.value =
-        metrics.p95Fps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
-        fps5PercentHigh.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual decay
+      fps99_9Percent.value =
+        metrics.p99_9Fps * (1 - CONFIG.performance.fpsCalcSavedWeight) +
+        fps99_9Percent.value * CONFIG.performance.fpsCalcSavedWeight; // Gradual decay
     }
 
     avgUpdateTime.value =
@@ -1410,7 +1383,7 @@ const reset = () => {
   ga.value = new GeneticAlgorithm(randomSeed);
 
   print(
-    `[Reset] Re-creating ${targetPopulationTotal.value} cars (${performanceTargetCarsPerType.value} per type) | Target: ${fpsTarget.value} FPS`
+    `[Reset] Re-creating ${targetPopulationTotal.value} cars (${performanceTargetCarsPerType.value} per type) | Target: ${fps0_1Percent.value} FPS (0.1% low)`
   );
 
   population.value = ga.value.initializePopulation(
