@@ -1,8 +1,8 @@
 import { Car } from './Car';
-import { NeuralNetwork } from './Neural';
+import { NeuralNetwork, averageNetworkWeights } from './Neural';
 import { Track } from './Track';
 import { SeededRandom } from './math/geom';
-import type { CarBrainConfig, ConfigEvolutionState } from '@/types';
+import type { CarBrainConfig, ConfigEvolutionState, BrainSelectionStrategy } from '@/types';
 import {
   CONFIG,
   getPopulationSize,
@@ -36,8 +36,10 @@ export class GeneticAlgorithm {
     for (const config of CAR_BRAIN_CONFIGS_DEFINED) {
       this.stateByShortName.set(config.shortName, {
         generation: 0,
-        bestFitness: 0,
-        bestWeights: null,
+        bestFitnessLastGeneration: 0,
+        bestWeightsLastGeneration: null,
+        bestFitnessAllTime: 0,
+        bestWeightsAllTime: null,
         totalTime: 0,
       });
     }
@@ -49,11 +51,13 @@ export class GeneticAlgorithm {
   }
 
   getBestFitness(shortName: string): number {
-    return this.stateByShortName.get(shortName)?.bestFitness ?? 0;
+    // Return all-time best fitness for display purposes
+    return this.stateByShortName.get(shortName)?.bestFitnessAllTime ?? 0;
   }
 
   getBestWeights(shortName: string): any {
-    return this.stateByShortName.get(shortName)?.bestWeights ?? null;
+    // Return all-time best weights for display purposes
+    return this.stateByShortName.get(shortName)?.bestWeightsAllTime ?? null;
   }
 
   getTotalTime(shortName: string): number {
@@ -121,7 +125,8 @@ export class GeneticAlgorithm {
     generationTime: number,
     winnerCar?: Car,
     mutationByDistance: boolean = true,
-    carsForThisType?: number
+    carsForThisType?: number,
+    brainSelectionStrategy?: BrainSelectionStrategy
   ): Car[] {
     const state = this.stateByShortName.get(config.shortName);
     if (!state) {
@@ -148,26 +153,84 @@ export class GeneticAlgorithm {
     // Update total time (accumulate generation time)
     state.totalTime += generationTime;
 
-    // Only save weights if this generation's best is equal or better than all-time best
-    // This preserves the best brain across generations even if some generations perform worse
-    if (bestCar.maxDistanceReached >= state.bestFitness) {
-      // Update best weights (all-time best brain)
-      state.bestWeights = bestCar.brain.toJSON();
+    // ALWAYS update best from last generation
+    const currentGenBestWeights = bestCar.brain.toJSON();
+    state.bestWeightsLastGeneration = currentGenBestWeights;
+    state.bestFitnessLastGeneration = bestCar.maxDistanceReached;
 
-      // Track fitness improvement
-      const previousBest = state.bestFitness;
-      state.bestFitness = bestCar.maxDistanceReached;
+    // Apply brain selection strategy to determine what to use for next generation
+    const strategy = brainSelectionStrategy || 'alltime'; // Default to all-time best
 
-      // Log improvement
-      if (previousBest > 0) {
-        const improvement = ((bestCar.maxDistanceReached - previousBest) / previousBest * 100).toFixed(1);
-        console.log(`[${config.shortName}] Gen ${state.generation}: New best! ${previousBest.toFixed(0)} → ${bestCar.maxDistanceReached.toFixed(0)} (+${improvement}%)`);
-      } else {
-        console.log(`[${config.shortName}] Gen ${state.generation}: First best saved: ${bestCar.maxDistanceReached.toFixed(0)}`);
-      }
-    } else {
-      // No improvement - keeping previous best brain
-      console.log(`[${config.shortName}] Gen ${state.generation}: No improvement (best: ${bestCar.maxDistanceReached.toFixed(0)}, all-time: ${state.bestFitness.toFixed(0)}). Keeping previous brain.`);
+    // Determine which brain to use for seeding next generation
+    let brainToSeed: any;
+
+    switch (strategy) {
+      case 'generation':
+        // Strategy 1: Use current generation's best to seed next generation
+        // Still track all-time best for comparison/display
+        brainToSeed = state.bestWeightsLastGeneration;
+
+        // Track all-time best
+        if (bestCar.maxDistanceReached > state.bestFitnessAllTime) {
+          const previousAllTime = state.bestFitnessAllTime;
+          state.bestWeightsAllTime = currentGenBestWeights;
+          state.bestFitnessAllTime = bestCar.maxDistanceReached;
+
+          if (previousAllTime > 0) {
+            const improvement = ((bestCar.maxDistanceReached - previousAllTime) / previousAllTime * 100).toFixed(1);
+            console.log(`[${config.shortName}] 🔄 Gen ${state.generation}: Using gen best (${bestCar.maxDistanceReached.toFixed(0)}). New all-time: ${previousAllTime.toFixed(0)} → ${bestCar.maxDistanceReached.toFixed(0)} (+${improvement}%)`);
+          } else {
+            console.log(`[${config.shortName}] 🔄 Gen ${state.generation}: Using gen best (${bestCar.maxDistanceReached.toFixed(0)}). First all-time best.`);
+          }
+        } else if (state.bestFitnessAllTime > 0) {
+          const regression = ((state.bestFitnessAllTime - bestCar.maxDistanceReached) / state.bestFitnessAllTime * 100).toFixed(1);
+          console.log(`[${config.shortName}] 🔄 Gen ${state.generation}: Using gen best (${bestCar.maxDistanceReached.toFixed(0)}, -${regression}% from all-time ${state.bestFitnessAllTime.toFixed(0)})`);
+        } else {
+          console.log(`[${config.shortName}] 🔄 Gen ${state.generation}: Using gen best (${bestCar.maxDistanceReached.toFixed(0)})`);
+        }
+        break;
+
+      case 'alltime':
+        // Strategy 2: Only update all-time best if equal or better, use it to seed
+        if (bestCar.maxDistanceReached >= state.bestFitnessAllTime) {
+          state.bestWeightsAllTime = currentGenBestWeights;
+          const previousAllTime = state.bestFitnessAllTime;
+          state.bestFitnessAllTime = bestCar.maxDistanceReached;
+
+          if (previousAllTime > 0) {
+            const improvement = ((bestCar.maxDistanceReached - previousAllTime) / previousAllTime * 100).toFixed(1);
+            console.log(`[${config.shortName}] 🏆 Gen ${state.generation}: New all-time best! ${previousAllTime.toFixed(0)} → ${bestCar.maxDistanceReached.toFixed(0)} (+${improvement}%)`);
+          } else {
+            console.log(`[${config.shortName}] 🏆 Gen ${state.generation}: First all-time best: ${bestCar.maxDistanceReached.toFixed(0)}`);
+          }
+        } else {
+          console.log(`[${config.shortName}] 🏆 Gen ${state.generation}: No improvement (gen: ${bestCar.maxDistanceReached.toFixed(0)}, all-time: ${state.bestFitnessAllTime.toFixed(0)}). Keeping all-time brain.`);
+        }
+
+        brainToSeed = state.bestWeightsAllTime;
+        break;
+
+      case 'averaging':
+        // Strategy 3: Average all-time best with current generation's best
+        // On first generation, just use the first brain
+        if (!state.bestWeightsAllTime || state.bestFitnessAllTime === 0) {
+          state.bestWeightsAllTime = currentGenBestWeights;
+          state.bestFitnessAllTime = bestCar.maxDistanceReached;
+          brainToSeed = state.bestWeightsAllTime;
+          console.log(`[${config.shortName}] 🧬 Gen ${state.generation}: First brain: ${bestCar.maxDistanceReached.toFixed(0)}`);
+        } else {
+          // Average the two brains
+          const averagedWeights = averageNetworkWeights(state.bestWeightsAllTime, currentGenBestWeights);
+          state.bestWeightsAllTime = averagedWeights;
+          brainToSeed = averagedWeights;
+
+          // Track the max fitness seen
+          const previousMaxFitness = state.bestFitnessAllTime;
+          state.bestFitnessAllTime = Math.max(state.bestFitnessAllTime, bestCar.maxDistanceReached);
+
+          console.log(`[${config.shortName}] 🧬 Gen ${state.generation}: Averaged (all-time fitness: ${previousMaxFitness.toFixed(0)}, gen: ${bestCar.maxDistanceReached.toFixed(0)}, max seen: ${state.bestFitnessAllTime.toFixed(0)})`);
+        }
+        break;
     }
 
     // Increment generation
@@ -193,9 +256,9 @@ export class GeneticAlgorithm {
     // Create next generation
     const nextGeneration: Car[] = [];
 
-    // Create elite brain
+    // Create elite brain from the seed brain determined by strategy
     const eliteBrain = NeuralNetwork.fromJSON(
-      state.bestWeights,
+      brainToSeed,
       this.rng.next() * 1000000,
       config.nn.architecture,
       config.nn.activationType
@@ -283,8 +346,26 @@ export class GeneticAlgorithm {
 
       // Load state by shortName
       if (data.stateByShortName) {
-        for (const [shortName, state] of Object.entries(data.stateByShortName)) {
-          this.stateByShortName.set(shortName, state as ConfigEvolutionState);
+        for (const [shortName, stateData] of Object.entries(data.stateByShortName)) {
+          const state = stateData as any;
+
+          // Migration: Handle old format (bestFitness/bestWeights) -> new format
+          // Old format only had one brain, we'll treat it as all-time best
+          if (state.bestFitness !== undefined && state.bestWeights !== undefined) {
+            // Old format detected
+            const migratedState: ConfigEvolutionState = {
+              generation: state.generation || 0,
+              bestFitnessLastGeneration: state.bestFitness || 0,
+              bestWeightsLastGeneration: state.bestWeights || null,
+              bestFitnessAllTime: state.bestFitness || 0,
+              bestWeightsAllTime: state.bestWeights || null,
+              totalTime: state.totalTime || 0,
+            };
+            this.stateByShortName.set(shortName, migratedState);
+          } else {
+            // New format - use as-is
+            this.stateByShortName.set(shortName, state as ConfigEvolutionState);
+          }
         }
       }
     } catch (error) {
@@ -296,8 +377,10 @@ export class GeneticAlgorithm {
   reset(): void {
     for (const state of this.stateByShortName.values()) {
       state.generation = 0;
-      state.bestFitness = 0;
-      state.bestWeights = null;
+      state.bestFitnessLastGeneration = 0;
+      state.bestWeightsLastGeneration = null;
+      state.bestFitnessAllTime = 0;
+      state.bestWeightsAllTime = null;
       state.totalTime = 0;
     }
   }

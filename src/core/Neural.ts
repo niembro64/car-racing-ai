@@ -230,3 +230,42 @@ export class NeuralNetwork {
     return new NeuralNetwork(weights, seed, architecture, activationType);
   }
 }
+
+/**
+ * Average two neural network weight structures element-wise
+ * Used for "sexual reproduction" brain selection strategy
+ *
+ * @param weights1 - First parent network weights
+ * @param weights2 - Second parent network weights
+ * @returns Averaged network weights (offspring)
+ */
+export function averageNetworkWeights(
+  weights1: NetworkStructure,
+  weights2: NetworkStructure
+): NetworkStructure {
+  // Deep clone first structure as base
+  const result: NetworkStructure = JSON.parse(JSON.stringify(weights1));
+
+  // Average each layer's weights and biases
+  for (let layerIdx = 0; layerIdx < result.layers.length; layerIdx++) {
+    const layer1 = weights1.layers[layerIdx];
+    const layer2 = weights2.layers[layerIdx];
+    const resultLayer = result.layers[layerIdx];
+
+    // Average weights matrix
+    for (let i = 0; i < resultLayer.weights.length; i++) {
+      for (let j = 0; j < resultLayer.weights[i].length; j++) {
+        resultLayer.weights[i][j] =
+          (layer1.weights[i][j] + layer2.weights[i][j]) / 2;
+      }
+    }
+
+    // Average biases vector
+    for (let i = 0; i < resultLayer.biases.length; i++) {
+      resultLayer.biases[i] =
+        (layer1.biases[i] + layer2.biases[i]) / 2;
+    }
+  }
+
+  return result;
+}

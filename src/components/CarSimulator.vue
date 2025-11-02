@@ -36,6 +36,10 @@
         >
           {{ carSpeedMultiplier }}x SPEED
         </button>
+        <button @click="cycleBrainStrategy" class="brain-strategy-button">
+          {{ BRAIN_SELECTION_STRATEGIES.find(s => s.id === brainSelectionStrategy)?.emoji }}
+          {{ BRAIN_SELECTION_STRATEGIES.find(s => s.id === brainSelectionStrategy)?.name }}
+        </button>
       </div>
 
       <div class="hud">
@@ -316,7 +320,9 @@ import type {
   InputModificationType,
   ActivationType,
   SpeedMultiplier,
+  BrainSelectionStrategy,
 } from '@/types';
+import { BRAIN_SELECTION_STRATEGIES } from '@/types';
 import { SPEED_MULTIPLIERS } from '@/types';
 import {
   CONFIG,
@@ -366,6 +372,9 @@ const carSpeedMultiplier = ref<SpeedMultiplier>(
 );
 const mutationByDistance = ref(CONFIG.defaults.mutationByDistance);
 const delayedSteering = ref(CONFIG.defaults.delayedSteering);
+const brainSelectionStrategy = ref<BrainSelectionStrategy>(
+  CONFIG.geneticAlgorithm.brainSelection.defaultStrategy
+);
 const useAllCarTypes = ref(false); // Toggle between active cars only and all cars
 const frameCounter = ref(0);
 const viewMode = ref<'table' | 'graph' | 'performance'>('table');
@@ -794,7 +803,8 @@ const evolvePopulationByConfig = (
     generationTime,
     winnerCar,
     mutationByDistance.value,
-    savedPerformanceTargetPerType.value
+    savedPerformanceTargetPerType.value,
+    brainSelectionStrategy.value
   );
   generationTimeByConfigId.value.set(config.shortName, 0);
   lapCompletionTimeByConfigId.value.set(config.shortName, Infinity); // Reset lap time for new generation
@@ -1445,6 +1455,20 @@ const toggleCarSpeed = () => {
   print(`[Speed] Car speed set to ${carSpeedMultiplier.value}x`);
 };
 
+// Cycle through brain selection strategies
+const cycleBrainStrategy = () => {
+  const strategies: BrainSelectionStrategy[] = ['generation', 'alltime', 'averaging'];
+  const currentIndex = strategies.indexOf(brainSelectionStrategy.value);
+  const nextIndex = (currentIndex + 1) % strategies.length;
+  brainSelectionStrategy.value = strategies[nextIndex];
+
+  // Persist to localStorage
+  localStorage.setItem('brainSelectionStrategy', brainSelectionStrategy.value);
+
+  const strategyInfo = BRAIN_SELECTION_STRATEGIES.find(s => s.id === brainSelectionStrategy.value);
+  print(`[Strategy] ${strategyInfo?.emoji} Switched to: ${strategyInfo?.name} - ${strategyInfo?.description}`);
+};
+
 // Render graph
 const renderGraph = () => {
   const canvas = graphCanvasRef.value;
@@ -1697,6 +1721,12 @@ watch(useAllCarTypes, () => {
 
 // Lifecycle
 onMounted(() => {
+  // Load brain selection strategy from localStorage
+  const savedStrategy = localStorage.getItem('brainSelectionStrategy');
+  if (savedStrategy && ['generation', 'alltime', 'averaging'].includes(savedStrategy)) {
+    brainSelectionStrategy.value = savedStrategy as BrainSelectionStrategy;
+  }
+
   init();
   animationFrameId = requestAnimationFrame(animate);
 });

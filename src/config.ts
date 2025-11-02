@@ -5,6 +5,7 @@ import type {
   CarBrainConfig,
   SpeedMultiplier,
 } from './types';
+import type { Config } from './config.types';
 import {
   SENSOR_RAY_ANGLES as _SENSOR_RAY_ANGLES,
   SENSOR_RAY_PAIRS as _SENSOR_RAY_PAIRS,
@@ -18,6 +19,7 @@ import {
 import { CAR_BRAIN_CONFIGS } from './core/config_cars';
 
 export type { Point, InputModificationType, ActivationType, CarBrainConfig };
+export type { Config } from './config.types';
 
 export function appendMirroredWaypoints(
   waypoints: Point[],
@@ -32,10 +34,10 @@ export function appendMirroredWaypoints(
   return [...waypoints, ...mirroredTail];
 }
 
-const multiplier = 100;
+const multiplier: number = 100;
 
-const canvas_width = 16 * multiplier;
-const canvas_height = 9 * multiplier;
+const canvas_width: number = 16 * multiplier;
+const canvas_height: number = 9 * multiplier;
 
 // Track waypoints defined as ratios (0.0 to 1.0) of canvas dimensions
 // This allows the track to scale proportionally with canvas size
@@ -68,7 +70,7 @@ function scaleWaypointsToCanvas(
   }));
 }
 
-export const CONFIG = {
+export const CONFIG: Config = {
   canvas: {
     width: canvas_width,
     height: canvas_height,
@@ -189,6 +191,14 @@ export const CONFIG = {
         updateInterval: 1,
         savedWeight: 0.999,
       },
+    },
+    brainSelection: {
+      // Default brain selection strategy for evolution
+      // Options:
+      //   'generation' - Always save current generation's best (aggressive exploration, can regress)
+      //   'alltime'    - Only save if equal or better than all-time best (stable, guaranteed progress)
+      //   'averaging'  - Average saved brain with current best (genetic diversity, sexual reproduction)
+      defaultStrategy: 'alltime' as import('@/types').BrainSelectionStrategy,
     },
   },
 

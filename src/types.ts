@@ -99,10 +99,52 @@ export interface CarBrainConfig {
 // Per-config evolution state
 export interface ConfigEvolutionState {
   generation: number;
-  bestFitness: number;
-  bestWeights: any;
+
+  // Best brain from most recent generation
+  bestFitnessLastGeneration: number;
+  bestWeightsLastGeneration: any | null;
+
+  // Best brain ever seen (all-time record)
+  bestFitnessAllTime: number;
+  bestWeightsAllTime: any | null;
+
   totalTime: number; // Total elapsed time in seconds for this config
 }
+
+// Brain selection strategy for evolution
+export type BrainSelectionStrategy =
+  | 'generation'  // Always save current generation's best
+  | 'alltime'     // Only save if equal or better than all-time best
+  | 'averaging';  // Average saved brain with current generation's best
+
+// Strategy metadata for UI display
+export interface StrategyInfo {
+  id: BrainSelectionStrategy;
+  name: string;
+  description: string;
+  emoji: string;
+}
+
+export const BRAIN_SELECTION_STRATEGIES: StrategyInfo[] = [
+  {
+    id: 'generation',
+    name: 'GEN',
+    description: 'Always save current generation\'s best',
+    emoji: '🔄'
+  },
+  {
+    id: 'alltime',
+    name: 'BEST',
+    description: 'Only save if equal or better than all-time best',
+    emoji: '🏆'
+  },
+  {
+    id: 'averaging',
+    name: 'AVG',
+    description: 'Average saved brain with current generation\'s best',
+    emoji: '🧬'
+  }
+];
 
 // ============================================================================
 // UTILITY TYPES
