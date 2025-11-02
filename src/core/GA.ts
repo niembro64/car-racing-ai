@@ -145,15 +145,29 @@ export class GeneticAlgorithm {
       bestCar = nonElite[0] || sorted[0];
     }
 
-    // Save best weights
-    state.bestWeights = bestCar.brain.toJSON();
-
     // Update total time (accumulate generation time)
     state.totalTime += generationTime;
 
-    // Track fitness improvements
-    if (bestCar.maxDistanceReached > state.bestFitness) {
+    // Only save weights if this generation's best is equal or better than all-time best
+    // This preserves the best brain across generations even if some generations perform worse
+    if (bestCar.maxDistanceReached >= state.bestFitness) {
+      // Update best weights (all-time best brain)
+      state.bestWeights = bestCar.brain.toJSON();
+
+      // Track fitness improvement
+      const previousBest = state.bestFitness;
       state.bestFitness = bestCar.maxDistanceReached;
+
+      // Log improvement
+      if (previousBest > 0) {
+        const improvement = ((bestCar.maxDistanceReached - previousBest) / previousBest * 100).toFixed(1);
+        console.log(`[${config.shortName}] Gen ${state.generation}: New best! ${previousBest.toFixed(0)} → ${bestCar.maxDistanceReached.toFixed(0)} (+${improvement}%)`);
+      } else {
+        console.log(`[${config.shortName}] Gen ${state.generation}: First best saved: ${bestCar.maxDistanceReached.toFixed(0)}`);
+      }
+    } else {
+      // No improvement - keeping previous best brain
+      console.log(`[${config.shortName}] Gen ${state.generation}: No improvement (best: ${bestCar.maxDistanceReached.toFixed(0)}, all-time: ${state.bestFitness.toFixed(0)}). Keeping previous brain.`);
     }
 
     // Increment generation
