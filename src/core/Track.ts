@@ -5,12 +5,14 @@ import {
   closestPointOnPolyline,
 } from './math/geom';
 import { CONFIG } from '@/config';
+import { SpatialGrid } from './SpatialGrid';
 
 export class Track {
   centerline: Point[];
   innerWall: Point[];
   outerWall: Point[];
   wallSegments: Segment[];
+  spatialGrid: SpatialGrid;
   cumulativeLengths: number[];
   halfWidth: number;
   startPosition: Point;
@@ -44,6 +46,10 @@ export class Track {
         p2: this.outerWall[(i + 1) % this.outerWall.length],
       });
     }
+
+    // Create spatial grid for fast collision/ray queries
+    // Cell size of 100 provides good balance between memory and query speed
+    this.spatialGrid = new SpatialGrid(this.wallSegments, 100);
 
     // Compute cumulative lengths for fitness calculation
     this.cumulativeLengths = computeCumulativeLengths(this.centerline);

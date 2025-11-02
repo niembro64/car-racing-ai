@@ -1,6 +1,7 @@
 import type { Point, Segment, RayHit, RayCastResult } from '@/types';
 import { castRay } from './math/geom';
 import { CONFIG } from '@/config';
+import type { SpatialGrid } from './SpatialGrid';
 
 export class RayCaster {
 
@@ -12,7 +13,8 @@ export class RayCaster {
   castRays(
     position: Point,
     heading: number,
-    wallSegments: Segment[]
+    wallSegments: Segment[],
+    spatialGrid?: SpatialGrid
   ): RayCastResult {
     const distances: number[] = [];
     const hits: (RayHit | null)[] = [];
@@ -24,10 +26,15 @@ export class RayCaster {
         y: Math.sin(rayAngle)
       };
 
+      // Use spatial grid for fast segment queries if available
+      const segmentsToCheck = spatialGrid
+        ? spatialGrid.queryRay(position, direction, this.CAST_DISTANCE)
+        : wallSegments;
+
       const hit = castRay(
         position,
         direction,
-        wallSegments,
+        segmentsToCheck,
         this.CAST_DISTANCE
       );
 

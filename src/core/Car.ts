@@ -8,6 +8,7 @@ import type {
 } from '@/types';
 import {
   createCarPolygon,
+  updateCarPolygon,
   polygonIntersectsSegments,
   normalizeAngle,
 } from './math/geom';
@@ -50,6 +51,7 @@ export class Car {
 
   // Centerline tracking
   lastCenterlinePoint: Point | null = null;
+  lastCenterlineDistanceAlongTrack: number = 0; // Distance along track centerline
 
   // Color for rendering
   color: string;
@@ -59,6 +61,9 @@ export class Car {
 
   // Config identifier (which brain config this car belongs to)
   configShortName: string;
+
+  // Object pooling - reused polygon for collision detection
+  private polygonCache: Point[];
 
   constructor(
     x: number,
@@ -90,6 +95,14 @@ export class Car {
     this.brain = brain;
     this.rayCaster = new RayCaster();
     this.color = color;
+
+    // Initialize polygon cache for object pooling (4 corners)
+    this.polygonCache = [
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+      { x: 0, y: 0 }
+    ];
   }
 
   // Update physics and AI
@@ -112,18 +125,20 @@ export class Car {
     const { distances, hits } = this.rayCaster.castRays(
       { x: this.x, y: this.y },
       this.angle,
-      wallSegments
+      wallSegments,
+      track.spatialGrid
     );
 
     this.lastRayDistances = distances;
     this.lastRayHits = hits;
 
-    // Get closest point on centerline (for visualization only)
+    // Get closest point on centerline (for fitness calculation and visualization)
     const centerlineResult = track.getClosestPointOnCenterline({
       x: this.x,
       y: this.y,
     });
     this.lastCenterlinePoint = centerlineResult.point;
+    this.lastCenterlineDistanceAlongTrack = centerlineResult.distance;
 
     // Prepare neural network input based on mode
     let inputRays: number[];
@@ -161,7 +176,7 @@ export class Car {
     this.applyPhysics(output, dt, speedMultiplier);
 
     // Check collision
-    this.checkCollision(wallSegments);
+    this.checkCollision(track);
   }
 
   // Apply physics based on AI output
@@ -250,10 +265,12 @@ export class Car {
   }
 
   // Check collision with walls
-  private checkCollision(wallSegments: Segment[]): void {
+  private checkCollision(track: any): void {
     if (!this.alive) return;
 
-    const polygon = createCarPolygon(
+    // Update polygon cache in place (object pooling - no allocation)
+    updateCarPolygon(
+      this.polygonCache,
       this.x,
       this.y,
       this.angle - Math.PI / 2, // Match visual orientation
@@ -261,7 +278,15 @@ export class Car {
       this.height * this.sizeMultiplier
     );
 
-    if (polygonIntersectsSegments(polygon, wallSegments)) {
+    // Use spatial grid to query only nearby wall segments
+    // Query radius based on car diagonal + small margin
+    const queryRadius = Math.sqrt(this.width * this.width + this.height * this.height) * this.sizeMultiplier + 20;
+    const nearbySegments = track.spatialGrid.queryPoint(
+      { x: this.x, y: this.y },
+      queryRadius
+    );
+
+    if (polygonIntersectsSegments(this.polygonCache, nearbySegments)) {
       this.alive = false;
       this.speed = 0;
     }

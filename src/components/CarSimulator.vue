@@ -161,29 +161,31 @@
                     <td class="value-cell">{{ currentFps.toFixed(1) }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">FPS 0.1% High</td>
+                    <td class="label-cell">FPS 0.1% {{ TEXT_CHARACTER.up }}</td>
                     <td class="value-cell">{{ fpsTarget.toFixed(1) }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">FPS 1% High</td>
+                    <td class="label-cell">FPS 1% {{ TEXT_CHARACTER.up }}</td>
                     <td class="value-cell">{{ fps1PercentHigh.toFixed(1) }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">FPS 5% High</td>
+                    <td class="label-cell">FPS 5% {{ TEXT_CHARACTER.up }}</td>
                     <td class="value-cell">{{ fps5PercentHigh.toFixed(1) }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">FPS 0.1% Low</td>
+                    <td class="label-cell">
+                      FPS 0.1% {{ TEXT_CHARACTER.down }}
+                    </td>
                     <td class="value-cell">
                       {{ fps0_1PercentLow.toFixed(1) }}
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">FPS 1% Low</td>
+                    <td class="label-cell">FPS 1% {{ TEXT_CHARACTER.down }}</td>
                     <td class="value-cell">{{ fps1PercentLow.toFixed(1) }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">FPS 5% Low</td>
+                    <td class="label-cell">FPS 5% {{ TEXT_CHARACTER.down }}</td>
                     <td class="value-cell">{{ fps5PercentLow.toFixed(1) }}</td>
                   </tr>
                   <tr>
@@ -210,45 +212,54 @@
                 </thead>
                 <tbody>
                   <tr>
-                    <td class="label-cell">PTPT Saved</td>
+                    <td class="label-cell">
+                      {{ TEXT_TARGET_NUMBER_PER_CAR }}
+                      {{ TEXT_CHARACTER.saved }}
+                    </td>
                     <td class="value-cell">
                       {{ savedPerformanceTargetPerType.toFixed(1) }}
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">PTPT</td>
+                    <td class="label-cell">
+                      {{ TEXT_TARGET_NUMBER_PER_CAR }}
+                    </td>
                     <td class="value-cell">
                       {{ actualPerformanceTargetPerType.toFixed(1) }}
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">PTPT Up</td>
+                    <td class="label-cell">
+                      {{ TEXT_TARGET_NUMBER_PER_CAR }} {{ TEXT_CHARACTER.up }}
+                    </td>
                     <td class="value-cell">
                       {{ performanceTargetCarsPerType.toFixed(1) }}
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">PTPT Down</td>
+                    <td class="label-cell">
+                      {{ TEXT_TARGET_NUMBER_PER_CAR }} {{ TEXT_CHARACTER.down }}
+                    </td>
                     <td class="value-cell">
                       {{ performanceTargetCarsPerTypeDown.toFixed(1) }}
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">Avg C/T</td>
+                    <td class="label-cell">Avg per {{ TEXT_CHARACTER.car }}</td>
                     <td class="value-cell">
                       {{ averageCarsPerType.toFixed(1) }}
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">Total Cars</td>
+                    <td class="label-cell">Total {{ TEXT_CHARACTER.car }}</td>
                     <td class="value-cell">{{ totalCars }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">Alive Cars</td>
+                    <td class="label-cell">Alive {{ TEXT_CHARACTER.car }}</td>
                     <td class="value-cell">{{ aliveCars }}</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">Dead Cars</td>
+                    <td class="label-cell">Dead {{ TEXT_CHARACTER.car }}</td>
                     <td class="value-cell">{{ deadCars }}</td>
                   </tr>
                   <tr>
@@ -274,9 +285,9 @@
                     <td class="value-cell">
                       {{
                         performanceTrend > 0
-                          ? '↗'
+                          ? TEXT_CHARACTER.up
                           : performanceTrend < 0
-                          ? '↘'
+                          ? TEXT_CHARACTER.down
                           : '→'
                       }}
                       {{ performanceTrend >= 0 ? '+' : ''
@@ -331,6 +342,7 @@ import {
   CAR_BRAIN_CONFIGS,
   CAR_BRAIN_CONFIGS_DEFINED,
 } from '@/core/config_cars';
+import { TEXT_CHARACTER, TEXT_TARGET_NUMBER_PER_CAR } from '@/core/config_text';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 // Keep canvas at fixed internal resolution for rendering
@@ -356,7 +368,9 @@ const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed));
 const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(CONFIG.defaults.showRays);
 const speedMultiplier = ref(1);
-const carSpeedMultiplier = ref<SpeedMultiplier>(CONFIG.defaults.speedMultiplier);
+const carSpeedMultiplier = ref<SpeedMultiplier>(
+  CONFIG.defaults.speedMultiplier
+);
 const mutationByDistance = ref(CONFIG.defaults.mutationByDistance);
 const delayedSteering = ref(CONFIG.defaults.delayedSteering);
 const useAllCarTypes = ref(false); // Toggle between active cars only and all cars
@@ -387,7 +401,8 @@ const populationController = new PopulationController(
     maxPopulation: CONFIG.geneticAlgorithm.population.bounds.max,
     initialPopulation: getPopulationSize(),
     maxChangeRate: CONFIG.geneticAlgorithm.population.adjustment.maxChangeRate,
-    adjustmentInterval: CONFIG.geneticAlgorithm.population.adjustment.intervalFrames,
+    adjustmentInterval:
+      CONFIG.geneticAlgorithm.population.adjustment.intervalFrames,
   },
   CAR_BRAIN_CONFIGS.length
 ); // Initial setup uses default active configs
@@ -397,7 +412,9 @@ const currentFps = ref(60);
 const performanceTargetCarsPerType = ref(
   getPopulationSize() / CAR_BRAIN_CONFIGS.length
 );
-const averageCarsPerType = ref(CONFIG.geneticAlgorithm.population.average.initial);
+const averageCarsPerType = ref(
+  CONFIG.geneticAlgorithm.population.average.initial
+);
 let averageCarsPerTypeFrameCounter = 0;
 const performanceTargetCarsPerTypeDown = computed(
   () => averageCarsPerType.value * 0.9
@@ -488,7 +505,8 @@ const calculateComprehensiveScore = (shortName: string): number => {
 
     if (maxLapTime > minLapTime) {
       // Scale: fastest gets 100, slowest gets 0
-      const speedRaw = 100 * (1 - (lapTime - minLapTime) / (maxLapTime - minLapTime));
+      const speedRaw =
+        100 * (1 - (lapTime - minLapTime) / (maxLapTime - minLapTime));
       speedScore = speedRaw * CONFIG.scoring.weights.lapSpeedBonus;
     } else {
       // All lap times are equal
@@ -507,13 +525,17 @@ const calculateComprehensiveScore = (shortName: string): number => {
   // Component 4: Learning Efficiency - Relative to all car types
   let efficiencyScore = 0;
   const generations = ga.value.getGeneration(shortName);
-  const allGenerations = allConfigs.map((c) => ga.value.getGeneration(c.shortName));
+  const allGenerations = allConfigs.map((c) =>
+    ga.value.getGeneration(c.shortName)
+  );
   const minGenerations = Math.min(...allGenerations); // Fewest (best)
   const maxGenerations = Math.max(...allGenerations); // Most (worst)
 
   if (maxGenerations > minGenerations) {
     // Scale: fewest generations gets 100, most gets 0
-    const efficiencyRaw = 100 * (1 - (generations - minGenerations) / (maxGenerations - minGenerations));
+    const efficiencyRaw =
+      100 *
+      (1 - (generations - minGenerations) / (maxGenerations - minGenerations));
     efficiencyScore = efficiencyRaw * CONFIG.scoring.weights.learningEfficiency;
   } else {
     // All have same generation count
@@ -604,7 +626,8 @@ const mutationRatePercentByConfigId = computed(() => {
     const scaledRate = baseRate * paramScale;
 
     // Normalize to 0-100% range (mutation base is max)
-    const normalizedPercent = (scaledRate / CONFIG.geneticAlgorithm.mutation.base) * 100;
+    const normalizedPercent =
+      (scaledRate / CONFIG.geneticAlgorithm.mutation.base) * 100;
     percentages.set(config.shortName, normalizedPercent);
   }
 
@@ -750,7 +773,10 @@ const evolvePopulationByConfig = (
 
     // Keep only last N markers per config
     if (markers.length > CONFIG.visualization.generationMarker.maxHistory) {
-      markers.splice(0, markers.length - CONFIG.visualization.generationMarker.maxHistory);
+      markers.splice(
+        0,
+        markers.length - CONFIG.visualization.generationMarker.maxHistory
+      );
     }
 
     generationMarkersByConfigId.value.set(config.shortName, markers);
@@ -762,7 +788,8 @@ const evolvePopulationByConfig = (
 
   // Use "Up" target if above threshold, "Down" target if below threshold
   const targetCarsPerType =
-    fps0_1PercentLow.value >= CONFIG.geneticAlgorithm.population.adjustment.thresholdFPS
+    fps0_1PercentLow.value >=
+    CONFIG.geneticAlgorithm.population.adjustment.thresholdFPS
       ? performanceTargetCarsPerType.value
       : performanceTargetCarsPerTypeDown.value;
 
@@ -801,9 +828,12 @@ const updatePhysics = (dt: number) => {
       );
 
       // Update fitness and check for backwards movement
-      const result = track.getClosestPointOnCenterline({ x: car.x, y: car.y });
-      car.fitness = result.distance;
-      car.updateSignedFitness(result.distance, trackLength);
+      // Distance already calculated in car.update(), reuse it for performance
+      car.fitness = car.lastCenterlineDistanceAlongTrack;
+      car.updateSignedFitness(
+        car.lastCenterlineDistanceAlongTrack,
+        trackLength
+      );
 
       // Diagnostic: Log when cars get close to completion
       if (
@@ -814,7 +844,9 @@ const updatePhysics = (dt: number) => {
         print(
           `[CLOSE] ${car.configShortName} at ${(
             car.currentProgressRatio * 100
-          ).toFixed(1)}% (need ${(CONFIG.lap.completionThreshold * 100).toFixed(0)}%)`
+          ).toFixed(1)}% (need ${(CONFIG.lap.completionThreshold * 100).toFixed(
+            0
+          )}%)`
         );
       }
 
@@ -927,9 +959,9 @@ const updatePhysics = (dt: number) => {
       print(
         `[DEBUG] ${config.shortName} max progress: ${(
           maxProgress * 100
-        ).toFixed(2)}% (threshold: ${(CONFIG.lap.completionThreshold * 100).toFixed(
-          1
-        )}%)`
+        ).toFixed(2)}% (threshold: ${(
+          CONFIG.lap.completionThreshold * 100
+        ).toFixed(1)}%)`
       );
 
       evolvePopulationByConfig(
@@ -971,15 +1003,31 @@ const render = (ctx: CanvasRenderingContext2D) => {
       const scaledPoint = CONFIG.track.waypoints.base[i];
 
       ctx.beginPath();
-      ctx.arc(scaledPoint.x, scaledPoint.y, CONFIG.visualization.waypoints.radius, 0, Math.PI * 2);
+      ctx.arc(
+        scaledPoint.x,
+        scaledPoint.y,
+        CONFIG.visualization.waypoints.radius,
+        0,
+        Math.PI * 2
+      );
       ctx.fill();
 
       ctx.fillStyle = CONFIG.visualization.waypoints.colors.text;
       ctx.strokeStyle = CONFIG.visualization.waypoints.colors.textStroke;
       ctx.lineWidth = 3;
-      const coordText = `(${ratioPoint.x.toFixed(4)}, ${ratioPoint.y.toFixed(4)})`;
-      ctx.strokeText(coordText, scaledPoint.x, scaledPoint.y + CONFIG.visualization.waypoints.textOffset);
-      ctx.fillText(coordText, scaledPoint.x, scaledPoint.y + CONFIG.visualization.waypoints.textOffset);
+      const coordText = `(${ratioPoint.x.toFixed(4)}, ${ratioPoint.y.toFixed(
+        4
+      )})`;
+      ctx.strokeText(
+        coordText,
+        scaledPoint.x,
+        scaledPoint.y + CONFIG.visualization.waypoints.textOffset
+      );
+      ctx.fillText(
+        coordText,
+        scaledPoint.x,
+        scaledPoint.y + CONFIG.visualization.waypoints.textOffset
+      );
       ctx.fillStyle = CONFIG.visualization.waypoints.colors.marker;
     }
   }
@@ -996,12 +1044,20 @@ const render = (ctx: CanvasRenderingContext2D) => {
 
     for (const marker of markers) {
       ctx.beginPath();
-      ctx.arc(marker.x, marker.y, CONFIG.visualization.generationMarker.radius, 0, Math.PI * 2);
+      ctx.arc(
+        marker.x,
+        marker.y,
+        CONFIG.visualization.generationMarker.radius,
+        0,
+        Math.PI * 2
+      );
       ctx.fill();
       ctx.fillText(
         marker.generation.toString(),
         marker.x,
-        marker.y - CONFIG.visualization.generationMarker.radius + CONFIG.visualization.generationMarker.textOffset
+        marker.y -
+          CONFIG.visualization.generationMarker.radius +
+          CONFIG.visualization.generationMarker.textOffset
       );
     }
   }
@@ -1206,22 +1262,29 @@ const animate = () => {
   // Update average cars per type using exponential moving average
   // Only update based on configured interval
   averageCarsPerTypeFrameCounter++;
-  if (averageCarsPerTypeFrameCounter >= CONFIG.geneticAlgorithm.population.average.updateInterval) {
+  if (
+    averageCarsPerTypeFrameCounter >=
+    CONFIG.geneticAlgorithm.population.average.updateInterval
+  ) {
     averageCarsPerTypeFrameCounter = 0;
     // Calculate actual alive cars per type from alive car count
     const currentAliveCarsPerType =
       aliveCars.value / activeCarConfigs.value.length;
     // Formula: saved_average = new_value * NEW_WEIGHT + saved_average * SAVED_WEIGHT
     averageCarsPerType.value =
-      currentAliveCarsPerType * (1 - CONFIG.geneticAlgorithm.population.average.savedWeight) +
-      averageCarsPerType.value * CONFIG.geneticAlgorithm.population.average.savedWeight;
+      currentAliveCarsPerType *
+        (1 - CONFIG.geneticAlgorithm.population.average.savedWeight) +
+      averageCarsPerType.value *
+        CONFIG.geneticAlgorithm.population.average.savedWeight;
   }
 
   // Update saved performance target per type every frame using exponential moving average
   // Formula: saved = new * (1 - SAVED_WEIGHT) + saved * SAVED_WEIGHT
   savedPerformanceTargetPerType.value =
-    actualPerformanceTargetPerType.value * (1 - CONFIG.geneticAlgorithm.population.average.savedWeight) +
-    savedPerformanceTargetPerType.value * CONFIG.geneticAlgorithm.population.average.savedWeight;
+    actualPerformanceTargetPerType.value *
+      (1 - CONFIG.geneticAlgorithm.population.average.savedWeight) +
+    savedPerformanceTargetPerType.value *
+      CONFIG.geneticAlgorithm.population.average.savedWeight;
 
   // Increment frame counter for Vue reactivity
   frameCounter.value++;
@@ -1260,7 +1323,11 @@ const restartCurrentGeneration = (config: CarBrainConfig) => {
   const carsPerType = Math.round(savedPerformanceTargetPerType.value);
 
   print(
-    `[SYNC] ${config.displayName}: Restarting generation ${ga.value.getGeneration(config.shortName)} with ${carsPerType} cars`
+    `[SYNC] ${
+      config.displayName
+    }: Restarting generation ${ga.value.getGeneration(
+      config.shortName
+    )} with ${carsPerType} cars`
   );
 
   // Create new cars from the current generation's weights
@@ -1286,7 +1353,8 @@ const restartCurrentGeneration = (config: CarBrainConfig) => {
 
   // Create cars: 1 elite + (carsPerType - 1) mutations
   for (let i = 0; i < carsPerType; i++) {
-    const angleWiggle = (Math.random() - 0.5) * 2 * CONFIG.car.spawn.angleWiggle;
+    const angleWiggle =
+      (Math.random() - 0.5) * 2 * CONFIG.car.spawn.angleWiggle;
     const startAngle = track.startAngle + angleWiggle;
 
     if (i === 0) {

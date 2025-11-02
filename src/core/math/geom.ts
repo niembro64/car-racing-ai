@@ -260,6 +260,36 @@ export function createCarPolygon(
   }));
 }
 
+// Update an existing polygon array in place (for object pooling)
+export function updateCarPolygon(
+  polygon: Point[],
+  x: number,
+  y: number,
+  angle: number,
+  width: number,
+  height: number
+): void {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const hw = width / 2;
+  const hh = height / 2;
+
+  // Four corners of the rectangle (local coordinates)
+  const corners = [
+    { x: -hw, y: -hh },
+    { x: hw, y: -hh },
+    { x: hw, y: hh },
+    { x: -hw, y: hh }
+  ];
+
+  // Update existing polygon points in place
+  for (let i = 0; i < 4; i++) {
+    const c = corners[i];
+    polygon[i].x = x + c.x * cos - c.y * sin;
+    polygon[i].y = y + c.x * sin + c.y * cos;
+  }
+}
+
 // Clamp value between min and max
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
