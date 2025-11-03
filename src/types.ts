@@ -142,9 +142,10 @@ export interface ConfigEvolutionState {
 
 // Brain selection strategy for evolution
 export type BrainSelectionStrategy =
-  | 'generation'  // Always save current generation's best
-  | 'alltime'     // Only save if equal or better than all-time best
-  | 'averaging';  // Average saved brain with current generation's best
+  | 'generation'   // Always save current generation's best
+  | 'alltime'      // Only save if equal or better than all-time best
+  | 'averaging'    // Average saved brain with current generation's best
+  | 'overcorrect'; // All-time best + (all-time - generation), extrapolates opposite direction
 
 // Strategy metadata for UI display
 export interface StrategyInfo {
@@ -172,6 +173,12 @@ export const BRAIN_SELECTION_STRATEGIES: StrategyInfo[] = [
     name: 'AVG',
     description: 'Average saved brain with current generation\'s best',
     emoji: TEXT_CHARACTER.sexual
+  },
+  {
+    id: 'overcorrect',
+    name: 'OVER',
+    description: 'All-time best + (all-time - generation), extrapolates opposite direction',
+    emoji: TEXT_CHARACTER.rocket
   }
 ];
 

@@ -1,5 +1,5 @@
 import { Car } from './Car';
-import { NeuralNetwork, averageNetworkWeights } from './Neural';
+import { NeuralNetwork, averageNetworkWeights, overcorrectNetworkWeights } from './Neural';
 import { Track } from './Track';
 import { SeededRandom } from './math/geom';
 import type { CarBrainConfig, ConfigEvolutionState, BrainSelectionStrategy } from '@/types';
@@ -231,6 +231,34 @@ export class GeneticAlgorithm {
           state.bestFitnessAllTime = Math.max(state.bestFitnessAllTime, bestCar.maxDistanceReached);
 
           console.log(`[${config.shortName}] ${TEXT_CHARACTER.sexual} Gen ${state.generation}: Averaged (all-time fitness: ${previousMaxFitness.toFixed(0)}, gen: ${bestCar.maxDistanceReached.toFixed(0)}, max seen: ${state.bestFitnessAllTime.toFixed(0)})`);
+        }
+        break;
+
+      case 'overcorrect':
+        // Strategy 4: Overcorrect by extrapolating opposite to generation's direction
+        // Formula: alltime + (alltime - generation) = 2*alltime - generation
+        // On first generation, just use the first brain
+        if (!state.bestWeightsAllTime || state.bestFitnessAllTime === 0) {
+          state.bestWeightsAllTime = currentGenBestWeights;
+          state.bestFitnessAllTime = bestCar.maxDistanceReached;
+          brainToSeed = state.bestWeightsAllTime;
+          console.log(`[${config.shortName}] ${TEXT_CHARACTER.rocket} Gen ${state.generation}: First brain: ${bestCar.maxDistanceReached.toFixed(0)}`);
+        } else {
+          // Overcorrect: 2*alltime - generation
+          const overcorrectedWeights = overcorrectNetworkWeights(state.bestWeightsAllTime, currentGenBestWeights);
+          brainToSeed = overcorrectedWeights;
+
+          // Update all-time best if current generation is better
+          if (bestCar.maxDistanceReached > state.bestFitnessAllTime) {
+            const previousAllTime = state.bestFitnessAllTime;
+            state.bestWeightsAllTime = currentGenBestWeights;
+            state.bestFitnessAllTime = bestCar.maxDistanceReached;
+
+            const improvement = ((bestCar.maxDistanceReached - previousAllTime) / previousAllTime * 100).toFixed(1);
+            console.log(`[${config.shortName}] ${TEXT_CHARACTER.rocket} Gen ${state.generation}: New ${TEXT_CHARACTER.trophy} all-time! ${previousAllTime.toFixed(0)} → ${bestCar.maxDistanceReached.toFixed(0)} (+${improvement}%). Overcorrecting from new baseline.`);
+          } else {
+            console.log(`[${config.shortName}] ${TEXT_CHARACTER.rocket} Gen ${state.generation}: Overcorrecting (${TEXT_CHARACTER.trophy} all-time: ${state.bestFitnessAllTime.toFixed(0)}, ${TEXT_CHARACTER.repeat} gen: ${bestCar.maxDistanceReached.toFixed(0)}). Extrapolating opposite direction.`);
+          }
         }
         break;
     }

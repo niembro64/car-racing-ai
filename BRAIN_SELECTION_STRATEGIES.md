@@ -9,19 +9,23 @@ Three different strategies for selecting which neural network weights to save an
 ## The Three Strategies
 
 ### 1. 🔄 **Generation Best** (Original)
+
 **"Always overwrite with current generation's best"**
 
 **Logic:**
+
 - Save the best performing car's brain from current generation
 - Unconditionally overwrites previous saved brain
 - Ignores historical performance
 
 **Pros:**
+
 - Fast exploration of solution space
 - Can escape local maxima
 - Simple and aggressive
 
 **Cons:**
+
 - Can regress if generation performs worse
 - No guarantee of progress
 - Loses good brains from previous generations
@@ -31,19 +35,23 @@ Three different strategies for selecting which neural network weights to save an
 ---
 
 ### 2. 🏆 **All-Time Best** (Current)
+
 **"Only overwrite if equal or better"**
 
 **Logic:**
+
 - Compare current generation's best to all-time best
 - Only save if `currentBest.fitness >= allTimeBest.fitness`
 - Preserves best brain across generations
 
 **Pros:**
+
 - Guaranteed forward progress (monotonic)
 - Never loses best solution
 - Stable convergence
 
 **Cons:**
+
 - Can get stuck in local maxima
 - Less exploration
 - May miss combination opportunities
@@ -53,21 +61,25 @@ Three different strategies for selecting which neural network weights to save an
 ---
 
 ### 3. 🧬 **Sexual Reproduction / Averaging**
+
 **"Average saved brain with generation's best"**
 
 **Logic:**
+
 - Take saved brain (parent 1)
 - Take current generation's best (parent 2)
 - Average all weights and biases element-wise
 - Save the averaged "offspring" brain
 
 **Pros:**
+
 - Genetic diversity through crossover
 - Combines traits from two good brains
 - Can discover novel solutions
 - Biological realism
 
 **Cons:**
+
 - Averaged brain might perform worse than either parent
 - Can lose specialized behaviors
 - More complex implementation
@@ -85,9 +97,10 @@ Three different strategies for selecting which neural network weights to save an
 ```typescript
 // Brain selection strategy for evolution
 export type BrainSelectionStrategy =
-  | 'generation'  // Always save current generation's best
-  | 'alltime'     // Only save if equal or better than all-time best
-  | 'averaging';  // Average saved brain with current generation's best
+  | 'generation' // Always save current generation's best
+  | 'alltime' // Only save if equal or better than all-time best
+  | 'averaging' // Average saved brain with current generation's best
+  | 'overcorrect';
 
 // Strategy metadata for UI display
 export interface StrategyInfo {
@@ -101,21 +114,21 @@ export const BRAIN_SELECTION_STRATEGIES: StrategyInfo[] = [
   {
     id: 'generation',
     name: 'Gen Best',
-    description: 'Always save current generation\'s best',
-    emoji: '🔄'
+    description: "Always save current generation's best",
+    emoji: '🔄',
   },
   {
     id: 'alltime',
     name: 'All-Time',
     description: 'Only save if equal or better',
-    emoji: '🏆'
+    emoji: '🏆',
   },
   {
     id: 'averaging',
     name: 'Averaging',
     description: 'Average saved + current best',
-    emoji: '🧬'
-  }
+    emoji: '🧬',
+  },
 ];
 ```
 
@@ -153,8 +166,7 @@ export function averageNetworkWeights(
 
     // Average biases vector
     for (let i = 0; i < resultLayer.biases.length; i++) {
-      resultLayer.biases[i] =
-        (layer1.biases[i] + layer2.biases[i]) / 2;
+      resultLayer.biases[i] = (layer1.biases[i] + layer2.biases[i]) / 2;
     }
   }
 
@@ -177,8 +189,8 @@ export const CONFIG = {
 
     brainSelection: {
       strategy: 'alltime' as BrainSelectionStrategy, // Default strategy
-    }
-  }
+    },
+  },
 };
 ```
 
@@ -201,11 +213,28 @@ switch (strategy) {
 
     // Update fitness if improved
     if (bestCar.maxDistanceReached > state.bestFitness) {
-      const improvement = ((bestCar.maxDistanceReached - state.bestFitness) / state.bestFitness * 100).toFixed(1);
-      console.log(`[${config.shortName}] Gen ${state.generation}: Gen best saved: ${bestCar.maxDistanceReached.toFixed(0)} (was: ${state.bestFitness.toFixed(0)}, ${improvement >= 0 ? '+' : ''}${improvement}%)`);
+      const improvement = (
+        ((bestCar.maxDistanceReached - state.bestFitness) / state.bestFitness) *
+        100
+      ).toFixed(1);
+      console.log(
+        `[${config.shortName}] Gen ${
+          state.generation
+        }: Gen best saved: ${bestCar.maxDistanceReached.toFixed(
+          0
+        )} (was: ${state.bestFitness.toFixed(0)}, ${
+          improvement >= 0 ? '+' : ''
+        }${improvement}%)`
+      );
       state.bestFitness = bestCar.maxDistanceReached;
     } else {
-      console.log(`[${config.shortName}] Gen ${state.generation}: Gen best saved: ${bestCar.maxDistanceReached.toFixed(0)} (regression from ${state.bestFitness.toFixed(0)})`);
+      console.log(
+        `[${config.shortName}] Gen ${
+          state.generation
+        }: Gen best saved: ${bestCar.maxDistanceReached.toFixed(
+          0
+        )} (regression from ${state.bestFitness.toFixed(0)})`
+      );
       state.bestFitness = bestCar.maxDistanceReached; // Update to current even if worse
     }
     break;
@@ -218,13 +247,32 @@ switch (strategy) {
       state.bestFitness = bestCar.maxDistanceReached;
 
       if (previousBest > 0) {
-        const improvement = ((bestCar.maxDistanceReached - previousBest) / previousBest * 100).toFixed(1);
-        console.log(`[${config.shortName}] Gen ${state.generation}: New all-time best! ${previousBest.toFixed(0)} → ${bestCar.maxDistanceReached.toFixed(0)} (+${improvement}%)`);
+        const improvement = (
+          ((bestCar.maxDistanceReached - previousBest) / previousBest) *
+          100
+        ).toFixed(1);
+        console.log(
+          `[${config.shortName}] Gen ${
+            state.generation
+          }: New all-time best! ${previousBest.toFixed(
+            0
+          )} → ${bestCar.maxDistanceReached.toFixed(0)} (+${improvement}%)`
+        );
       } else {
-        console.log(`[${config.shortName}] Gen ${state.generation}: First best saved: ${bestCar.maxDistanceReached.toFixed(0)}`);
+        console.log(
+          `[${config.shortName}] Gen ${
+            state.generation
+          }: First best saved: ${bestCar.maxDistanceReached.toFixed(0)}`
+        );
       }
     } else {
-      console.log(`[${config.shortName}] Gen ${state.generation}: No improvement (best: ${bestCar.maxDistanceReached.toFixed(0)}, all-time: ${state.bestFitness.toFixed(0)}). Keeping previous brain.`);
+      console.log(
+        `[${config.shortName}] Gen ${
+          state.generation
+        }: No improvement (best: ${bestCar.maxDistanceReached.toFixed(
+          0
+        )}, all-time: ${state.bestFitness.toFixed(0)}). Keeping previous brain.`
+      );
     }
     break;
 
@@ -236,17 +284,35 @@ switch (strategy) {
     if (!state.bestWeights || state.bestFitness === 0) {
       state.bestWeights = currentBestWeights;
       state.bestFitness = bestCar.maxDistanceReached;
-      console.log(`[${config.shortName}] Gen ${state.generation}: First brain saved: ${bestCar.maxDistanceReached.toFixed(0)}`);
+      console.log(
+        `[${config.shortName}] Gen ${
+          state.generation
+        }: First brain saved: ${bestCar.maxDistanceReached.toFixed(0)}`
+      );
     } else {
       // Average the two brains
-      const averagedWeights = averageNetworkWeights(state.bestWeights, currentBestWeights);
+      const averagedWeights = averageNetworkWeights(
+        state.bestWeights,
+        currentBestWeights
+      );
       state.bestWeights = averagedWeights;
 
       // Track the max fitness seen (hybrid's fitness is unknown until tested)
       const previousBest = state.bestFitness;
-      state.bestFitness = Math.max(state.bestFitness, bestCar.maxDistanceReached);
+      state.bestFitness = Math.max(
+        state.bestFitness,
+        bestCar.maxDistanceReached
+      );
 
-      console.log(`[${config.shortName}] Gen ${state.generation}: Averaged brains (saved: ${previousBest.toFixed(0)}, gen: ${bestCar.maxDistanceReached.toFixed(0)}, max: ${state.bestFitness.toFixed(0)})`);
+      console.log(
+        `[${config.shortName}] Gen ${
+          state.generation
+        }: Averaged brains (saved: ${previousBest.toFixed(
+          0
+        )}, gen: ${bestCar.maxDistanceReached.toFixed(
+          0
+        )}, max: ${state.bestFitness.toFixed(0)})`
+      );
     }
     break;
 }
@@ -259,6 +325,7 @@ switch (strategy) {
 **File:** `src/components/CarSimulator.vue`
 
 #### State Management
+
 ```typescript
 // Add reactive state
 const brainSelectionStrategy = ref<BrainSelectionStrategy>(
@@ -267,7 +334,11 @@ const brainSelectionStrategy = ref<BrainSelectionStrategy>(
 
 // Cycle through strategies
 const cycleBrainStrategy = () => {
-  const strategies: BrainSelectionStrategy[] = ['generation', 'alltime', 'averaging'];
+  const strategies: BrainSelectionStrategy[] = [
+    'generation',
+    'alltime',
+    'averaging',
+  ];
   const currentIndex = strategies.indexOf(brainSelectionStrategy.value);
   const nextIndex = (currentIndex + 1) % strategies.length;
   brainSelectionStrategy.value = strategies[nextIndex];
@@ -275,7 +346,13 @@ const cycleBrainStrategy = () => {
   // Persist to localStorage
   localStorage.setItem('brainSelectionStrategy', brainSelectionStrategy.value);
 
-  print(`[Strategy] Switched to: ${BRAIN_SELECTION_STRATEGIES.find(s => s.id === brainSelectionStrategy.value)?.name}`);
+  print(
+    `[Strategy] Switched to: ${
+      BRAIN_SELECTION_STRATEGIES.find(
+        (s) => s.id === brainSelectionStrategy.value
+      )?.name
+    }`
+  );
 };
 
 // Load from localStorage on mount
@@ -288,6 +365,7 @@ onMounted(() => {
 ```
 
 #### Template
+
 ```vue
 <!-- Add button in controls area -->
 <button @click="cycleBrainStrategy" class="control-button">
@@ -297,6 +375,7 @@ onMounted(() => {
 ```
 
 #### Pass to GA
+
 ```typescript
 // When calling ga.value.evolvePopulation(), pass strategy
 const newCars = ga.value.evolvePopulation(
@@ -306,7 +385,7 @@ const newCars = ga.value.evolvePopulation(
   generationTime,
   track,
   mutationByDistance.value,
-  brainSelectionStrategy.value  // Pass current strategy
+  brainSelectionStrategy.value // Pass current strategy
 );
 ```
 
@@ -338,18 +417,21 @@ evolvePopulation(
 ## Logging Format
 
 ### Strategy 1: Generation Best
+
 ```
 [DIFF] Gen 5: Gen best saved: 1200 (was: 1500, -20.0%)  // Regression
 [DIFF] Gen 6: Gen best saved: 1800 (was: 1200, +50.0%)  // Improvement
 ```
 
 ### Strategy 2: All-Time Best
+
 ```
 [DIFF] Gen 5: New all-time best! 1500 → 1800 (+20.0%)
 [DIFF] Gen 6: No improvement (best: 1200, all-time: 1800). Keeping previous brain.
 ```
 
 ### Strategy 3: Averaging
+
 ```
 [DIFF] Gen 5: Averaged brains (saved: 1500, gen: 1200, max: 1500)
 [DIFF] Gen 6: Averaged brains (saved: 1500, gen: 1800, max: 1800)
@@ -360,6 +442,7 @@ evolvePopulation(
 ## Testing Scenarios
 
 ### 1. Generation Best
+
 - Start at 0
 - Gen 0: Save brain (1000)
 - Gen 1: Worse (800) → Still saves (should regress)
@@ -367,6 +450,7 @@ evolvePopulation(
 - **Verify**: Gen 2 starts from Gen 1's brain (800), not Gen 0's (1000)
 
 ### 2. All-Time Best
+
 - Start at 0
 - Gen 0: Save brain (1000)
 - Gen 1: Worse (800) → Keeps Gen 0's brain
@@ -374,6 +458,7 @@ evolvePopulation(
 - **Verify**: Gen 2 starts from Gen 0's brain (1000), not Gen 1's (800)
 
 ### 3. Averaging
+
 - Start at 0
 - Gen 0: Save brain (1000)
 - Gen 1: Average Gen 0 (1000) + Gen 1 best (800) = hybrid
@@ -385,18 +470,22 @@ evolvePopulation(
 ## Edge Cases
 
 ### First Generation
+
 - No previous brain exists
 - All strategies: Just save the first brain
 
 ### Ties
+
 - Multiple cars with same max fitness
 - Already handled: `sorted[0]` picks first one
 
 ### Winner Car Override
+
 - Lap completion winner provided
 - Already handled: `bestCar = winnerCar` takes precedence
 
 ### Architecture Mismatch (Averaging)
+
 - Should not happen (same config type)
 - Averaging assumes same layer sizes
 - Consider adding validation
@@ -406,17 +495,21 @@ evolvePopulation(
 ## Future Enhancements
 
 1. **Weighted Averaging**
+
    - Weight by fitness: `(w1*f1 + w2*f2) / (f1+f2)`
    - Favors better performing parent
 
 2. **Multi-Parent Averaging**
+
    - Average top 3 brains instead of just 2
 
 3. **Crossover Strategies**
+
    - Layer-wise crossover (swap whole layers)
    - Neuron-wise crossover (swap individual neurons)
 
 4. **Adaptive Strategy**
+
    - Auto-switch based on progress
    - Use "generation" when stuck, "alltime" when improving
 

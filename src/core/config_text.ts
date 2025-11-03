@@ -15,6 +15,7 @@ export const TEXT_CHARACTER = {
   repeat: '🔁',
   sexual: '💑',
   trophy: '🏆',
+  rocket: '🚀',
 };
 
 export const TEXT_TARGET_NUMBER_PER_CAR =

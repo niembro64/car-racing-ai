@@ -45,9 +45,12 @@ export class NeuralNetwork {
 
       // Use He initialization for ReLU/GELU, Xavier for linear/tanh
       // For uniform distribution: limit = sqrt(6 / (fan_in + fan_out))
-      const limit = this.activationType === 'relu' || this.activationType === 'gelu' || this.activationType === 'swiglu'
-        ? Math.sqrt(6.0 / inputSize)  // He initialization (scaled for uniform dist)
-        : Math.sqrt(6.0 / (inputSize + outputSize));  // Xavier initialization
+      const limit =
+        this.activationType === 'relu' ||
+        this.activationType === 'gelu' ||
+        this.activationType === 'swiglu'
+          ? Math.sqrt(6.0 / inputSize) // He initialization (scaled for uniform dist)
+          : Math.sqrt(6.0 / (inputSize + outputSize)); // Xavier initialization
 
       for (let j = 0; j < outputSize; j++) {
         const neuronWeights: number[] = [];
@@ -270,8 +273,51 @@ export function averageNetworkWeights(
 
     // Average biases vector
     for (let i = 0; i < resultLayer.biases.length; i++) {
+      resultLayer.biases[i] = (layer1.biases[i] + layer2.biases[i]) / 2;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Overcorrect network weights by extrapolating opposite to generation's direction
+ * Formula: overcorrect = alltime + (alltime - generation) = 2*alltime - generation
+ * Used for "overcorrect" brain selection strategy
+ *
+ * @param alltimeWeights - All-time best network weights
+ * @param generationWeights - Current generation's best network weights
+ * @returns Overcorrected network weights
+ */
+export function overcorrectNetworkWeights(
+  alltimeWeights: NetworkStructure,
+  generationWeights: NetworkStructure
+): NetworkStructure {
+  // Deep clone alltime structure as base
+  const result: NetworkStructure = JSON.parse(JSON.stringify(alltimeWeights));
+
+  const amount = 1; // Scaling factor for overcorrection
+
+  // Apply overcorrect formula to each layer's weights and biases
+  for (let layerIdx = 0; layerIdx < result.layers.length; layerIdx++) {
+    const layerAlltime = alltimeWeights.layers[layerIdx];
+    const layerGeneration = generationWeights.layers[layerIdx];
+    const resultLayer = result.layers[layerIdx];
+
+    // Overcorrect weights matrix: 2*alltime - generation
+    for (let i = 0; i < resultLayer.weights.length; i++) {
+      for (let j = 0; j < resultLayer.weights[i].length; j++) {
+        resultLayer.weights[i][j] =
+          layerAlltime.weights[i][j] +
+          (layerAlltime.weights[i][j] - layerGeneration.weights[i][j]) * amount;
+      }
+    }
+
+    // Overcorrect biases vector: 2*alltime - generation
+    for (let i = 0; i < resultLayer.biases.length; i++) {
       resultLayer.biases[i] =
-        (layer1.biases[i] + layer2.biases[i]) / 2;
+        layerAlltime.biases[i] +
+        (layerAlltime.biases[i] - layerGeneration.biases[i]) * amount;
     }
   }
 

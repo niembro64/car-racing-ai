@@ -24,7 +24,10 @@
         >
           DELAY TURN
         </button>
-        <button @click="toggleAllCarTypes" :class="{ active: carUsageLevel !== 'use-few' }">
+        <button
+          @click="toggleAllCarTypes"
+          :class="{ active: carUsageLevel !== 'use-few' }"
+        >
           {{ getCarUsageLevelInfo(carUsageLevel).name }}
         </button>
         <button @click="toggleShowRays" :class="{ active: showRays }">
@@ -51,7 +54,10 @@
           <!-- Table View -->
           <table
             v-if="viewMode === 'table'"
-            :class="['stats-table', { 'stats-table-compact': carUsageLevel !== 'use-few' }]"
+            :class="[
+              'stats-table',
+              { 'stats-table-compact': carUsageLevel !== 'use-few' },
+            ]"
             @click="cycleView"
           >
             <thead>
@@ -61,6 +67,7 @@
                 <th>{{ isMobile() ? '#' : '# Alive' }}</th>
                 <th>Gen</th>
                 <th>{{ isMobile() ? 'MUT' : 'NEXT MUT' }}</th>
+                <th>{{ isMobile() ? 'NR' : 'NEAR' }}</th>
                 <th>Mean</th>
                 <th>Best</th>
                 <th>Duration</th>
@@ -95,6 +102,15 @@
                   <PercentageBar
                     :percentage="
                       mutationRatePercentByConfigId.get(config.shortName) ?? 0
+                    "
+                    variant="white"
+                    :compact="carUsageLevel !== 'use-few'"
+                  />
+                </td>
+                <td>
+                  <PercentageBar
+                    :percentage="
+                      nearnessPercentByConfigId.get(config.shortName) ?? 0
                     "
                     variant="white"
                     :compact="carUsageLevel !== 'use-few'"
@@ -169,68 +185,46 @@
                 </thead>
                 <tbody>
                   <tr>
-                    <td class="label-cell">
-                      FPS Avg
-                    </td>
+                    <td class="label-cell">FPS Avg</td>
                     <td class="value-cell">
                       {{ currentFps.toFixed(1) }}
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">
-                      FPS 99.9%
-                    </td>
+                    <td class="label-cell">FPS 99.9%</td>
                     <td class="value-cell">
                       {{ fps99_9Percent.toFixed(1) }}
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">
-                      FPS 99.0%
-                    </td>
+                    <td class="label-cell">FPS 99.0%</td>
                     <td class="value-cell">
                       {{ fps99Percent.toFixed(1) }}
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">
-                      FPS 1.0%
-                    </td>
+                    <td class="label-cell">FPS 1.0%</td>
                     <td class="value-cell">
                       {{ fps1Percent.toFixed(1) }}
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">
-                      FPS 0.1%
-                    </td>
+                    <td class="label-cell">FPS 0.1%</td>
                     <td class="value-cell">
                       {{ fps0_1Percent.toFixed(1) }}
                     </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">
-                      Frame Time
-                    </td>
-                    <td class="value-cell">
-                      {{ avgFrameTime.toFixed(2) }}ms
-                    </td>
+                    <td class="label-cell">Frame Time</td>
+                    <td class="value-cell">{{ avgFrameTime.toFixed(2) }}ms</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">
-                      Update Time
-                    </td>
-                    <td class="value-cell">
-                      {{ avgUpdateTime.toFixed(2) }}ms
-                    </td>
+                    <td class="label-cell">Update Time</td>
+                    <td class="value-cell">{{ avgUpdateTime.toFixed(2) }}ms</td>
                   </tr>
                   <tr>
-                    <td class="label-cell">
-                      Render Time
-                    </td>
-                    <td class="value-cell">
-                      {{ avgRenderTime.toFixed(2) }}ms
-                    </td>
+                    <td class="label-cell">Render Time</td>
+                    <td class="value-cell">{{ avgRenderTime.toFixed(2) }}ms</td>
                   </tr>
                 </tbody>
               </table>
@@ -629,6 +623,68 @@ const sortedCarBrainConfigs = computed(() => {
   return [...activeCarConfigs.value].sort(compareConfigs);
 });
 
+// Computed property for nearness to all-time best death point (0 to 1)
+const nearnessPercentByConfigId = computed(() => {
+  void frameCounter.value; // Trigger on every frame
+  const trackLength = track.getTotalLength();
+
+  const nearnesses = new Map<string, number>();
+
+  for (const config of activeCarConfigs.value) {
+    // Get all-time best distance for this car type
+    const alltimeBestDistance = ga.value.getBestFitness(config.shortName);
+
+    // If no all-time best point exists yet (no deaths recorded), nearness stays at 0
+    if (alltimeBestDistance === 0) {
+      nearnesses.set(config.shortName, 0);
+      continue;
+    }
+
+    // If all-time best completed the lap (at finish line), nearness stays at 0
+    if (alltimeBestDistance >= trackLength) {
+      nearnesses.set(config.shortName, 0);
+      continue;
+    }
+
+    // Get current generation's best distance
+    const carsOfType = population.value.filter(
+      (car) => car.configShortName === config.shortName
+    );
+    const currentBestDistance =
+      carsOfType.length > 0
+        ? Math.max(...carsOfType.map((car) => car.maxDistanceReached))
+        : 0;
+
+    const pow = 4;
+
+    // Calculate nearness (triangular function peaking at all-time best point)
+    let nearness: number;
+    if (currentBestDistance <= alltimeBestDistance) {
+      // Approaching the all-time best point: 0 -> 1
+      // (alltimeBestDistance > 0 is guaranteed by earlier check)
+      nearness = Math.pow(currentBestDistance / alltimeBestDistance, pow);
+    } else {
+      // Past the all-time best point: 1 -> 0
+      const remainingDistance = trackLength - alltimeBestDistance;
+      if (remainingDistance > 0) {
+        nearness = Math.pow(
+          Math.max(
+            0,
+            1 - (currentBestDistance - alltimeBestDistance) / remainingDistance
+          ),
+          pow
+        );
+      } else {
+        nearness = 0;
+      }
+    }
+
+    nearnesses.set(config.shortName, nearness * 100); // Convert to percentage
+  }
+
+  return nearnesses;
+});
+
 // Computed property for mutation rates as raw percentages (for bars)
 const mutationRatePercentByConfigId = computed(() => {
   void frameCounter.value; // Trigger on every frame
@@ -852,28 +908,30 @@ const evolvePopulationByConfig = (
       const allTimeBestMarker = markers[maxFitnessIndex];
 
       // Keep the most recent markers
-      const recentMarkers = markers.slice(-CONFIG.visualization.generationMarker.maxHistory);
+      const recentMarkers = markers.slice(
+        -CONFIG.visualization.generationMarker.maxHistory
+      );
 
       // Check if all-time best is already in recent markers
       const allTimeBestInRecent = recentMarkers.some(
-        m => m.generation === allTimeBestMarker.generation
+        (m) => m.generation === allTimeBestMarker.generation
       );
 
       if (!allTimeBestInRecent) {
         // All-time best is old, so we need to keep it separately
         // Keep all-time best + most recent (maxHistory - 1) markers
         const keepCount = CONFIG.visualization.generationMarker.maxHistory - 1;
-        const markersToKeep = [
-          allTimeBestMarker,
-          ...markers.slice(-keepCount)
-        ];
+        const markersToKeep = [allTimeBestMarker, ...markers.slice(-keepCount)];
 
         // Sort by generation to maintain chronological order
         markersToKeep.sort((a, b) => a.generation - b.generation);
         markers.splice(0, markers.length, ...markersToKeep);
       } else {
         // All-time best is recent, just keep the most recent markers
-        markers.splice(0, markers.length - CONFIG.visualization.generationMarker.maxHistory);
+        markers.splice(
+          0,
+          markers.length - CONFIG.visualization.generationMarker.maxHistory
+        );
       }
     }
 
@@ -1167,11 +1225,15 @@ const render = (ctx: CanvasRenderingContext2D) => {
 
       // Conditionally show emojis based on brain selection strategy
       const showRepeat =
-        (brainSelectionStrategy.value === 'generation' || brainSelectionStrategy.value === 'averaging')
-        && marker.isLastGenBest;
+        (brainSelectionStrategy.value === 'generation' ||
+          brainSelectionStrategy.value === 'averaging' ||
+          brainSelectionStrategy.value === 'overcorrect') &&
+        marker.isLastGenBest;
       const showTrophy =
-        (brainSelectionStrategy.value === 'alltime' || brainSelectionStrategy.value === 'averaging')
-        && marker.isAllTimeBest;
+        (brainSelectionStrategy.value === 'alltime' ||
+          brainSelectionStrategy.value === 'averaging' ||
+          brainSelectionStrategy.value === 'overcorrect') &&
+        marker.isAllTimeBest;
 
       // Draw repeat emoji to the left if this is last generation's best (and strategy uses it)
       if (showRepeat) {
@@ -1587,11 +1649,8 @@ const toggleCarSpeed = () => {
 
 // Cycle through brain selection strategies
 const cycleBrainStrategy = () => {
-  const strategies: BrainSelectionStrategy[] = [
-    'generation',
-    'alltime',
-    'averaging',
-  ];
+  // Use the strategies from BRAIN_SELECTION_STRATEGIES to automatically include all
+  const strategies = BRAIN_SELECTION_STRATEGIES.map((s) => s.id);
   const currentIndex = strategies.indexOf(brainSelectionStrategy.value);
   const nextIndex = (currentIndex + 1) % strategies.length;
   brainSelectionStrategy.value = strategies[nextIndex];
