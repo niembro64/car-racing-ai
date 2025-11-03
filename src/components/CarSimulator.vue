@@ -623,6 +623,25 @@ const sortedCarBrainConfigs = computed(() => {
   return [...activeCarConfigs.value].sort(compareConfigs);
 });
 
+/**
+ * Smooth easing function for nearness calculation
+ * Creates a slow start, fast middle, smooth peak curve
+ * Similar to cubic bezier ease-in-out but with adjustable steepness
+ *
+ * @param t - Linear progress from 0 to 1
+ * @param power - Steepness of the curve (higher = more dramatic)
+ * @returns Eased value from 0 to 1
+ */
+const easeInOutPower = (t: number, power: number = 3): number => {
+  if (t < 0.5) {
+    // Ease in: slow start, accelerating
+    return Math.pow(2 * t, power) / 2;
+  } else {
+    // Ease out: decelerating, slow end
+    return 1 - Math.pow(2 * (1 - t), power) / 2;
+  }
+};
+
 // Computed property for nearness to all-time best death point (0 to 1)
 const nearnessPercentByConfigId = computed(() => {
   void frameCounter.value; // Trigger on every frame
@@ -655,25 +674,21 @@ const nearnessPercentByConfigId = computed(() => {
         ? Math.max(...carsOfType.map((car) => car.maxDistanceReached))
         : 0;
 
-    const pow = 4;
-
-    // Calculate nearness (triangular function peaking at all-time best point)
+    // Calculate nearness with smooth easing (peaks at all-time best point)
     let nearness: number;
     if (currentBestDistance <= alltimeBestDistance) {
-      // Approaching the all-time best point: 0 -> 1
-      // (alltimeBestDistance > 0 is guaranteed by earlier check)
-      nearness = Math.pow(currentBestDistance / alltimeBestDistance, pow);
+      // Approaching the all-time best point: 0 -> 1 with smooth ease-in-out
+      const linearProgress = currentBestDistance / alltimeBestDistance;
+      nearness = easeInOutPower(linearProgress, 3);
     } else {
-      // Past the all-time best point: 1 -> 0
+      // Past the all-time best point: 1 -> 0 with smooth ease-in-out
       const remainingDistance = trackLength - alltimeBestDistance;
       if (remainingDistance > 0) {
-        nearness = Math.pow(
-          Math.max(
-            0,
-            1 - (currentBestDistance - alltimeBestDistance) / remainingDistance
-          ),
-          pow
+        const linearProgress = Math.max(
+          0,
+          1 - (currentBestDistance - alltimeBestDistance) / remainingDistance
         );
+        nearness = easeInOutPower(linearProgress, 3);
       } else {
         nearness = 0;
       }
