@@ -1,4 +1,5 @@
-import type { CarBrainConfig } from '@/types';
+import type { CarBrainConfig, CarUsageLevel, CarUsageLevelInfo } from '@/types';
+import { CAR_USAGE_LEVELS } from '@/types';
 import {
   NN_ARCH_DIFF_LARGE,
   NN_ARCH_DIFF_MEDIUM,
@@ -11,7 +12,7 @@ import {
 export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   // === None/Raw (no hidden layers, no activation function) ===
   {
-    useCar: true,
+    useCar: 'use-few',
     displayName: 'Pico',
     shortName: 'PC',
     description: 'No hidden layers, differential inputs (1 fwd + 4 L-R pairs)',
@@ -26,7 +27,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: true,
+    useCar: 'use-few',
     displayName: 'Nano',
     shortName: 'NA',
     description: 'No hidden layers, direct raw sensor inputs (9 rays)',
@@ -36,14 +37,14 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: '-',
     },
     colors: {
-      light: '#aaaaaa',
-      dark: '#777777',
+      light: '#777',
+      dark: '#111',
     },
   },
 
   // === Linear activation (orange/yellow family) ===
   {
-    useCar: true,
+    useCar: 'use-many',
     displayName: 'Spark',
     shortName: 'SP',
     description: 'Linear activation, differential inputs, 1 hidden layer (3)',
@@ -58,7 +59,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: false,
+    useCar: 'use-many',
     displayName: 'Flame',
     shortName: 'FL',
     description:
@@ -74,7 +75,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: true,
+    useCar: 'use-many',
     displayName: 'Glow',
     shortName: 'GL',
     description: 'Linear activation, direct inputs, 1 hidden layer (3)',
@@ -89,7 +90,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: false,
+    useCar: 'use-all',
     displayName: 'Shine',
     shortName: 'SH',
     description: 'Linear activation, direct inputs, 2 hidden layers (3, 2)',
@@ -106,7 +107,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
 
   // === ReLU activation (blue family) ===
   {
-    useCar: false,
+    useCar: 'use-many',
     displayName: 'Drop',
     shortName: 'DR',
     description: 'ReLU activation, differential inputs, 1 hidden layer (3)',
@@ -121,7 +122,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: false,
+    useCar: 'use-all',
     displayName: 'Wave',
     shortName: 'WV',
     description: 'ReLU activation, differential inputs, 2 hidden layers (3, 2)',
@@ -136,7 +137,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: false,
+    useCar: 'use-many',
     displayName: 'Mist',
     shortName: 'MI',
     description: 'ReLU activation, direct inputs, 1 hidden layer (3)',
@@ -151,7 +152,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: false,
+    useCar: 'use-all',
     displayName: 'Tide',
     shortName: 'TD',
     description: 'ReLU activation, direct inputs, 2 hidden layers (3, 2)',
@@ -168,7 +169,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
 
   // === GELU activation (green/cyan family) ===
   {
-    useCar: false,
+    useCar: 'use-all',
     displayName: 'Leaf',
     shortName: 'LF',
     description: 'GELU activation, differential inputs, 1 hidden layer (3)',
@@ -183,7 +184,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: false,
+    useCar: 'use-all',
     displayName: 'Vine',
     shortName: 'VN',
     description: 'GELU activation, differential inputs, 2 hidden layers (3, 2)',
@@ -198,7 +199,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: false,
+    useCar: 'use-all',
     displayName: 'Moss',
     shortName: 'MS',
     description: 'GELU activation, direct inputs, 1 hidden layer (3)',
@@ -213,7 +214,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: false,
+    useCar: 'use-all',
     displayName: 'Fern',
     shortName: 'FN',
     description: 'GELU activation, direct inputs, 2 hidden layers (3, 2)',
@@ -230,7 +231,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
 
   // === Step activation (purple/magenta family) ===
   {
-    useCar: false,
+    useCar: 'use-all',
     displayName: 'Bit',
     shortName: 'BT',
     description: 'Step activation, differential inputs, 1 hidden layer (3)',
@@ -245,7 +246,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: false,
+    useCar: 'use-all',
     displayName: 'Byte',
     shortName: 'BY',
     description: 'Step activation, differential inputs, 2 hidden layers (3, 2)',
@@ -260,7 +261,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: false,
+    useCar: 'use-all',
     displayName: 'Chip',
     shortName: 'CH',
     description: 'Step activation, direct inputs, 1 hidden layer (3)',
@@ -275,7 +276,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: false,
+    useCar: 'use-all',
     displayName: 'Core',
     shortName: 'CR',
     description: 'Step activation, direct inputs, 2 hidden layers (3, 2)',
@@ -292,7 +293,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
 
   // === SWIGLU activation (red/pink family) ===
   {
-    useCar: false,
+    useCar: 'use-all',
     displayName: 'Neo',
     shortName: 'NE',
     description: 'SWIGLU activation, differential inputs, 1 hidden layer (3)',
@@ -308,6 +309,46 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   },
 ];
 
-export const CAR_BRAIN_CONFIGS = CAR_BRAIN_CONFIGS_DEFINED.filter(
-  (config) => config.useCar
+// Filter configs by usage level
+export const CAR_BRAIN_CONFIGS_FEW = CAR_BRAIN_CONFIGS_DEFINED.filter(
+  (config) => config.useCar === 'use-few'
 );
+
+export const CAR_BRAIN_CONFIGS_MANY = CAR_BRAIN_CONFIGS_DEFINED.filter(
+  (config) => config.useCar === 'use-few' || config.useCar === 'use-many'
+);
+
+export const CAR_BRAIN_CONFIGS_ALL = CAR_BRAIN_CONFIGS_DEFINED.filter(
+  (config) => config.useCar === 'use-few' || config.useCar === 'use-many' || config.useCar === 'use-all'
+);
+
+// Default export - currently set to 'use-few' (2 cars)
+export const CAR_BRAIN_CONFIGS = CAR_BRAIN_CONFIGS_FEW;
+
+// Helper function to get configs by usage level
+export function getCarBrainConfigsByLevel(level: CarUsageLevel): CarBrainConfig[] {
+  switch (level) {
+    case 'use-few':
+      return CAR_BRAIN_CONFIGS_FEW;
+    case 'use-many':
+      return CAR_BRAIN_CONFIGS_MANY;
+    case 'use-all':
+      return CAR_BRAIN_CONFIGS_ALL;
+  }
+}
+
+// Helper function to get metadata for a usage level
+export function getCarUsageLevelInfo(level: CarUsageLevel): CarUsageLevelInfo {
+  const info = CAR_USAGE_LEVELS.find((l) => l.id === level);
+  if (!info) {
+    throw new Error(`Unknown car usage level: ${level}`);
+  }
+  return info;
+}
+
+// Helper function to get the next usage level in the cycle
+export function getNextCarUsageLevel(current: CarUsageLevel): CarUsageLevel {
+  const currentIndex = CAR_USAGE_LEVELS.findIndex((l) => l.id === current);
+  const nextIndex = (currentIndex + 1) % CAR_USAGE_LEVELS.length;
+  return CAR_USAGE_LEVELS[nextIndex].id;
+}

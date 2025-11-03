@@ -30,7 +30,9 @@ export class NeuralNetwork {
     }
   }
 
-  // Initialize random weights
+  // Initialize random weights using He initialization for better convergence
+  // He initialization: weights ~ N(0, sqrt(2/n_in)) for ReLU-like activations
+  // Xavier initialization: weights ~ N(0, sqrt(2/(n_in + n_out))) for linear/tanh
   private initializeRandom(): NetworkStructure {
     const layers: Layer[] = [];
 
@@ -41,15 +43,21 @@ export class NeuralNetwork {
       const weights: number[][] = [];
       const biases: number[] = [];
 
-      const scale = 0.5;
+      // Use He initialization for ReLU/GELU, Xavier for linear/tanh
+      // For uniform distribution: limit = sqrt(6 / (fan_in + fan_out))
+      const limit = this.activationType === 'relu' || this.activationType === 'gelu' || this.activationType === 'swiglu'
+        ? Math.sqrt(6.0 / inputSize)  // He initialization (scaled for uniform dist)
+        : Math.sqrt(6.0 / (inputSize + outputSize));  // Xavier initialization
 
       for (let j = 0; j < outputSize; j++) {
         const neuronWeights: number[] = [];
         for (let k = 0; k < inputSize; k++) {
-          neuronWeights.push((this.rng.next() * 2 - 1) * scale);
+          // Uniform distribution in [-limit, limit]
+          neuronWeights.push((this.rng.next() * 2 - 1) * limit);
         }
         weights.push(neuronWeights);
-        biases.push((this.rng.next() * 2 - 1) * scale);
+        // Initialize biases to small values
+        biases.push((this.rng.next() * 2 - 1) * 0.01);
       }
 
       layers.push({ weights, biases });

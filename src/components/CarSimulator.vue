@@ -24,8 +24,8 @@
         >
           DELAY TURN
         </button>
-        <button @click="toggleAllCarTypes" :class="{ active: useAllCarTypes }">
-          ALL TYPES
+        <button @click="toggleAllCarTypes" :class="{ active: carUsageLevel !== 'use-few' }">
+          {{ getCarUsageLevelInfo(carUsageLevel).name }}
         </button>
         <button @click="toggleShowRays" :class="{ active: showRays }">
           SHOW RAYS
@@ -51,7 +51,7 @@
           <!-- Table View -->
           <table
             v-if="viewMode === 'table'"
-            :class="['stats-table', { 'stats-table-compact': useAllCarTypes }]"
+            :class="['stats-table', { 'stats-table-compact': carUsageLevel !== 'use-few' }]"
             @click="cycleView"
           >
             <thead>
@@ -79,7 +79,7 @@
                   <PercentageBar
                     :percentage="scoreByConfigId.get(config.shortName) ?? 0"
                     variant="white"
-                    :compact="useAllCarTypes"
+                    :compact="carUsageLevel !== 'use-few'"
                   />
                 </td>
                 <td style="font-weight: bold">
@@ -97,21 +97,21 @@
                       mutationRatePercentByConfigId.get(config.shortName) ?? 0
                     "
                     variant="white"
-                    :compact="useAllCarTypes"
+                    :compact="carUsageLevel !== 'use-few'"
                   />
                 </td>
                 <td>
                   <PercentageBar
                     :percentage="getMeanFitnessPercentRaw(config.shortName)"
                     variant="white"
-                    :compact="useAllCarTypes"
+                    :compact="carUsageLevel !== 'use-few'"
                   />
                 </td>
                 <td>
                   <PercentageBar
                     :percentage="getBestFitnessPercentRaw(config.shortName)"
                     variant="white"
-                    :compact="useAllCarTypes"
+                    :compact="carUsageLevel !== 'use-few'"
                   />
                 </td>
                 <td>
@@ -362,6 +362,7 @@ import type {
   SpeedMultiplier,
   BrainSelectionStrategy,
   GenerationMarker,
+  CarUsageLevel,
 } from '@/types';
 import { BRAIN_SELECTION_STRATEGIES } from '@/types';
 import { SPEED_MULTIPLIERS } from '@/types';
@@ -378,6 +379,9 @@ import {
 import {
   CAR_BRAIN_CONFIGS,
   CAR_BRAIN_CONFIGS_DEFINED,
+  getCarBrainConfigsByLevel,
+  getCarUsageLevelInfo,
+  getNextCarUsageLevel,
 } from '@/core/config_cars';
 import {
   TEXT_CHARACTER,
@@ -416,13 +420,13 @@ const delayedSteering = ref(CONFIG.defaults.delayedSteering);
 const brainSelectionStrategy = ref<BrainSelectionStrategy>(
   CONFIG.geneticAlgorithm.brainSelection.defaultStrategy
 );
-const useAllCarTypes = ref(false); // Toggle between active cars only and all cars
+const carUsageLevel = ref<CarUsageLevel>('use-few'); // Current car usage level
 const frameCounter = ref(0);
 const viewMode = ref<'table' | 'graph' | 'performance'>('table');
 const graphCanvasRef = ref<HTMLCanvasElement | null>(null);
 
 const activeCarConfigs = computed(() => {
-  return useAllCarTypes.value ? CAR_BRAIN_CONFIGS_DEFINED : CAR_BRAIN_CONFIGS;
+  return getCarBrainConfigsByLevel(carUsageLevel.value);
 });
 
 // ============================================================================
@@ -1563,9 +1567,9 @@ const toggleMutationByDistance = () => {
   mutationByDistance.value = !mutationByDistance.value;
 };
 
-// Toggle All Car Types mode
+// Cycle through car usage levels: use-few -> use-many -> use-all -> use-few
 const toggleAllCarTypes = () => {
-  useAllCarTypes.value = !useAllCarTypes.value;
+  carUsageLevel.value = getNextCarUsageLevel(carUsageLevel.value);
 };
 
 // Toggle Delayed Steering mode
@@ -1833,15 +1837,10 @@ watch(frameCounter, () => {
   }
 });
 
-// Watch for toggle of all car types - reset and reinitialize
-watch(useAllCarTypes, () => {
-  print(
-    `[Toggle] ${
-      useAllCarTypes.value
-        ? 'Enabling all car types'
-        : 'Using active car types only'
-    }`
-  );
+// Watch for changes in car usage level - reset and reinitialize
+watch(carUsageLevel, () => {
+  const levelInfo = getCarUsageLevelInfo(carUsageLevel.value);
+  print(`[Toggle] Car usage level: ${levelInfo.description}`);
 
   // Update population controller with new car type count
   populationController.setPopulation(getPopulationSize());

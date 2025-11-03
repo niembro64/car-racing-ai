@@ -73,8 +73,35 @@ export type SpeedMultiplier = (typeof SPEED_MULTIPLIERS)[number];
 // CAR BRAIN CONFIGURATION TYPES
 // ============================================================================
 
+export type CarUsageLevel = 'use-few' | 'use-many' | 'use-all';
+
+// Metadata for car usage levels
+export interface CarUsageLevelInfo {
+  id: CarUsageLevel;
+  name: string; // Short display name (e.g., 'FEW', 'MANY', 'ALL')
+  description: string; // Full description (e.g., 'FEW (2 types)')
+}
+
+export const CAR_USAGE_LEVELS: CarUsageLevelInfo[] = [
+  {
+    id: 'use-few',
+    name: 'FEW',
+    description: 'FEW (2 types)',
+  },
+  {
+    id: 'use-many',
+    name: 'MANY',
+    description: 'MANY (5 types)',
+  },
+  {
+    id: 'use-all',
+    name: 'ALL',
+    description: 'ALL types',
+  },
+];
+
 export interface CarBrainConfig {
-  useCar: boolean; // Whether to use this config for cars
+  useCar: CarUsageLevel; // Usage level: 'use-few' (2 cars), 'use-many' (several), 'use-all' (rest)
   // Identification
   displayName: string; // Full name for desktop (e.g., 'Spark', 'Wave')
   shortName: string; // Abbreviated name for mobile/HUD (e.g., 'SP', 'WV')

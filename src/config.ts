@@ -15,6 +15,10 @@ import {
   NN_ARCH_DIFF_SMALL as _NN_ARCH_DIFF_SMALL,
   NN_ARCH_DIFF_MEDIUM as _NN_ARCH_DIFF_MEDIUM,
   NN_ARCH_DIFF_LARGE as _NN_ARCH_DIFF_LARGE,
+  NN_ARCH_XL as _NN_ARCH_XL,
+  NN_ARCH_XXL as _NN_ARCH_XXL,
+  NN_ARCH_DIFF_XL as _NN_ARCH_DIFF_XL,
+  NN_ARCH_DIFF_XXL as _NN_ARCH_DIFF_XXL,
 } from './config_nn';
 import { CAR_BRAIN_CONFIGS } from './core/config_cars';
 
@@ -118,7 +122,7 @@ export const CONFIG: Config = {
       height: 30,
     },
     spawn: {
-      angleWiggle: Math.PI / 10,
+      angleWiggle: Math.PI / 20,
     },
     colors: {
       labelAlive: '#ffffff',
@@ -156,22 +160,22 @@ export const CONFIG: Config = {
 
   geneticAlgorithm: {
     mutation: {
-      base: 0.01,
-      min: 0.001,
+      base: 0.2, // Increased from 0.01 for more exploration early on
+      min: 0.0003, // Slightly increased minimum mutation
       startingMutationParameterScaleAgainstSize: {
-        min: 0.75,
+        min: 0.7, // Larger networks get slightly lower mutation rates
         max: 1.0,
       },
       bezierPoints: [1, 0.1, 0.25, 0.75],
       rankMultiplier: {
-        min: 0.1,
-        max: 0.2,
-        curvePower: 2.0,
+        min: 0.00001, // Increased minimum multiplier for more diversity
+        max: 0.01, // Increased maximum for stronger mutations in later cars
+        curvePower: 2, // Slightly reduced curve power for more gradual increase
       },
       progressive: {
         enabled: true,
-        baseVariance: 0.01,
-        growthRate: 0.05,
+        baseVariance: 0.008, // Reduced from 0.01 for gentler starting mutations
+        growthRate: 0.035, // Reduced from 0.05 for smoother progression
         growthType: 'exponential',
       },
     },
