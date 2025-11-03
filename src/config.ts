@@ -77,8 +77,8 @@ export const CONFIG: Config = {
   },
 
   track: {
-    halfWidth: 70,
-    segmentsPerCurve: 8,
+    halfWidth: 60,
+    segmentsPerCurve: 4,
     waypoints: {
       base: scaleWaypointsToCanvas(
         track_waypoints_ratios,
@@ -114,11 +114,11 @@ export const CONFIG: Config = {
       steeringDelaySeconds: 0.2,
     },
     dimensions: {
-      width: 30,
-      height: 50,
+      width: 20,
+      height: 30,
     },
     spawn: {
-      angleWiggle: Math.PI / 20,
+      angleWiggle: Math.PI / 10,
     },
     colors: {
       labelAlive: '#ffffff',
@@ -156,10 +156,10 @@ export const CONFIG: Config = {
 
   geneticAlgorithm: {
     mutation: {
-      base: 0.1,
-      min: 0.01,
-      parameterScale: {
-        min: 0.2,
+      base: 0.01,
+      min: 0.001,
+      startingMutationParameterScaleAgainstSize: {
+        min: 0.75,
         max: 1.0,
       },
       bezierPoints: [1, 0.1, 0.25, 0.75],
@@ -167,6 +167,12 @@ export const CONFIG: Config = {
         min: 0.1,
         max: 0.2,
         curvePower: 2.0,
+      },
+      progressive: {
+        enabled: true,
+        baseVariance: 0.01,
+        growthRate: 0.05,
+        growthType: 'exponential',
       },
     },
     population: {
@@ -193,7 +199,7 @@ export const CONFIG: Config = {
       },
     },
     brainSelection: {
-      defaultStrategy: 'averaging',
+      defaultStrategy: 'alltime',
     },
   },
 
@@ -252,6 +258,7 @@ export const CONFIG: Config = {
       fontSize: 20,
       textOffset: -2,
       maxHistory: 10,
+      showGenerationNumber: false,
     },
     graph: {
       useLogScale: false,
@@ -266,17 +273,10 @@ export const CONFIG: Config = {
     speedMultiplier: 1 as SpeedMultiplier,
     showRays: true,
   },
-
-  logging: {
-    enableConsoleLogs: true,
-  },
 };
 
-export function print(...args: any[]): void {
-  if (CONFIG.logging.enableConsoleLogs) {
-    console.log(...args);
-  }
-}
+// Re-export print from logger utility to maintain backwards compatibility
+export { print } from './utils/logger';
 
 function cubicBezier(
   t: number,
@@ -382,15 +382,19 @@ export function getParameterBasedMutationScale(
   maxParams: number
 ): number {
   if (maxParams === minParams) {
-    return CONFIG.geneticAlgorithm.mutation.parameterScale.max;
+    return CONFIG.geneticAlgorithm.mutation
+      .startingMutationParameterScaleAgainstSize.max;
   }
 
   const normalized = (parameterCount - minParams) / (maxParams - minParams);
   const scale =
-    CONFIG.geneticAlgorithm.mutation.parameterScale.max -
+    CONFIG.geneticAlgorithm.mutation.startingMutationParameterScaleAgainstSize
+      .max -
     normalized *
-      (CONFIG.geneticAlgorithm.mutation.parameterScale.max -
-        CONFIG.geneticAlgorithm.mutation.parameterScale.min);
+      (CONFIG.geneticAlgorithm.mutation
+        .startingMutationParameterScaleAgainstSize.max -
+        CONFIG.geneticAlgorithm.mutation
+          .startingMutationParameterScaleAgainstSize.min);
 
   return scale;
 }
@@ -430,4 +434,35 @@ export function getCarBrainConfig(
   shortName: string
 ): CarBrainConfig | undefined {
   return CAR_BRAIN_CONFIGS.find((config) => config.shortName === shortName);
+}
+
+export function getVarianceForIndex(
+  index: number,
+  baseVariance: number = CONFIG.geneticAlgorithm.mutation.progressive
+    .baseVariance,
+  growthRate: number = CONFIG.geneticAlgorithm.mutation.progressive.growthRate,
+  growthType: 'linear' | 'exponential' = CONFIG.geneticAlgorithm.mutation
+    .progressive.growthType
+): number {
+  if (index === 0) return 0;
+
+  if (growthType === 'exponential') {
+    return baseVariance * Math.pow(1 + growthRate, index);
+  }
+
+  return baseVariance + growthRate * index;
+}
+
+export function mutateParameter(
+  originalValue: number,
+  variance: number
+): number {
+  if (variance <= 0) return originalValue;
+
+  // Box-Muller transform for Gaussian distribution
+  const u = Math.random();
+  const v = Math.random();
+  const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+
+  return originalValue + z * variance;
 }

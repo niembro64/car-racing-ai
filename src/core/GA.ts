@@ -9,6 +9,7 @@ import {
   getMutationRate,
   countTrainableParameters,
   getParameterBasedMutationScale,
+  getVarianceForIndex,
 } from '@/config';
 import { CAR_BRAIN_CONFIGS, CAR_BRAIN_CONFIGS_DEFINED } from './config_cars';
 import { TEXT_CHARACTER } from './config_text';
@@ -288,12 +289,20 @@ export class GeneticAlgorithm {
         // Mutated car
         const mutationSeed = this.rng.next() * 1000000 + i + state.generation * 10000;
 
-        // Apply mutation curve only when NOT using distance-based mutation
-        // Distance-based mutation already provides enough variation
-        // Note: scaledMutationRate already includes parameter-based scaling
-        const sigma = mutationByDistance
-          ? scaledMutationRate
-          : scaledMutationRate * this.getMutationMultiplier(i, carsPerType);
+        let sigma: number;
+
+        if (CONFIG.geneticAlgorithm.mutation.progressive.enabled) {
+          // Progressive mutation: variance increases with brain index
+          const variance = getVarianceForIndex(i);
+          sigma = variance;
+        } else {
+          // Legacy mutation: apply mutation curve only when NOT using distance-based mutation
+          // Distance-based mutation already provides enough variation
+          // Note: scaledMutationRate already includes parameter-based scaling
+          sigma = mutationByDistance
+            ? scaledMutationRate
+            : scaledMutationRate * this.getMutationMultiplier(i, carsPerType);
+        }
 
         const mutatedBrain = eliteBrain.mutate(sigma, mutationSeed);
 

@@ -58,6 +58,7 @@
               <tr>
                 <th v-if="!isMobile()">Score</th>
                 <th>Type</th>
+                <th>{{ isMobile() ? '#' : '# Alive' }}</th>
                 <th>Gen</th>
                 <th>{{ isMobile() ? 'MUT' : 'NEXT MUT' }}</th>
                 <th>Mean</th>
@@ -83,6 +84,9 @@
                 </td>
                 <td style="font-weight: bold">
                   {{ isMobile() ? config.shortName : config.displayName }}
+                </td>
+                <td>
+                  {{ getAliveCount(config.shortName) }}
                 </td>
                 <td>
                   {{ ga.getGeneration(config.shortName) }}
@@ -165,36 +169,68 @@
                 </thead>
                 <tbody>
                   <tr>
-                    <td class="label-cell">FPS Avg</td>
-                    <td class="value-cell">{{ currentFps.toFixed(1) }}</td>
+                    <td class="label-cell">
+                      FPS Avg
+                    </td>
+                    <td class="value-cell">
+                      {{ currentFps.toFixed(1) }}
+                    </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">FPS 99.9%</td>
-                    <td class="value-cell">{{ fps99_9Percent.toFixed(1) }}</td>
+                    <td class="label-cell">
+                      FPS 99.9%
+                    </td>
+                    <td class="value-cell">
+                      {{ fps99_9Percent.toFixed(1) }}
+                    </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">FPS 99.0%</td>
-                    <td class="value-cell">{{ fps99Percent.toFixed(1) }}</td>
+                    <td class="label-cell">
+                      FPS 99.0%
+                    </td>
+                    <td class="value-cell">
+                      {{ fps99Percent.toFixed(1) }}
+                    </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">FPS 1.0%</td>
-                    <td class="value-cell">{{ fps1Percent.toFixed(1) }}</td>
+                    <td class="label-cell">
+                      FPS 1.0%
+                    </td>
+                    <td class="value-cell">
+                      {{ fps1Percent.toFixed(1) }}
+                    </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">FPS 0.1%</td>
-                    <td class="value-cell">{{ fps0_1Percent.toFixed(1) }}</td>
+                    <td class="label-cell">
+                      FPS 0.1%
+                    </td>
+                    <td class="value-cell">
+                      {{ fps0_1Percent.toFixed(1) }}
+                    </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">Frame Time</td>
-                    <td class="value-cell">{{ avgFrameTime.toFixed(2) }}ms</td>
+                    <td class="label-cell">
+                      Frame Time
+                    </td>
+                    <td class="value-cell">
+                      {{ avgFrameTime.toFixed(2) }}ms
+                    </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">Update Time</td>
-                    <td class="value-cell">{{ avgUpdateTime.toFixed(2) }}ms</td>
+                    <td class="label-cell">
+                      Update Time
+                    </td>
+                    <td class="value-cell">
+                      {{ avgUpdateTime.toFixed(2) }}ms
+                    </td>
                   </tr>
                   <tr>
-                    <td class="label-cell">Render Time</td>
-                    <td class="value-cell">{{ avgRenderTime.toFixed(2) }}ms</td>
+                    <td class="label-cell">
+                      Render Time
+                    </td>
+                    <td class="value-cell">
+                      {{ avgRenderTime.toFixed(2) }}ms
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -713,6 +749,12 @@ const getBestLapTime = (shortName: string): string => {
   return lapTime.toFixed(3) + 's';
 };
 
+const getAliveCount = (shortName: string): number => {
+  return population.value.filter(
+    (car) => car.configShortName === shortName && car.alive
+  ).length;
+};
+
 // Cycle through views: table -> graph -> performance -> table
 const cycleView = () => {
   if (viewMode.value === 'table') {
@@ -780,15 +822,7 @@ const evolvePopulationByConfig = (
       isLastGenBest: true, // This is the most recent generation
     });
 
-    // Keep only last N markers per config
-    if (markers.length > CONFIG.visualization.generationMarker.maxHistory) {
-      markers.splice(
-        0,
-        markers.length - CONFIG.visualization.generationMarker.maxHistory
-      );
-    }
-
-    // Update flags for all markers
+    // Update flags for all markers BEFORE pruning
     // 1. Set all previous markers' isLastGenBest to false
     for (let i = 0; i < markers.length - 1; i++) {
       markers[i].isLastGenBest = false;
@@ -807,6 +841,36 @@ const evolvePopulationByConfig = (
     // 3. Update all markers' isAllTimeBest flag
     for (let i = 0; i < markers.length; i++) {
       markers[i].isAllTimeBest = i === maxFitnessIndex;
+    }
+
+    // 4. Prune markers, but ALWAYS keep the all-time best
+    if (markers.length > CONFIG.visualization.generationMarker.maxHistory) {
+      const allTimeBestMarker = markers[maxFitnessIndex];
+
+      // Keep the most recent markers
+      const recentMarkers = markers.slice(-CONFIG.visualization.generationMarker.maxHistory);
+
+      // Check if all-time best is already in recent markers
+      const allTimeBestInRecent = recentMarkers.some(
+        m => m.generation === allTimeBestMarker.generation
+      );
+
+      if (!allTimeBestInRecent) {
+        // All-time best is old, so we need to keep it separately
+        // Keep all-time best + most recent (maxHistory - 1) markers
+        const keepCount = CONFIG.visualization.generationMarker.maxHistory - 1;
+        const markersToKeep = [
+          allTimeBestMarker,
+          ...markers.slice(-keepCount)
+        ];
+
+        // Sort by generation to maintain chronological order
+        markersToKeep.sort((a, b) => a.generation - b.generation);
+        markers.splice(0, markers.length, ...markersToKeep);
+      } else {
+        // All-time best is recent, just keep the most recent markers
+        markers.splice(0, markers.length - CONFIG.visualization.generationMarker.maxHistory);
+      }
     }
 
     generationMarkersByConfigId.value.set(config.shortName, markers);
@@ -1086,17 +1150,27 @@ const render = (ctx: CanvasRenderingContext2D) => {
       );
       ctx.fill();
 
-      // Draw generation number above the dot
-      ctx.fillText(
-        marker.generation.toString(),
-        marker.x,
-        marker.y -
-          CONFIG.visualization.generationMarker.radius +
-          CONFIG.visualization.generationMarker.textOffset
-      );
+      // Draw generation number above the dot (if enabled)
+      if (CONFIG.visualization.generationMarker.showGenerationNumber) {
+        ctx.fillText(
+          marker.generation.toString(),
+          marker.x,
+          marker.y -
+            CONFIG.visualization.generationMarker.radius +
+            CONFIG.visualization.generationMarker.textOffset
+        );
+      }
 
-      // Draw repeat emoji to the left if this is last generation's best
-      if (marker.isLastGenBest) {
+      // Conditionally show emojis based on brain selection strategy
+      const showRepeat =
+        (brainSelectionStrategy.value === 'generation' || brainSelectionStrategy.value === 'averaging')
+        && marker.isLastGenBest;
+      const showTrophy =
+        (brainSelectionStrategy.value === 'alltime' || brainSelectionStrategy.value === 'averaging')
+        && marker.isAllTimeBest;
+
+      // Draw repeat emoji to the left if this is last generation's best (and strategy uses it)
+      if (showRepeat) {
         ctx.fillText(
           TEXT_CHARACTER.repeat,
           marker.x - CONFIG.visualization.generationMarker.radius * 3,
@@ -1104,8 +1178,8 @@ const render = (ctx: CanvasRenderingContext2D) => {
         );
       }
 
-      // Draw trophy emoji to the right if this is all-time best
-      if (marker.isAllTimeBest) {
+      // Draw trophy emoji to the right if this is all-time best (and strategy uses it)
+      if (showTrophy) {
         ctx.fillText(
           TEXT_CHARACTER.trophy,
           marker.x + CONFIG.visualization.generationMarker.radius * 3,
@@ -1518,9 +1592,6 @@ const cycleBrainStrategy = () => {
   const nextIndex = (currentIndex + 1) % strategies.length;
   brainSelectionStrategy.value = strategies[nextIndex];
 
-  // Persist to localStorage
-  localStorage.setItem('brainSelectionStrategy', brainSelectionStrategy.value);
-
   const strategyInfo = BRAIN_SELECTION_STRATEGIES.find(
     (s) => s.id === brainSelectionStrategy.value
   );
@@ -1781,15 +1852,6 @@ watch(useAllCarTypes, () => {
 
 // Lifecycle
 onMounted(() => {
-  // Load brain selection strategy from localStorage
-  const savedStrategy = localStorage.getItem('brainSelectionStrategy');
-  if (
-    savedStrategy &&
-    ['generation', 'alltime', 'averaging'].includes(savedStrategy)
-  ) {
-    brainSelectionStrategy.value = savedStrategy as BrainSelectionStrategy;
-  }
-
   init();
   animationFrameId = requestAnimationFrame(animate);
 });

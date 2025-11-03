@@ -1,24 +1,37 @@
-// Neural Network Architecture Constants
-// Separated to avoid circular dependency with config_cars.ts
+import { print } from './utils/logger';
 
-export const SENSOR_RAY_ANGLES = [
-  0,
-  -Math.PI / 9,
-  Math.PI / 9,
-  -Math.PI / 4.5,
-  Math.PI / 4.5,
-  -Math.PI / 3,
-  Math.PI / 3,
-  -Math.PI / 2,
-  Math.PI / 2,
-];
+const sra = [0, 0.05, 0.07, 0.125, 0.25, 0.5];
 
-export const SENSOR_RAY_PAIRS = [
-  [1, 2],
-  [3, 4],
-  [5, 6],
-  [7, 8],
-];
+export const SENSOR_RAY_ANGLES: number[] = [];
+
+for (let i = 0; i < sra.length; i++) {
+  const a = sra[i] * Math.PI;
+
+  SENSOR_RAY_ANGLES.push(a);
+
+  if (a !== 0) {
+    SENSOR_RAY_ANGLES.push(-a);
+  }
+}
+
+export const SENSOR_RAY_PAIRS: [number, number][] = [];
+
+for (let i = 1; i < SENSOR_RAY_ANGLES.length; i += 1) {
+  if (i % 2 === 0) {
+    continue;
+  }
+
+  SENSOR_RAY_PAIRS.push([i, i + 1]);
+}
+
+print(
+  'Sensor Ray Angles:',
+  SENSOR_RAY_ANGLES.map((a) => a.toFixed(2))
+);
+print(
+  'Sensor Ray Pairs:',
+  SENSOR_RAY_PAIRS.map((p) => `[${p[0]}, ${p[1]}]`)
+);
 
 export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 1];
 export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 3, 1];

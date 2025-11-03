@@ -127,12 +127,20 @@ export interface MutationRankMultiplierConfig {
   curvePower: number;
 }
 
+export interface ProgressiveMutationConfig {
+  enabled: boolean;
+  baseVariance: number;
+  growthRate: number;
+  growthType: 'linear' | 'exponential';
+}
+
 export interface MutationConfig {
   base: number;
   min: number;
-  parameterScale: MutationParameterScaleConfig;
+  startingMutationParameterScaleAgainstSize: MutationParameterScaleConfig;
   bezierPoints: [number, number, number, number];
   rankMultiplier: MutationRankMultiplierConfig;
+  progressive: ProgressiveMutationConfig;
 }
 
 export interface PopulationInitialConfig {
@@ -256,6 +264,7 @@ export interface VisualizationGenerationMarkerConfig {
   fontSize: number;
   textOffset: number;
   maxHistory: number;
+  showGenerationNumber: boolean;
 }
 
 export interface VisualizationGraphConfig {
@@ -284,14 +293,6 @@ export interface DefaultsConfig {
 }
 
 // ============================================================================
-// LOGGING CONFIG
-// ============================================================================
-
-export interface LoggingConfig {
-  enableConsoleLogs: boolean;
-}
-
-// ============================================================================
 // MAIN CONFIG TYPE
 // ============================================================================
 
@@ -307,5 +308,4 @@ export interface Config {
   scoring: ScoringConfig;
   visualization: VisualizationConfig;
   defaults: DefaultsConfig;
-  logging: LoggingConfig;
 }
