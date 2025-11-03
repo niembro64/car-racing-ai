@@ -963,6 +963,10 @@ const evolvePopulationByConfig = (
   // Update the actual performance target being used (raw value)
   actualPerformanceTargetPerType.value = targetCarsPerType;
 
+  // Get nearness value for this config (convert from percentage to ratio)
+  const nearnessPercent = nearnessPercentByConfigId.value.get(config.shortName) ?? 0;
+  const nearnessRatio = nearnessPercent / 100;
+
   const newCars = ga.value.evolvePopulation(
     configCars,
     config,
@@ -971,7 +975,8 @@ const evolvePopulationByConfig = (
     winnerCar,
     mutationByDistance.value,
     savedPerformanceTargetPerType.value,
-    brainSelectionStrategy.value
+    brainSelectionStrategy.value,
+    nearnessRatio
   );
   generationTimeByConfigId.value.set(config.shortName, 0);
   lapCompletionTimeByConfigId.value.set(config.shortName, Infinity); // Reset lap time for new generation

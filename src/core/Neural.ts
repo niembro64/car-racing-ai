@@ -323,3 +323,47 @@ export function overcorrectNetworkWeights(
 
   return result;
 }
+
+/**
+ * Blend two neural network weight structures using a ratio
+ * Used for injecting randomness based on nearness to all-time best point
+ *
+ * @param weights1 - First network weights (strategic seed)
+ * @param weights2 - Second network weights (random seed)
+ * @param blendRatio - Ratio from 0 to 1, where 0 = all weights1, 1 = all weights2
+ * @returns Blended network weights
+ */
+export function blendNetworkWeights(
+  weights1: NetworkStructure,
+  weights2: NetworkStructure,
+  blendRatio: number
+): NetworkStructure {
+  // Deep clone first structure as base
+  const result: NetworkStructure = JSON.parse(JSON.stringify(weights1));
+
+  // Clamp blend ratio to [0, 1]
+  const ratio = Math.max(0, Math.min(1, blendRatio));
+
+  // Blend each layer's weights and biases
+  for (let layerIdx = 0; layerIdx < result.layers.length; layerIdx++) {
+    const layer1 = weights1.layers[layerIdx];
+    const layer2 = weights2.layers[layerIdx];
+    const resultLayer = result.layers[layerIdx];
+
+    // Blend weights matrix: (1 - ratio) * weights1 + ratio * weights2
+    for (let i = 0; i < resultLayer.weights.length; i++) {
+      for (let j = 0; j < resultLayer.weights[i].length; j++) {
+        resultLayer.weights[i][j] =
+          (1 - ratio) * layer1.weights[i][j] + ratio * layer2.weights[i][j];
+      }
+    }
+
+    // Blend biases vector: (1 - ratio) * biases1 + ratio * biases2
+    for (let i = 0; i < resultLayer.biases.length; i++) {
+      resultLayer.biases[i] =
+        (1 - ratio) * layer1.biases[i] + ratio * layer2.biases[i];
+    }
+  }
+
+  return result;
+}

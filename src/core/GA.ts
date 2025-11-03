@@ -1,5 +1,5 @@
 import { Car } from './Car';
-import { NeuralNetwork, averageNetworkWeights, overcorrectNetworkWeights } from './Neural';
+import { NeuralNetwork, averageNetworkWeights, overcorrectNetworkWeights, blendNetworkWeights } from './Neural';
 import { Track } from './Track';
 import { SeededRandom } from './math/geom';
 import type { CarBrainConfig, ConfigEvolutionState, BrainSelectionStrategy } from '@/types';
@@ -128,7 +128,8 @@ export class GeneticAlgorithm {
     winnerCar?: Car,
     mutationByDistance: boolean = true,
     carsForThisType?: number,
-    brainSelectionStrategy?: BrainSelectionStrategy
+    brainSelectionStrategy?: BrainSelectionStrategy,
+    nearness: number = 0
   ): Car[] {
     const state = this.stateByShortName.get(config.shortName);
     if (!state) {
@@ -265,6 +266,27 @@ export class GeneticAlgorithm {
 
     // Increment generation
     state.generation++;
+
+    // Apply nearness-based random injection
+    // If nearness is high (close to all-time best point), inject more randomness
+    // If nearness is low (far from all-time best point), stick to strategic seed
+    if (nearness > 0) {
+      // Generate a completely random brain with the same architecture
+      const randomSeed = this.rng.next() * 1000000 + state.generation * 10000;
+      const randomBrain = NeuralNetwork.createRandom(
+        randomSeed,
+        config.nn.architecture,
+        config.nn.activationType
+      );
+      const randomWeights = randomBrain.toJSON();
+
+      // Blend: (1 - nearness) * strategic + nearness * random
+      // nearness = 0.9 => 10% strategic + 90% random
+      // nearness = 0.1 => 90% strategic + 10% random
+      brainToSeed = blendNetworkWeights(brainToSeed, randomWeights, nearness);
+
+      console.log(`[${config.shortName}] Nearness: ${(nearness * 100).toFixed(1)}% - Injecting ${(nearness * 100).toFixed(1)}% randomness into seed brain`);
+    }
 
     // Calculate base mutation rate using the helper function
     const trackLength = track.getTotalLength();
