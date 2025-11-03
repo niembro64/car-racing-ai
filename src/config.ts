@@ -122,7 +122,7 @@ export const CONFIG: Config = {
       height: 30,
     },
     spawn: {
-      angleWiggle: Math.PI / 20,
+      angleWiggle: Math.PI / 2000000,
     },
     colors: {
       labelAlive: '#ffffff',
@@ -137,7 +137,7 @@ export const CONFIG: Config = {
 
   sensors: {
     visualization: {
-      rayWidth: 0.5,
+      rayWidth: 0.3,
       hitRadius: 3,
       centerlineHitColor: '#ffffff',
     },
@@ -161,15 +161,15 @@ export const CONFIG: Config = {
   geneticAlgorithm: {
     mutation: {
       base: 0.01, // Increased from 0.01 for more exploration early on
-      min: 0.0001, // Slightly increased minimum mutation
+      min: 0.001, // Slightly increased minimum mutation
       startingMutationParameterScaleAgainstSize: {
         min: 0.7, // Larger networks get slightly lower mutation rates
         max: 1.0,
       },
       bezierPoints: [1, 0.1, 0.25, 0.75],
       rankMultiplier: {
-        min: 0.000000001, // Increased minimum multiplier for more diversity
-        max: 0.001, // Increased maximum for stronger mutations in later cars
+        min: 0.0001, // Increased minimum multiplier for more diversity
+        max: 0.01, // Increased maximum for stronger mutations in later cars
         curvePower: 2, // Slightly reduced curve power for more gradual increase
       },
       progressive: {
