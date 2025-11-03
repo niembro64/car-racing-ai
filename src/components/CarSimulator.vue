@@ -623,25 +623,6 @@ const sortedCarBrainConfigs = computed(() => {
   return [...activeCarConfigs.value].sort(compareConfigs);
 });
 
-/**
- * Smooth easing function for nearness calculation
- * Creates a slow start, fast middle, smooth peak curve
- * Similar to cubic bezier ease-in-out but with adjustable steepness
- *
- * @param t - Linear progress from 0 to 1
- * @param power - Steepness of the curve (higher = more dramatic)
- * @returns Eased value from 0 to 1
- */
-const easeInOutPower = (t: number, power: number = 3): number => {
-  if (t < 0.5) {
-    // Ease in: slow start, accelerating
-    return Math.pow(2 * t, power) / 2;
-  } else {
-    // Ease out: decelerating, slow end
-    return 1 - Math.pow(2 * (1 - t), power) / 2;
-  }
-};
-
 // Computed property for nearness to all-time best death point (0 to 1)
 const nearnessPercentByConfigId = computed(() => {
   void frameCounter.value; // Trigger on every frame
@@ -674,41 +655,38 @@ const nearnessPercentByConfigId = computed(() => {
         ? Math.max(...carsOfType.map((car) => car.maxDistanceReached))
         : 0;
 
-    // Calculate nearness with very sharp spike around all-time best point
-    // Define spike window: 2% before and 2% after the all-time best point
-    const spikeWindowPercent = 0.02; // 2% window on each side
-    const spikeWindowBefore = alltimeBestDistance * spikeWindowPercent;
-    const spikeWindowAfter = (trackLength - alltimeBestDistance) * spikeWindowPercent;
+    // Calculate nearness using infinity-based asymptotic approach
+    // The idea: measure the ABSOLUTE GAP to the all-time best point
+    // Formula: 1 / (1 + scaledGap) creates a hyperbolic curve
+    // Stays near 0 when gap is large, explodes to 1 when gap approaches 0
+
+    const scaleFactor = 100; // Adjust this to control explosion steepness
 
     let nearness: number;
 
     if (currentBestDistance <= alltimeBestDistance) {
       // Approaching the all-time best point
-      const distanceFromTarget = alltimeBestDistance - currentBestDistance;
+      const gap = alltimeBestDistance - currentBestDistance;
 
-      if (distanceFromTarget <= spikeWindowBefore) {
-        // Within spike window (last 2% before the target)
-        // Map to 0->1 within the window
-        const windowProgress = 1 - (distanceFromTarget / spikeWindowBefore);
-        // Apply smooth easing with very high power for sharp spike
-        nearness = easeInOutPower(windowProgress, 5);
-      } else {
-        // Outside spike window - stays near zero
-        nearness = 0;
-      }
+      // Scale the gap relative to the all-time best distance
+      const scaledGap = (gap / alltimeBestDistance) * scaleFactor;
+
+      // Hyperbolic function: stays near 0 until gap is tiny, then explodes
+      nearness = 1 / (1 + scaledGap);
     } else {
-      // Past the all-time best point
-      const distanceFromTarget = currentBestDistance - alltimeBestDistance;
+      // Past the all-time best point - mirror the approach
+      const remainingToEnd = trackLength - alltimeBestDistance;
 
-      if (distanceFromTarget <= spikeWindowAfter) {
-        // Within spike window (first 2% after the target)
-        // Map to 1->0 within the window
-        const windowProgress = 1 - (distanceFromTarget / spikeWindowAfter);
-        // Apply smooth easing with very high power for sharp spike
-        nearness = easeInOutPower(windowProgress, 5);
-      } else {
-        // Outside spike window - stays near zero
+      if (remainingToEnd <= 0) {
         nearness = 0;
+      } else {
+        const gap = currentBestDistance - alltimeBestDistance;
+
+        // Scale the gap relative to remaining distance to end
+        const scaledGap = (gap / remainingToEnd) * scaleFactor;
+
+        // Hyperbolic function: explodes down from 1 to 0
+        nearness = 1 / (1 + scaledGap);
       }
     }
 
