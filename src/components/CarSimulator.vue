@@ -674,22 +674,40 @@ const nearnessPercentByConfigId = computed(() => {
         ? Math.max(...carsOfType.map((car) => car.maxDistanceReached))
         : 0;
 
-    // Calculate nearness with smooth easing (peaks at all-time best point)
+    // Calculate nearness with very sharp spike around all-time best point
+    // Define spike window: 2% before and 2% after the all-time best point
+    const spikeWindowPercent = 0.02; // 2% window on each side
+    const spikeWindowBefore = alltimeBestDistance * spikeWindowPercent;
+    const spikeWindowAfter = (trackLength - alltimeBestDistance) * spikeWindowPercent;
+
     let nearness: number;
+
     if (currentBestDistance <= alltimeBestDistance) {
-      // Approaching the all-time best point: 0 -> 1 with smooth ease-in-out
-      const linearProgress = currentBestDistance / alltimeBestDistance;
-      nearness = easeInOutPower(linearProgress, 3);
-    } else {
-      // Past the all-time best point: 1 -> 0 with smooth ease-in-out
-      const remainingDistance = trackLength - alltimeBestDistance;
-      if (remainingDistance > 0) {
-        const linearProgress = Math.max(
-          0,
-          1 - (currentBestDistance - alltimeBestDistance) / remainingDistance
-        );
-        nearness = easeInOutPower(linearProgress, 3);
+      // Approaching the all-time best point
+      const distanceFromTarget = alltimeBestDistance - currentBestDistance;
+
+      if (distanceFromTarget <= spikeWindowBefore) {
+        // Within spike window (last 2% before the target)
+        // Map to 0->1 within the window
+        const windowProgress = 1 - (distanceFromTarget / spikeWindowBefore);
+        // Apply smooth easing with very high power for sharp spike
+        nearness = easeInOutPower(windowProgress, 5);
       } else {
+        // Outside spike window - stays near zero
+        nearness = 0;
+      }
+    } else {
+      // Past the all-time best point
+      const distanceFromTarget = currentBestDistance - alltimeBestDistance;
+
+      if (distanceFromTarget <= spikeWindowAfter) {
+        // Within spike window (first 2% after the target)
+        // Map to 1->0 within the window
+        const windowProgress = 1 - (distanceFromTarget / spikeWindowAfter);
+        // Apply smooth easing with very high power for sharp spike
+        nearness = easeInOutPower(windowProgress, 5);
+      } else {
+        // Outside spike window - stays near zero
         nearness = 0;
       }
     }
