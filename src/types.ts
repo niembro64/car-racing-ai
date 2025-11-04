@@ -67,7 +67,7 @@ export interface GenomeData {
 }
 
 // Speed multiplier options - type is derived from this array
-export const SPEED_MULTIPLIERS = [0.25, 0.5, 1, 2, 3, 4] as const;
+export const SPEED_MULTIPLIERS = [0.2, 0.5, 1, 2, 3, 4] as const;
 export type SpeedMultiplier = (typeof SPEED_MULTIPLIERS)[number];
 // ============================================================================
 // CAR BRAIN CONFIGURATION TYPES
@@ -81,6 +81,20 @@ export interface CarUsageLevelInfo {
   name: string; // Short display name (e.g., 'FEW', 'MANY', 'ALL')
   description: string; // Full description (e.g., 'FEW (2 types)')
 }
+
+// View mode types for visualization (internal state)
+export const VIEW_MODES = ['table', 'graph', 'performance'] as const;
+export type ViewMode = (typeof VIEW_MODES)[number];
+
+// Info section view types (all 5 clickable views)
+export const INFO_VIEWS = [
+  'table-cars',
+  'graph-completion',
+  'graph-rate',
+  'graph-score',
+  'table-fps',
+] as const;
+export type InfoView = (typeof INFO_VIEWS)[number];
 
 export const CAR_USAGE_LEVELS: CarUsageLevelInfo[] = [
   {
@@ -212,6 +226,7 @@ export interface GenerationMarker {
   generation: number;
   fitness: number;
   duration: number;  // How long this generation lasted in seconds
+  score: number;  // Comprehensive score (0-100)
   isAllTimeBest: boolean;  // Maps to bestWeightsAllTime brain (trophy emoji)
   isLastGenBest: boolean;  // Maps to bestWeightsLastGeneration brain (repeat emoji)
 }

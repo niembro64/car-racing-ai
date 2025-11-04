@@ -1,4 +1,4 @@
-import type { Point, BrainSelectionStrategy, SpeedMultiplier } from './types';
+import type { Point, BrainSelectionStrategy, SpeedMultiplier, InfoView, CarUsageLevel } from './types';
 
 // ============================================================================
 // CANVAS CONFIG
@@ -269,6 +269,7 @@ export interface VisualizationGenerationMarkerConfig {
 
 export interface VisualizationGraphConfig {
   useLogScale: boolean;
+  recentGenerationsCount: number;
 }
 
 export interface VisualizationConfig {
@@ -290,6 +291,8 @@ export interface DefaultsConfig {
   delayedSteering: boolean;
   speedMultiplier: SpeedMultiplier;
   showRays: boolean;
+  defaultInfoView: InfoView;
+  defaultCarUsageLevel: CarUsageLevel;
 }
 
 // ============================================================================

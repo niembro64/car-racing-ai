@@ -11,6 +11,7 @@ import {
 
 export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   // === None/Raw (no hidden layers, no activation function) ===
+  // Gray family - neutral/basic
   {
     useCar: 'use-few',
     displayName: 'Pico',
@@ -22,8 +23,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: '-',
     },
     colors: {
-      light: '#cccccc',
-      dark: '#999999',
+      light: '#b8b8b8', // Light gray - differential, no hidden
+      dark: '#7a7a7a',
     },
   },
   {
@@ -37,12 +38,13 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: '-',
     },
     colors: {
-      light: '#777',
-      dark: '#111',
+      light: '#999999', // Medium gray - direct, no hidden
+      dark: '#5a5a5a',
     },
   },
 
-  // === Linear activation (orange/yellow family) ===
+  // === Linear activation (orange/amber family) ===
+  // Orange hues - warm, simple transformation
   {
     useCar: 'use-many',
     displayName: 'Spark',
@@ -54,8 +56,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      light: '#cc8833',
-      dark: '#995522',
+      light: '#e89f3c', // Bright orange - differential, 1 hidden
+      dark: '#c2742a',
     },
   },
   {
@@ -70,8 +72,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      light: '#aa6611',
-      dark: '#774400',
+      light: '#d67020', // Deep orange - differential, 2 hidden
+      dark: '#a85518',
     },
   },
   {
@@ -85,8 +87,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      light: '#ccaa33',
-      dark: '#997722',
+      light: '#d9a550', // Amber - direct, 1 hidden
+      dark: '#b5803c',
     },
   },
   {
@@ -100,12 +102,13 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      light: '#aa8811',
-      dark: '#775500',
+      light: '#c28835', // Dark amber - direct, 2 hidden
+      dark: '#986828',
     },
   },
 
   // === ReLU activation (blue family) ===
+  // Blue hues - cool, rectified activation
   {
     useCar: 'use-many',
     displayName: 'Drop',
@@ -117,8 +120,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'relu',
     },
     colors: {
-      light: '#5588cc',
-      dark: '#336699',
+      light: '#5b9bd5', // Sky blue - differential, 1 hidden
+      dark: '#3a78b5',
     },
   },
   {
@@ -132,8 +135,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'relu',
     },
     colors: {
-      light: '#3366aa',
-      dark: '#224477',
+      light: '#3470b8', // Deep blue - differential, 2 hidden
+      dark: '#285590',
     },
   },
   {
@@ -147,8 +150,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'relu',
     },
     colors: {
-      light: '#55aacc',
-      dark: '#338899',
+      light: '#6eb8d8', // Cyan-blue - direct, 1 hidden
+      dark: '#4a95b5',
     },
   },
   {
@@ -162,12 +165,13 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'relu',
     },
     colors: {
-      light: '#3388aa',
-      dark: '#226677',
+      light: '#4a8fb8', // Teal-blue - direct, 2 hidden
+      dark: '#3a6f95',
     },
   },
 
-  // === GELU activation (green/cyan family) ===
+  // === GELU activation (green/teal family) ===
+  // Green hues - natural, smooth activation
   {
     useCar: 'use-all',
     displayName: 'Leaf',
@@ -179,8 +183,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'gelu',
     },
     colors: {
-      light: '#44cc88',
-      dark: '#229955',
+      light: '#5bb85d', // Grass green - differential, 1 hidden
+      dark: '#3a9540',
     },
   },
   {
@@ -194,8 +198,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'gelu',
     },
     colors: {
-      light: '#22aa66',
-      dark: '#117733',
+      light: '#3a9540', // Forest green - differential, 2 hidden
+      dark: '#2a7530',
     },
   },
   {
@@ -209,8 +213,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'gelu',
     },
     colors: {
-      light: '#44ccaa',
-      dark: '#229977',
+      light: '#5bbf98', // Teal-green - direct, 1 hidden
+      dark: '#3a9d78',
     },
   },
   {
@@ -224,12 +228,13 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'gelu',
     },
     colors: {
-      light: '#22aa88',
-      dark: '#117755',
+      light: '#3a9d78', // Deep teal - direct, 2 hidden
+      dark: '#2a7d5a',
     },
   },
 
-  // === Step activation (purple/magenta family) ===
+  // === Step activation (purple/violet family) ===
+  // Purple hues - digital, binary activation
   {
     useCar: 'use-all',
     displayName: 'Bit',
@@ -241,8 +246,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'step',
     },
     colors: {
-      light: '#cc55cc',
-      dark: '#993399',
+      light: '#9b6bb8', // Violet - differential, 1 hidden
+      dark: '#7a4a95',
     },
   },
   {
@@ -256,8 +261,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'step',
     },
     colors: {
-      light: '#aa33aa',
-      dark: '#771177',
+      light: '#7a4a95', // Deep violet - differential, 2 hidden
+      dark: '#5a3575',
     },
   },
   {
@@ -271,8 +276,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'step',
     },
     colors: {
-      light: '#9955cc',
-      dark: '#663399',
+      light: '#b880d5', // Lavender - direct, 1 hidden
+      dark: '#9560b5',
     },
   },
   {
@@ -286,12 +291,13 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'step',
     },
     colors: {
-      light: '#7733aa',
-      dark: '#551177',
+      light: '#9560b5', // Deep lavender - direct, 2 hidden
+      dark: '#754595',
     },
   },
 
   // === SWIGLU activation (red/pink family) ===
+  // Red hues - advanced, gated activation
   {
     useCar: 'use-all',
     displayName: 'Neo',
@@ -303,8 +309,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'swiglu',
     },
     colors: {
-      light: '#ff6699',
-      dark: '#cc3366',
+      light: '#d85b70', // Rose red - differential, 1 hidden
+      dark: '#b53a50',
     },
   },
 ];

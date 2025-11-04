@@ -4,6 +4,8 @@ import type {
   ActivationType,
   CarBrainConfig,
   SpeedMultiplier,
+  InfoView,
+  CarUsageLevel,
 } from './types';
 import type { Config } from './config.types';
 import {
@@ -261,11 +263,12 @@ export const CONFIG: Config = {
       radius: 8,
       fontSize: 20,
       textOffset: -2,
-      maxHistory: 500,
+      maxHistory: 100,
       showGenerationNumber: false,
     },
     graph: {
       useLogScale: false,
+      recentGenerationsCount: 20,
     },
   },
 
@@ -275,7 +278,10 @@ export const CONFIG: Config = {
     mutationByDistance: true,
     delayedSteering: true,
     speedMultiplier: 1 as SpeedMultiplier,
+    // speedMultiplier: 1 as SpeedMultiplier,
     showRays: true,
+    defaultInfoView: 'graph-rate' as InfoView,
+    defaultCarUsageLevel: 'use-many' as CarUsageLevel,
   },
 };
 

@@ -10,36 +10,55 @@
 
     <div class="info-container">
       <div class="controls">
-        <button @click="nextGeneration">SYNC</button>
-        <button @click="reset">RESTART</button>
+        <button @click="nextGeneration" class="btn-sync">SYNC</button>
+        <button @click="reset" class="btn-restart">RESTART</button>
         <button
           @click="toggleMutationByDistance"
+          class="btn-toggle-mutation"
           :class="{ active: mutationByDistance }"
         >
           MUT DIST
         </button>
         <button
           @click="toggleDelayedSteering"
+          class="btn-toggle-delay"
           :class="{ active: delayedSteering }"
         >
           DELAY TURN
         </button>
         <button
           @click="toggleAllCarTypes"
-          :class="{ active: carUsageLevel !== 'use-few' }"
+          class="btn-car-usage"
+          :class="{
+            'usage-few': carUsageLevel === 'use-few',
+            'usage-many': carUsageLevel === 'use-many',
+            'usage-all': carUsageLevel === 'use-all'
+          }"
         >
           {{ getCarUsageLevelInfo(carUsageLevel).name }}
         </button>
-        <button @click="toggleShowRays" :class="{ active: showRays }">
+        <button
+          @click="toggleShowRays"
+          class="btn-toggle-rays"
+          :class="{ active: showRays }"
+        >
           SHOW RAYS
         </button>
         <button
           @click="toggleCarSpeed"
-          :class="{ active: carSpeedMultiplier > 1 }"
+          class="btn-speed"
+          :class="{
+            'speed-0_2x': carSpeedMultiplier === 0.2,
+            'speed-0_5x': carSpeedMultiplier === 0.5,
+            'speed-1x': carSpeedMultiplier === 1,
+            'speed-2x': carSpeedMultiplier === 2,
+            'speed-3x': carSpeedMultiplier === 3,
+            'speed-4x': carSpeedMultiplier === 4
+          }"
         >
           {{ carSpeedMultiplier }}x SPEED
         </button>
-        <button @click="cycleBrainStrategy" class="brain-strategy-button">
+        <button @click="cycleBrainStrategy" class="btn-brain-strategy">
           {{ TEXT_CHARACTER.brain }}:
           {{
             BRAIN_SELECTION_STRATEGIES.find(
@@ -357,6 +376,8 @@ import type {
   BrainSelectionStrategy,
   GenerationMarker,
   CarUsageLevel,
+  ViewMode,
+  InfoView,
 } from '@/types';
 import { BRAIN_SELECTION_STRATEGIES } from '@/types';
 import { SPEED_MULTIPLIERS } from '@/types';
@@ -414,10 +435,28 @@ const delayedSteering = ref(CONFIG.defaults.delayedSteering);
 const brainSelectionStrategy = ref<BrainSelectionStrategy>(
   CONFIG.geneticAlgorithm.brainSelection.defaultStrategy
 );
-const carUsageLevel = ref<CarUsageLevel>('use-few'); // Current car usage level
+const carUsageLevel = ref<CarUsageLevel>(CONFIG.defaults.defaultCarUsageLevel);
 const frameCounter = ref(0);
-const viewMode = ref<'table' | 'graph' | 'performance'>('table');
-const graphType = ref<'completion' | 'rate'>('completion');
+
+// Parse InfoView config into separate viewMode and graphType states
+const parseInfoView = (infoView: InfoView): { viewMode: ViewMode; graphType: 'completion' | 'rate' | 'score' } => {
+  switch (infoView) {
+    case 'table-cars':
+      return { viewMode: 'table', graphType: 'completion' };
+    case 'graph-completion':
+      return { viewMode: 'graph', graphType: 'completion' };
+    case 'graph-rate':
+      return { viewMode: 'graph', graphType: 'rate' };
+    case 'graph-score':
+      return { viewMode: 'graph', graphType: 'score' };
+    case 'table-fps':
+      return { viewMode: 'performance', graphType: 'completion' };
+  }
+};
+
+const initialView = parseInfoView(CONFIG.defaults.defaultInfoView);
+const viewMode = ref<ViewMode>(initialView.viewMode);
+const graphType = ref<'completion' | 'rate' | 'score'>(initialView.graphType);
 const graphCanvasRef = ref<HTMLCanvasElement | null>(null);
 
 const activeCarConfigs = computed(() => {
@@ -827,7 +866,7 @@ const getAliveCount = (shortName: string): number => {
   ).length;
 };
 
-// Cycle through views: table -> graph (completion) -> graph (rate) -> performance -> table
+// Cycle through views: table-cars -> graph-completion -> graph-rate -> graph-score -> table-fps -> table-cars
 const cycleView = () => {
   if (viewMode.value === 'table') {
     viewMode.value = 'graph';
@@ -835,6 +874,8 @@ const cycleView = () => {
   } else if (viewMode.value === 'graph') {
     if (graphType.value === 'completion') {
       graphType.value = 'rate';
+    } else if (graphType.value === 'rate') {
+      graphType.value = 'score';
     } else {
       viewMode.value = 'performance';
     }
@@ -892,6 +933,9 @@ const evolvePopulationByConfig = (
     // Get generation duration
     const genDuration = generationTimeByConfigId.value.get(config.shortName) ?? 0;
 
+    // Calculate comprehensive score for this generation
+    const comprehensiveScore = calculateComprehensiveScore(config.shortName);
+
     // Add new marker with temporary flags
     markers.push({
       x: bestCar.x,
@@ -899,6 +943,7 @@ const evolvePopulationByConfig = (
       generation: ga.value.getGeneration(config.shortName),
       fitness: bestCar.maxDistanceReached,
       duration: genDuration,
+      score: comprehensiveScore,
       isAllTimeBest: false, // Will be calculated below
       isLastGenBest: true, // This is the most recent generation
     });
@@ -1709,101 +1754,124 @@ const renderGraph = () => {
   canvas.width = width;
   canvas.height = height;
 
-  const padding = 45;
-  const topPadding = 25; // Extra space at top for labels above dots
-  const graphWidth = width - padding * 2;
-  const graphHeight = height - padding - topPadding;
+  const leftPadding = 45;
+  const rightPadding = 120; // Extra space for car type labels to the right of dots
+  const bottomPadding = 45;
+  const topPadding = 25; // Extra space at top
+  const graphWidth = width - leftPadding - rightPadding;
+  const graphHeight = height - bottomPadding - topPadding;
 
   // Clear canvas
   ctx.fillStyle = '#1a1a1a';
   ctx.fillRect(0, 0, width, height);
 
-  // Calculate fitness history for each active config
+  // Calculate fitness history for each active config (only last N generations)
   const configHistories: Map<string, { xValue: number; score: number }[]> =
     new Map();
 
   const trackLength = track.getTotalLength();
-  let maxGeneration = 0;
+  const RECENT_GENERATIONS_COUNT = CONFIG.visualization.graph.recentGenerationsCount;
 
   for (const config of activeCarConfigs.value) {
     const markers =
       generationMarkersByConfigId.value.get(config.shortName) ?? [];
     if (markers.length === 0) continue;
 
+    // Take only the last 20 markers (most recent generations)
+    const recentMarkers = markers.slice(-RECENT_GENERATIONS_COUNT);
+
+    // Find the latest generation number for this car type
+    const latestGeneration = recentMarkers[recentMarkers.length - 1].generation;
+
     const history: { xValue: number; score: number }[] = [];
 
     // For each marker (generation), show the appropriate metric
-    for (const marker of markers) {
+    for (const marker of recentMarkers) {
       const fitnessPercent = (marker.fitness / trackLength) * 100;
 
-      // X-axis: always generation number
-      const xValue = marker.generation;
+      // X-axis: relative generation (0 = latest, -1 = one back, etc.)
+      const relativeGen = marker.generation - latestGeneration;
 
-      // Y-axis: track completion % or completion rate (% per second)
-      const yValue = graphType.value === 'completion'
-        ? fitnessPercent
-        : marker.duration > 0 ? fitnessPercent / marker.duration : 0;
+      // Y-axis: track completion %, completion rate (% per second), or comprehensive score
+      let yValue: number;
+      if (graphType.value === 'completion') {
+        yValue = fitnessPercent;
+      } else if (graphType.value === 'rate') {
+        yValue = marker.duration > 0 ? fitnessPercent / marker.duration : 0;
+      } else {
+        // score
+        yValue = marker.score;
+      }
 
-      history.push({ xValue: xValue, score: yValue });
-      maxGeneration = Math.max(maxGeneration, xValue);
+      history.push({ xValue: relativeGen, score: yValue });
     }
 
     configHistories.set(config.shortName, history);
   }
 
-  // If no data, use defaults
-  if (maxGeneration === 0) maxGeneration = 1;
-
-  // Find min and max scores across all data for y-axis scaling
-  let minScore = 0; // Always start at 0%
-  let maxScore = 0;
+  // Find min and max scores across all data for y-axis scaling (linear, dynamic)
+  let minScore = Infinity;
+  let maxScore = -Infinity;
 
   for (const history of configHistories.values()) {
     for (const point of history) {
+      minScore = Math.min(minScore, point.score);
       maxScore = Math.max(maxScore, point.score);
     }
   }
 
   // If no valid data, use default range
-  if (maxScore === 0) {
+  if (minScore === Infinity || maxScore === -Infinity) {
+    minScore = 0;
     maxScore = graphType.value === 'completion' ? 100 : 10;
   } else {
-    // Add 10% padding to the top
+    // Add minimal padding (3% on each side) for better visualization
+    const range = maxScore - minScore;
+    const padding = range * 0.03;
+    minScore = Math.max(0, minScore - padding);
+    maxScore = maxScore + padding;
+
+    // Cap completion at 100
     if (graphType.value === 'completion') {
-      maxScore = Math.min(100, maxScore * 1.1);
-    } else {
-      // For rate graph, don't cap at 100
-      maxScore = maxScore * 1.1;
+      maxScore = Math.min(100, maxScore);
     }
   }
 
-  // Scale helper: map generation number to x position
-  const genToX = (gen: number): number => {
-    // Use log scale if enabled
-    if (CONFIG.visualization.graph.useLogScale && maxGeneration > 1) {
-      const maxLog = Math.log10(maxGeneration + 1);
-      const logPos = Math.log10(gen + 1) / maxLog;
-      return padding + logPos * graphWidth;
-    } else {
-      // Linear scale
-      return padding + (gen / maxGeneration) * graphWidth;
-    }
+  // Scale helper: map relative generation to x position
+  // Relative gen ranges from -(N-1) (oldest) to 0 (latest) for N generations
+  const relativeGenToX = (relativeGen: number): number => {
+    // Map from [-(N-1), 0] to [0, graphWidth]
+    // relativeGen = -(N-1) -> x = 0
+    // relativeGen = 0 -> x = graphWidth
+    const maxNegative = -(RECENT_GENERATIONS_COUNT - 1);
+    return leftPadding + ((relativeGen - maxNegative) / (0 - maxNegative)) * graphWidth;
   };
 
-  // Scale helper: map score to y position
+  // Scale helper: map score to y position (linear scale)
   const scoreToY = (score: number): number => {
     const normalizedScore = (score - minScore) / (maxScore - minScore);
-    return height - padding - normalizedScore * graphHeight;
+    return height - bottomPadding - normalizedScore * graphHeight;
   };
 
   // Draw axes
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(padding, topPadding);
-  ctx.lineTo(padding, height - padding);
-  ctx.lineTo(width - padding, height - padding);
+  ctx.moveTo(leftPadding, topPadding);
+  ctx.lineTo(leftPadding, height - bottomPadding);
+  ctx.lineTo(width - rightPadding, height - bottomPadding);
   ctx.stroke();
+
+  // Draw graph title at the top
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'center';
+  const graphTitle = graphType.value === 'completion'
+    ? 'Track Completion vs Recent Generations'
+    : graphType.value === 'rate'
+    ? 'Track Completion Rate vs Recent Generations'
+    : 'Comprehensive Score vs Recent Generations';
+  ctx.fillText(graphTitle, width / 2, topPadding - 8);
 
   // Draw grid lines and labels
   ctx.strokeStyle = '#333333';
@@ -1812,80 +1880,76 @@ const renderGraph = () => {
   ctx.font = '10px monospace';
   ctx.textAlign = 'center';
 
-  // Y-axis grid
+  // Y-axis grid (linear scale with dynamic range)
   const numYGridLines = 10;
   for (let i = 0; i <= numYGridLines; i++) {
     const score = minScore + (i * (maxScore - minScore)) / numYGridLines;
     const y = scoreToY(score);
+
+    ctx.strokeStyle = '#333333';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(padding, y);
-    ctx.lineTo(width - padding, y);
+    ctx.moveTo(leftPadding, y);
+    ctx.lineTo(width - rightPadding, y);
     ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'right';
+
     // Format y-axis labels based on graph type
-    const label = graphType.value === 'completion'
-      ? `${score.toFixed(0)}%`
-      : score.toFixed(1);
-    ctx.fillText(label, padding - 5, y + 3);
+    let label: string;
+    if (graphType.value === 'completion') {
+      label = `${score.toFixed(1)}%`;
+    } else if (graphType.value === 'rate') {
+      label = score.toFixed(2);
+    } else {
+      // score graph type
+      label = score.toFixed(1);
+    }
+    ctx.fillText(label, leftPadding - 5, y + 3);
   }
 
-  // X-axis grid (always generation number)
-  if (CONFIG.visualization.graph.useLogScale) {
-    // Logarithmic generations: 1, 10, 100, 1000, etc.
-    let power = 0;
-    while (Math.pow(10, power) - 1 <= maxGeneration) {
-      const gen = Math.pow(10, power) - 1;
-      const x = genToX(gen);
+  // X-axis grid (relative generations from -(N-1) to 0)
+  const numGridLines = 10;
+  const maxNegative = -(RECENT_GENERATIONS_COUNT - 1);
+  const step = (0 - maxNegative) / numGridLines;
 
-      ctx.strokeStyle = '#333333';
-      ctx.beginPath();
-      ctx.moveTo(x, topPadding);
-      ctx.lineTo(x, height - padding);
-      ctx.stroke();
+  for (let i = 0; i <= numGridLines; i++) {
+    const relativeGen = maxNegative + (i * step);
+    const x = relativeGenToX(relativeGen);
 
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'center';
-      const label = gen === 0 ? '0' : `${Math.pow(10, power)}`;
-      ctx.fillText(label, x, height - padding + 15);
+    ctx.strokeStyle = '#333333';
+    ctx.beginPath();
+    ctx.moveTo(x, topPadding);
+    ctx.lineTo(x, height - bottomPadding);
+    ctx.stroke();
 
-      power++;
-    }
-  } else {
-    // Linear scale: evenly spaced grid lines
-    const numGridLines = 10;
-    const step = Math.ceil(maxGeneration / numGridLines);
-    for (let i = 0; i <= numGridLines; i++) {
-      const gen = Math.min(i * step, maxGeneration);
-      const x = genToX(gen);
-
-      ctx.strokeStyle = '#333333';
-      ctx.beginPath();
-      ctx.moveTo(x, topPadding);
-      ctx.lineTo(x, height - padding);
-      ctx.stroke();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'center';
-      ctx.fillText(gen.toString(), x, height - padding + 15);
-    }
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText(Math.round(relativeGen).toString(), x, height - bottomPadding + 15);
   }
 
   // Axis labels
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 11px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('Generation', width / 2, height - 5);
+  ctx.fillText('Recent Generations', width / 2, height - 5);
 
   ctx.save();
   ctx.translate(12, height / 2);
   ctx.rotate(-Math.PI / 2);
   const yAxisLabel = graphType.value === 'completion'
     ? 'Track Completion (%)'
-    : 'Track Completion (% / sec)';
+    : graphType.value === 'rate'
+    ? 'Track Completion (% / sec)'
+    : 'Comprehensive Score';
   ctx.fillText(yAxisLabel, 0, 0);
   ctx.restore();
+
+  // Calculate dynamic line width based on number of car types
+  // Fewer cars = thicker lines, more cars = thinner lines
+  const numCarTypes = activeCarConfigs.value.length;
+  const dynamicLineWidth = Math.max(1.5, Math.min(6, 12 / numCarTypes));
 
   // Draw lines for each active config
   for (const config of activeCarConfigs.value) {
@@ -1893,12 +1957,12 @@ const renderGraph = () => {
     if (!history || history.length === 0) continue;
 
     ctx.strokeStyle = config.colors.dark;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = dynamicLineWidth;
     ctx.beginPath();
 
     let started = false;
     for (const point of history) {
-      const x = genToX(point.xValue);
+      const x = relativeGenToX(point.xValue);
       const y = scoreToY(point.score);
 
       if (!started) {
@@ -1911,21 +1975,22 @@ const renderGraph = () => {
 
     ctx.stroke();
 
-    // Draw label at the end of the line (above the dot)
+    // Draw label at the end of the line (to the right of the dot)
     const lastPoint = history[history.length - 1];
-    const lastX = genToX(lastPoint.xValue);
+    const lastX = relativeGenToX(lastPoint.xValue);
     const lastY = scoreToY(lastPoint.score);
 
-    // Draw dot at end (larger)
+    // Draw dot at end (size proportional to line width)
+    const dotRadius = dynamicLineWidth * 1.5;
     ctx.fillStyle = config.colors.dark;
     ctx.beginPath();
-    ctx.arc(lastX, lastY, 7, 0, Math.PI * 2);
+    ctx.arc(lastX, lastY, dotRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Draw label above the dot (larger font)
+    // Draw label to the right of the dot
     ctx.font = 'bold 14px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(config.shortName, lastX, lastY - 12);
+    ctx.textAlign = 'left';
+    ctx.fillText(config.displayName, lastX + dotRadius + 5, lastY + 5);
   }
 };
 
@@ -2194,21 +2259,207 @@ button:active {
   border-color: #1f2937;
 }
 
-/* Toggle buttons - active state (green when on) */
-button.active {
+/* SYNC button - Blue (action/synchronize) */
+.btn-sync {
+  background: #0284c7;
+  border-color: #0369a1;
+}
+
+.btn-sync:hover {
+  background: #0369a1;
+  border-color: #075985;
+}
+
+.btn-sync:active {
+  background: #075985;
+  border-color: #0c4a6e;
+}
+
+/* RESTART button - Red (destructive action) */
+.btn-restart {
+  background: #dc2626;
+  border-color: #b91c1c;
+}
+
+.btn-restart:hover {
+  background: #b91c1c;
+  border-color: #991b1b;
+}
+
+.btn-restart:active {
+  background: #991b1b;
+  border-color: #7f1d1d;
+}
+
+/* Mutation toggle - Green when active (genetic/evolution) */
+.btn-toggle-mutation {
+  background: #4b5563;
+  border-color: #374151;
+}
+
+.btn-toggle-mutation.active {
   background: #059669;
-  color: #ffffff;
   border-color: #047857;
 }
 
-button.active:hover {
+.btn-toggle-mutation.active:hover {
   background: #047857;
   border-color: #065f46;
 }
 
-button.active:active {
+.btn-toggle-mutation.active:active {
   background: #065f46;
   border-color: #064e3b;
+}
+
+/* Delay toggle - Purple when active (control modification) */
+.btn-toggle-delay {
+  background: #4b5563;
+  border-color: #374151;
+}
+
+.btn-toggle-delay.active {
+  background: #9333ea;
+  border-color: #7e22ce;
+}
+
+.btn-toggle-delay.active:hover {
+  background: #7e22ce;
+  border-color: #6b21a8;
+}
+
+.btn-toggle-delay.active:active {
+  background: #6b21a8;
+  border-color: #581c87;
+}
+
+/* Car usage button - Different colors for each level */
+.btn-car-usage.usage-few {
+  background: #0284c7;
+  border-color: #0369a1;
+}
+
+.btn-car-usage.usage-few:hover {
+  background: #0369a1;
+  border-color: #075985;
+}
+
+.btn-car-usage.usage-many {
+  background: #ca8a04;
+  border-color: #a16207;
+}
+
+.btn-car-usage.usage-many:hover {
+  background: #a16207;
+  border-color: #854d0e;
+}
+
+.btn-car-usage.usage-all {
+  background: #ea580c;
+  border-color: #c2410c;
+}
+
+.btn-car-usage.usage-all:hover {
+  background: #c2410c;
+  border-color: #9a3412;
+}
+
+/* Show rays toggle - Cyan when active (visualization) */
+.btn-toggle-rays {
+  background: #4b5563;
+  border-color: #374151;
+}
+
+.btn-toggle-rays.active {
+  background: #06b6d4;
+  border-color: #0891b2;
+}
+
+.btn-toggle-rays.active:hover {
+  background: #0891b2;
+  border-color: #0e7490;
+}
+
+.btn-toggle-rays.active:active {
+  background: #0e7490;
+  border-color: #155e75;
+}
+
+/* Speed button - Color intensity increases with speed */
+.btn-speed.speed-0_2x {
+  background: #3b82f6;
+  border-color: #2563eb;
+}
+
+.btn-speed.speed-0_2x:hover {
+  background: #2563eb;
+  border-color: #1d4ed8;
+}
+
+.btn-speed.speed-0_5x {
+  background: #06b6d4;
+  border-color: #0891b2;
+}
+
+.btn-speed.speed-0_5x:hover {
+  background: #0891b2;
+  border-color: #0e7490;
+}
+
+.btn-speed.speed-1x {
+  background: #4b5563;
+  border-color: #374151;
+}
+
+.btn-speed.speed-1x:hover {
+  background: #6b7280;
+  border-color: #4b5563;
+}
+
+.btn-speed.speed-2x {
+  background: #ca8a04;
+  border-color: #a16207;
+}
+
+.btn-speed.speed-2x:hover {
+  background: #a16207;
+  border-color: #854d0e;
+}
+
+.btn-speed.speed-3x {
+  background: #ea580c;
+  border-color: #c2410c;
+}
+
+.btn-speed.speed-3x:hover {
+  background: #c2410c;
+  border-color: #9a3412;
+}
+
+.btn-speed.speed-4x {
+  background: #dc2626;
+  border-color: #b91c1c;
+}
+
+.btn-speed.speed-4x:hover {
+  background: #b91c1c;
+  border-color: #991b1b;
+}
+
+/* Brain strategy button - Magenta (AI/learning strategy) */
+.btn-brain-strategy {
+  background: #c026d3;
+  border-color: #a21caf;
+}
+
+.btn-brain-strategy:hover {
+  background: #a21caf;
+  border-color: #86198f;
+}
+
+.btn-brain-strategy:active {
+  background: #86198f;
+  border-color: #701a75;
 }
 
 /* Graph View */
