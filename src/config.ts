@@ -269,7 +269,7 @@ export const CONFIG: Config = {
     graph: {
       useLogScale: false,
       recentGenerationsCount: 20,
-      labelRightPadding: 120,
+      labelRightPadding: 60,
     },
   },
 
