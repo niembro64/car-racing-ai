@@ -32,7 +32,7 @@
           :class="{
             'usage-few': carUsageLevel === 'use-few',
             'usage-many': carUsageLevel === 'use-many',
-            'usage-all': carUsageLevel === 'use-all'
+            'usage-all': carUsageLevel === 'use-all',
           }"
         >
           {{ getCarUsageLevelInfo(carUsageLevel).name }}
@@ -53,13 +53,13 @@
             'speed-1x': carSpeedMultiplier === 1,
             'speed-2x': carSpeedMultiplier === 2,
             'speed-3x': carSpeedMultiplier === 3,
-            'speed-4x': carSpeedMultiplier === 4
+            'speed-4x': carSpeedMultiplier === 4,
           }"
         >
           {{ carSpeedMultiplier }}x SPEED
         </button>
         <button @click="cycleBrainStrategy" class="btn-brain-strategy">
-          {{ TEXT_CHARACTER.brain }}:
+          {{ TEXT_CHARACTER.saved + TEXT_CHARACTER.brain }}:
           {{
             BRAIN_SELECTION_STRATEGIES.find(
               (s) => s.id === brainSelectionStrategy
@@ -439,7 +439,9 @@ const carUsageLevel = ref<CarUsageLevel>(CONFIG.defaults.defaultCarUsageLevel);
 const frameCounter = ref(0);
 
 // Parse InfoView config into separate viewMode and graphType states
-const parseInfoView = (infoView: InfoView): { viewMode: ViewMode; graphType: 'completion' | 'rate' | 'score' } => {
+const parseInfoView = (
+  infoView: InfoView
+): { viewMode: ViewMode; graphType: 'completion' | 'rate' | 'score' } => {
   switch (infoView) {
     case 'table-cars':
       return { viewMode: 'table', graphType: 'completion' };
@@ -931,7 +933,8 @@ const evolvePopulationByConfig = (
       generationMarkersByConfigId.value.get(config.shortName) ?? [];
 
     // Get generation duration
-    const genDuration = generationTimeByConfigId.value.get(config.shortName) ?? 0;
+    const genDuration =
+      generationTimeByConfigId.value.get(config.shortName) ?? 0;
 
     // Calculate comprehensive score for this generation
     const comprehensiveScore = calculateComprehensiveScore(config.shortName);
@@ -1019,7 +1022,8 @@ const evolvePopulationByConfig = (
   actualPerformanceTargetPerType.value = targetCarsPerType;
 
   // Get nearness value for this config (convert from percentage to ratio)
-  const nearnessPercent = nearnessPercentByConfigId.value.get(config.shortName) ?? 0;
+  const nearnessPercent =
+    nearnessPercentByConfigId.value.get(config.shortName) ?? 0;
   const nearnessRatio = nearnessPercent / 100;
 
   const newCars = ga.value.evolvePopulation(
@@ -1755,7 +1759,7 @@ const renderGraph = () => {
   canvas.height = height;
 
   const leftPadding = 45;
-  const rightPadding = 120; // Extra space for car type labels to the right of dots
+  const rightPadding = CONFIG.visualization.graph.labelRightPadding; // Extra space for car type labels to the right of dots
   const bottomPadding = 45;
   const topPadding = 25; // Extra space at top
   const graphWidth = width - leftPadding - rightPadding;
@@ -1770,7 +1774,8 @@ const renderGraph = () => {
     new Map();
 
   const trackLength = track.getTotalLength();
-  const RECENT_GENERATIONS_COUNT = CONFIG.visualization.graph.recentGenerationsCount;
+  const RECENT_GENERATIONS_COUNT =
+    CONFIG.visualization.graph.recentGenerationsCount;
 
   for (const config of activeCarConfigs.value) {
     const markers =
@@ -1844,7 +1849,10 @@ const renderGraph = () => {
     // relativeGen = -(N-1) -> x = 0
     // relativeGen = 0 -> x = graphWidth
     const maxNegative = -(RECENT_GENERATIONS_COUNT - 1);
-    return leftPadding + ((relativeGen - maxNegative) / (0 - maxNegative)) * graphWidth;
+    return (
+      leftPadding +
+      ((relativeGen - maxNegative) / (0 - maxNegative)) * graphWidth
+    );
   };
 
   // Scale helper: map score to y position (linear scale)
@@ -1866,11 +1874,12 @@ const renderGraph = () => {
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 12px monospace';
   ctx.textAlign = 'center';
-  const graphTitle = graphType.value === 'completion'
-    ? 'Track Completion vs Recent Generations'
-    : graphType.value === 'rate'
-    ? 'Track Completion Rate vs Recent Generations'
-    : 'Comprehensive Score vs Recent Generations';
+  const graphTitle =
+    graphType.value === 'completion'
+      ? 'Track Completion vs Recent Generations'
+      : graphType.value === 'rate'
+      ? 'Track Completion Rate vs Recent Generations'
+      : 'Comprehensive Score vs Recent Generations';
   ctx.fillText(graphTitle, width / 2, topPadding - 8);
 
   // Draw grid lines and labels
@@ -1915,7 +1924,7 @@ const renderGraph = () => {
   const step = (0 - maxNegative) / numGridLines;
 
   for (let i = 0; i <= numGridLines; i++) {
-    const relativeGen = maxNegative + (i * step);
+    const relativeGen = maxNegative + i * step;
     const x = relativeGenToX(relativeGen);
 
     ctx.strokeStyle = '#333333';
@@ -1926,7 +1935,11 @@ const renderGraph = () => {
 
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
-    ctx.fillText(Math.round(relativeGen).toString(), x, height - bottomPadding + 15);
+    ctx.fillText(
+      Math.round(relativeGen).toString(),
+      x,
+      height - bottomPadding + 15
+    );
   }
 
   // Axis labels
@@ -1938,11 +1951,12 @@ const renderGraph = () => {
   ctx.save();
   ctx.translate(12, height / 2);
   ctx.rotate(-Math.PI / 2);
-  const yAxisLabel = graphType.value === 'completion'
-    ? 'Track Completion (%)'
-    : graphType.value === 'rate'
-    ? 'Track Completion (% / sec)'
-    : 'Comprehensive Score';
+  const yAxisLabel =
+    graphType.value === 'completion'
+      ? 'Track Completion (%)'
+      : graphType.value === 'rate'
+      ? 'Track Completion (% / sec)'
+      : 'Comprehensive Score';
   ctx.fillText(yAxisLabel, 0, 0);
   ctx.restore();
 

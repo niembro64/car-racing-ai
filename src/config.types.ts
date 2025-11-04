@@ -270,6 +270,7 @@ export interface VisualizationGenerationMarkerConfig {
 export interface VisualizationGraphConfig {
   useLogScale: boolean;
   recentGenerationsCount: number;
+  labelRightPadding: number;
 }
 
 export interface VisualizationConfig {
