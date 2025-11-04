@@ -81,8 +81,8 @@ export const CONFIG: Config = {
   },
 
   track: {
-    halfWidth: 60,
-    segmentsPerCurve: 4,
+    halfWidth: 70,
+    segmentsPerCurve: 6,
     waypoints: {
       base: scaleWaypointsToCanvas(
         track_waypoints_ratios,
