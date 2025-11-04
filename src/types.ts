@@ -211,6 +211,7 @@ export interface GenerationMarker {
   y: number;
   generation: number;
   fitness: number;
+  duration: number;  // How long this generation lasted in seconds
   isAllTimeBest: boolean;  // Maps to bestWeightsAllTime brain (trophy emoji)
   isLastGenBest: boolean;  // Maps to bestWeightsLastGeneration brain (repeat emoji)
 }

@@ -261,7 +261,7 @@ export const CONFIG: Config = {
       radius: 8,
       fontSize: 20,
       textOffset: -2,
-      maxHistory: 10,
+      maxHistory: 500,
       showGenerationNumber: false,
     },
     graph: {

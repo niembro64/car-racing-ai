@@ -417,6 +417,7 @@ const brainSelectionStrategy = ref<BrainSelectionStrategy>(
 const carUsageLevel = ref<CarUsageLevel>('use-few'); // Current car usage level
 const frameCounter = ref(0);
 const viewMode = ref<'table' | 'graph' | 'performance'>('table');
+const graphType = ref<'completion' | 'rate'>('completion');
 const graphCanvasRef = ref<HTMLCanvasElement | null>(null);
 
 const activeCarConfigs = computed(() => {
@@ -826,12 +827,17 @@ const getAliveCount = (shortName: string): number => {
   ).length;
 };
 
-// Cycle through views: table -> graph -> performance -> table
+// Cycle through views: table -> graph (completion) -> graph (rate) -> performance -> table
 const cycleView = () => {
   if (viewMode.value === 'table') {
     viewMode.value = 'graph';
+    graphType.value = 'completion';
   } else if (viewMode.value === 'graph') {
-    viewMode.value = 'performance';
+    if (graphType.value === 'completion') {
+      graphType.value = 'rate';
+    } else {
+      viewMode.value = 'performance';
+    }
   } else {
     viewMode.value = 'table';
   }
@@ -883,12 +889,16 @@ const evolvePopulationByConfig = (
     const markers =
       generationMarkersByConfigId.value.get(config.shortName) ?? [];
 
+    // Get generation duration
+    const genDuration = generationTimeByConfigId.value.get(config.shortName) ?? 0;
+
     // Add new marker with temporary flags
     markers.push({
       x: bestCar.x,
       y: bestCar.y,
       generation: ga.value.getGeneration(config.shortName),
       fitness: bestCar.maxDistanceReached,
+      duration: genDuration,
       isAllTimeBest: false, // Will be calculated below
       isLastGenBest: true, // This is the most recent generation
     });
@@ -1709,7 +1719,7 @@ const renderGraph = () => {
   ctx.fillRect(0, 0, width, height);
 
   // Calculate fitness history for each active config
-  const configHistories: Map<string, { generation: number; score: number }[]> =
+  const configHistories: Map<string, { xValue: number; score: number }[]> =
     new Map();
 
   const trackLength = track.getTotalLength();
@@ -1720,13 +1730,22 @@ const renderGraph = () => {
       generationMarkersByConfigId.value.get(config.shortName) ?? [];
     if (markers.length === 0) continue;
 
-    const history: { generation: number; score: number }[] = [];
+    const history: { xValue: number; score: number }[] = [];
 
-    // For each marker (generation), show the best fitness achieved
+    // For each marker (generation), show the appropriate metric
     for (const marker of markers) {
       const fitnessPercent = (marker.fitness / trackLength) * 100;
-      history.push({ generation: marker.generation, score: fitnessPercent });
-      maxGeneration = Math.max(maxGeneration, marker.generation);
+
+      // X-axis: always generation number
+      const xValue = marker.generation;
+
+      // Y-axis: track completion % or completion rate (% per second)
+      const yValue = graphType.value === 'completion'
+        ? fitnessPercent
+        : marker.duration > 0 ? fitnessPercent / marker.duration : 0;
+
+      history.push({ xValue: xValue, score: yValue });
+      maxGeneration = Math.max(maxGeneration, xValue);
     }
 
     configHistories.set(config.shortName, history);
@@ -1747,14 +1766,20 @@ const renderGraph = () => {
 
   // If no valid data, use default range
   if (maxScore === 0) {
-    maxScore = 100;
+    maxScore = graphType.value === 'completion' ? 100 : 10;
   } else {
     // Add 10% padding to the top
-    maxScore = Math.min(100, maxScore * 1.1);
+    if (graphType.value === 'completion') {
+      maxScore = Math.min(100, maxScore * 1.1);
+    } else {
+      // For rate graph, don't cap at 100
+      maxScore = maxScore * 1.1;
+    }
   }
 
-  // Scale helper: map generation to x position
+  // Scale helper: map generation number to x position
   const genToX = (gen: number): number => {
+    // Use log scale if enabled
     if (CONFIG.visualization.graph.useLogScale && maxGeneration > 1) {
       const maxLog = Math.log10(maxGeneration + 1);
       const logPos = Math.log10(gen + 1) / maxLog;
@@ -1787,7 +1812,7 @@ const renderGraph = () => {
   ctx.font = '10px monospace';
   ctx.textAlign = 'center';
 
-  // Y-axis grid (track completion percentage 0-100%)
+  // Y-axis grid
   const numYGridLines = 10;
   for (let i = 0; i <= numYGridLines; i++) {
     const score = minScore + (i * (maxScore - minScore)) / numYGridLines;
@@ -1799,10 +1824,14 @@ const renderGraph = () => {
 
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'right';
-    ctx.fillText(`${score.toFixed(0)}%`, padding - 5, y + 3);
+    // Format y-axis labels based on graph type
+    const label = graphType.value === 'completion'
+      ? `${score.toFixed(0)}%`
+      : score.toFixed(1);
+    ctx.fillText(label, padding - 5, y + 3);
   }
 
-  // X-axis grid
+  // X-axis grid (always generation number)
   if (CONFIG.visualization.graph.useLogScale) {
     // Logarithmic generations: 1, 10, 100, 1000, etc.
     let power = 0;
@@ -1852,7 +1881,10 @@ const renderGraph = () => {
   ctx.save();
   ctx.translate(12, height / 2);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillText('Best Fitness (%)', 0, 0);
+  const yAxisLabel = graphType.value === 'completion'
+    ? 'Track Completion (%)'
+    : 'Track Completion (% / sec)';
+  ctx.fillText(yAxisLabel, 0, 0);
   ctx.restore();
 
   // Draw lines for each active config
@@ -1866,7 +1898,7 @@ const renderGraph = () => {
 
     let started = false;
     for (const point of history) {
-      const x = genToX(point.generation);
+      const x = genToX(point.xValue);
       const y = scoreToY(point.score);
 
       if (!started) {
@@ -1881,7 +1913,7 @@ const renderGraph = () => {
 
     // Draw label at the end of the line (above the dot)
     const lastPoint = history[history.length - 1];
-    const lastX = genToX(lastPoint.generation);
+    const lastX = genToX(lastPoint.xValue);
     const lastY = scoreToY(lastPoint.score);
 
     // Draw dot at end (larger)
@@ -1901,6 +1933,13 @@ const renderGraph = () => {
 watch(viewMode, (mode) => {
   if (mode === 'graph') {
     // Use nextTick to ensure canvas is mounted
+    nextTick(() => renderGraph());
+  }
+});
+
+// Watch for graph type changes and re-render
+watch(graphType, () => {
+  if (viewMode.value === 'graph') {
     nextTick(() => renderGraph());
   }
 });
