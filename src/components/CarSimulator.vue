@@ -2135,68 +2135,41 @@ button {
   font-family: 'Courier New', 'Courier', monospace;
   font-size: 14px;
   font-weight: bold;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: background 0.15s ease, border-color 0.15s ease;
   touch-action: manipulation;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   margin: 0;
-  background: #d1d5db;
-  color: #000000;
-  border: 2px solid #9ca3af;
+  background: #4b5563;
+  color: #ffffff;
+  border: 2px solid #374151;
 }
 
 button:hover {
-  background: #e5e7eb;
-  border-color: #6b7280;
+  background: #6b7280;
+  border-color: #4b5563;
 }
 
-/* SYNC and RESET buttons (first two) - flash green when pressed */
-button:nth-child(1):active,
-button:nth-child(2):active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  background: #10b981;
-  color: #ffffff;
-  border-color: #059669;
+button:active {
+  background: #374151;
+  border-color: #1f2937;
 }
 
-/* Toggle buttons - active state (green) */
+/* Toggle buttons - active state (green when on) */
 button.active {
-  background: #10b981;
-  color: #ffffff;
-  border-color: #059669;
-}
-
-button.active:hover {
   background: #059669;
+  color: #ffffff;
   border-color: #047857;
 }
 
-button.active:active {
+button.active:hover {
   background: #047857;
+  border-color: #065f46;
 }
 
-/* Toggle buttons - inactive state (red) */
-button:nth-child(3):not(.active),
-button:nth-child(4):not(.active),
-button:nth-child(5):not(.active) {
-  background: #ef4444;
-  color: #ffffff;
-  border-color: #dc2626;
-}
-
-button:not(.active):nth-child(3):hover,
-button:not(.active):nth-child(4):hover,
-button:not(.active):nth-child(5):hover {
-  background: #dc2626;
-  border-color: #b91c1c;
-}
-
-button:not(.active):nth-child(3):active,
-button:not(.active):nth-child(4):active,
-button:not(.active):nth-child(5):active {
-  background: #b91c1c;
+button.active:active {
+  background: #065f46;
+  border-color: #064e3b;
 }
 
 /* Graph View */

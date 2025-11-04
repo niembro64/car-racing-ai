@@ -168,13 +168,13 @@ export const CONFIG: Config = {
       },
       bezierPoints: [0, 0, 1, 1], // Linear decay from base to min
       rankMultiplier: {
-        min: 0.05, // Standard minimum multiplier (50% of base)
+        min: 0.00000001, // Standard minimum multiplier (50% of base)
         max: 2.0, // Standard maximum multiplier (200% of base)
         curvePower: 2, // Quadratic curve for gradual increase
       },
       progressive: {
         enabled: false, // Disabled for standard training
-        baseVariance: 0.001,
+        baseVariance: 0.01,
         growthRate: 0.05,
         growthType: 'exponential',
       },
