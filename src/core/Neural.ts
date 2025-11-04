@@ -30,9 +30,9 @@ export class NeuralNetwork {
     }
   }
 
-  // Initialize random weights using He initialization for better convergence
+  // Initialize random weights using standard initialization
   // He initialization: weights ~ N(0, sqrt(2/n_in)) for ReLU-like activations
-  // Xavier initialization: weights ~ N(0, sqrt(2/(n_in + n_out))) for linear/tanh
+  // Xavier/Glorot initialization: weights ~ N(0, sqrt(2/(n_in + n_out))) for linear/tanh
   private initializeRandom(): NetworkStructure {
     const layers: Layer[] = [];
 
@@ -43,24 +43,25 @@ export class NeuralNetwork {
       const weights: number[][] = [];
       const biases: number[] = [];
 
-      // Use He initialization for ReLU/GELU, Xavier for linear/tanh
-      // For uniform distribution: limit = sqrt(6 / (fan_in + fan_out))
-      const limit =
+      // Standard deviation for Gaussian initialization
+      // He initialization: std = sqrt(2 / n_in) for ReLU/GELU/SWIGLU
+      // Xavier initialization: std = sqrt(2 / (n_in + n_out)) for linear/tanh/sigmoid
+      const stddev =
         this.activationType === 'relu' ||
         this.activationType === 'gelu' ||
         this.activationType === 'swiglu'
-          ? Math.sqrt(6.0 / inputSize) // He initialization (scaled for uniform dist)
-          : Math.sqrt(6.0 / (inputSize + outputSize)); // Xavier initialization
+          ? Math.sqrt(2.0 / inputSize) // He initialization
+          : Math.sqrt(2.0 / (inputSize + outputSize)); // Xavier/Glorot initialization
 
       for (let j = 0; j < outputSize; j++) {
         const neuronWeights: number[] = [];
         for (let k = 0; k < inputSize; k++) {
-          // Uniform distribution in [-limit, limit]
-          neuronWeights.push((this.rng.next() * 2 - 1) * limit);
+          // Gaussian/Normal distribution N(0, stddev)
+          neuronWeights.push(this.rng.gaussian(0, stddev));
         }
         weights.push(neuronWeights);
-        // Initialize biases to small values
-        biases.push((this.rng.next() * 2 - 1) * 0.01);
+        // Initialize biases to zero (standard practice)
+        biases.push(0);
       }
 
       layers.push({ weights, biases });

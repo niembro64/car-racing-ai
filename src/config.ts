@@ -160,22 +160,22 @@ export const CONFIG: Config = {
 
   geneticAlgorithm: {
     mutation: {
-      base: 0.01, // Increased from 0.01 for more exploration early on
-      min: 0.001, // Slightly increased minimum mutation
+      base: 0.1, // Standard starting mutation rate
+      min: 0.00001, // Minimum mutation rate when approaching track completion
       startingMutationParameterScaleAgainstSize: {
-        min: 0.7, // Larger networks get slightly lower mutation rates
+        min: 0.8, // Larger networks get slightly lower mutation rates
         max: 1.0,
       },
-      bezierPoints: [1, 0.1, 0.25, 0.75],
+      bezierPoints: [0, 0, 1, 1], // Linear decay from base to min
       rankMultiplier: {
-        min: 0.0001, // Increased minimum multiplier for more diversity
-        max: 0.01, // Increased maximum for stronger mutations in later cars
-        curvePower: 2, // Slightly reduced curve power for more gradual increase
+        min: 0.05, // Standard minimum multiplier (50% of base)
+        max: 2.0, // Standard maximum multiplier (200% of base)
+        curvePower: 2, // Quadratic curve for gradual increase
       },
       progressive: {
-        enabled: true,
-        baseVariance: 0.008, // Reduced from 0.01 for gentler starting mutations
-        growthRate: 0.035, // Reduced from 0.05 for smoother progression
+        enabled: false, // Disabled for standard training
+        baseVariance: 0.001,
+        growthRate: 0.05,
         growthType: 'exponential',
       },
     },
