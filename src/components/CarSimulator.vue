@@ -30,7 +30,7 @@
             'viz-simple': visualizationMode === 'vis-simple',
             'viz-medium': visualizationMode === 'vis-medium',
             'viz-weights': visualizationMode === 'vis-weights',
-            'viz-activity': visualizationMode === 'vis-activity',
+            'viz-think': visualizationMode === 'vis-think',
           }"
         >
           {{ getVisualizationModeLabel(visualizationMode) }}
@@ -426,7 +426,7 @@ const visualizationMode = ref<VisualizationMode>(CONFIG.defaults.defaultVisualiz
 // Computed properties derived from visualizationMode
 const showRays = computed(() => visualizationMode.value !== 'vis-simple');
 const carVizMode = computed<CarVizMode>(() =>
-  (visualizationMode.value === 'vis-weights' || visualizationMode.value === 'vis-activity')
+  (visualizationMode.value === 'vis-weights' || visualizationMode.value === 'vis-think')
     ? 'detailed'
     : 'simple'
 );
@@ -1710,8 +1710,8 @@ const getVisualizationModeLabel = (mode: VisualizationMode): string => {
       return 'VIS MEDIUM';
     case 'vis-weights':
       return 'VIS WEIGHTS';
-    case 'vis-activity':
-      return 'VIS ACTIVITY';
+    case 'vis-think':
+      return 'VIS THINK';
   }
 };
 
@@ -2453,12 +2453,12 @@ button:active {
   border-color: #7f8794;
 }
 
-.btn-toggle-viz.viz-activity {
+.btn-toggle-viz.viz-think {
   background: #c0c7d0;
   border-color: #9ca3af;
 }
 
-.btn-toggle-viz.viz-activity:hover {
+.btn-toggle-viz.viz-think:hover {
   background: #d0d7e0;
   border-color: #b0b6c0;
 }

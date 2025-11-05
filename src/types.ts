@@ -201,7 +201,7 @@ export const CAR_VIZ_MODES = ['simple', 'detailed'] as const;
 export type CarVizMode = (typeof CAR_VIZ_MODES)[number];
 
 // Visualization mode - controls what debug info is shown
-export const VISUALIZATION_MODES = ['vis-simple', 'vis-medium', 'vis-weights', 'vis-activity'] as const;
+export const VISUALIZATION_MODES = ['vis-simple', 'vis-medium', 'vis-weights', 'vis-think'] as const;
 export type VisualizationMode = (typeof VISUALIZATION_MODES)[number];
 
 // Info section view types (all 5 clickable views)
