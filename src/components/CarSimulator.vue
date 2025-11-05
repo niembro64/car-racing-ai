@@ -42,7 +42,7 @@
             'speed-4x': carSpeedMultiplier === 4,
           }"
         >
-          {{ carSpeedMultiplier }}x SPEED
+          {{ carSpeedMultiplier.toFixed(1) }} x SPEED
         </button>
         <button @click="cycleBrainStrategy" class="btn-brain-strategy">
           {{ TEXT_CHARACTER.saved + TEXT_CHARACTER.brain }}:
@@ -2385,185 +2385,46 @@ button {
   font-family: 'Courier New', 'Courier', monospace;
   font-size: 14px;
   font-weight: bold;
+  line-height: 1.2;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.15s ease, border-color 0.15s ease;
   touch-action: manipulation;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   margin: 0;
-  background: #4b5563;
+  background: #6b7280;
   color: #ffffff;
-  border: 2px solid #374151;
+  border: 2px solid #4b5563;
+  box-sizing: border-box;
 }
 
 button:hover {
-  background: #6b7280;
-  border-color: #4b5563;
+  background: #7f8794;
+  border-color: #5a6370;
 }
 
 button:active {
-  background: #374151;
-  border-color: #1f2937;
-}
-
-/* SYNC button - Blue (action/synchronize) */
-.btn-sync {
-  background: #0284c7;
-  border-color: #0369a1;
-}
-
-.btn-sync:hover {
-  background: #0369a1;
-  border-color: #075985;
-}
-
-.btn-sync:active {
-  background: #075985;
-  border-color: #0c4a6e;
-}
-
-/* RESTART button - Red (destructive action) */
-.btn-restart {
-  background: #dc2626;
-  border-color: #b91c1c;
-}
-
-.btn-restart:hover {
-  background: #b91c1c;
-  border-color: #991b1b;
-}
-
-.btn-restart:active {
-  background: #991b1b;
-  border-color: #7f1d1d;
-}
-
-/* Car usage button - Different colors for each level */
-.btn-car-usage.usage-few {
-  background: #0284c7;
-  border-color: #0369a1;
-}
-
-.btn-car-usage.usage-few:hover {
-  background: #0369a1;
-  border-color: #075985;
-}
-
-.btn-car-usage.usage-many {
-  background: #ca8a04;
-  border-color: #a16207;
-}
-
-.btn-car-usage.usage-many:hover {
-  background: #a16207;
-  border-color: #854d0e;
-}
-
-.btn-car-usage.usage-all {
-  background: #ea580c;
-  border-color: #c2410c;
-}
-
-.btn-car-usage.usage-all:hover {
-  background: #c2410c;
-  border-color: #9a3412;
-}
-
-/* Show rays toggle - Cyan when active (visualization) */
-.btn-toggle-rays {
   background: #4b5563;
   border-color: #374151;
 }
 
+/* Active state for toggle buttons */
 .btn-toggle-rays.active {
-  background: #06b6d4;
-  border-color: #0891b2;
+  background: #9ca3af;
+  border-color: #6b7280;
 }
 
 .btn-toggle-rays.active:hover {
-  background: #0891b2;
-  border-color: #0e7490;
+  background: #b0b6c0;
+  border-color: #7f8794;
 }
 
 .btn-toggle-rays.active:active {
-  background: #0e7490;
-  border-color: #155e75;
-}
-
-/* Speed button - Color intensity increases with speed */
-.btn-speed.speed-0_2x {
-  background: #3b82f6;
-  border-color: #2563eb;
-}
-
-.btn-speed.speed-0_2x:hover {
-  background: #2563eb;
-  border-color: #1d4ed8;
-}
-
-.btn-speed.speed-0_5x {
-  background: #06b6d4;
-  border-color: #0891b2;
-}
-
-.btn-speed.speed-0_5x:hover {
-  background: #0891b2;
-  border-color: #0e7490;
-}
-
-.btn-speed.speed-1x {
-  background: #4b5563;
-  border-color: #374151;
-}
-
-.btn-speed.speed-1x:hover {
-  background: #6b7280;
-  border-color: #4b5563;
-}
-
-.btn-speed.speed-2x {
-  background: #ca8a04;
-  border-color: #a16207;
-}
-
-.btn-speed.speed-2x:hover {
-  background: #a16207;
-  border-color: #854d0e;
-}
-
-.btn-speed.speed-3x {
-  background: #ea580c;
-  border-color: #c2410c;
-}
-
-.btn-speed.speed-3x:hover {
-  background: #c2410c;
-  border-color: #9a3412;
-}
-
-.btn-speed.speed-4x {
-  background: #dc2626;
-  border-color: #b91c1c;
-}
-
-.btn-speed.speed-4x:hover {
-  background: #b91c1c;
-  border-color: #991b1b;
-}
-
-/* Brain strategy button - Magenta (AI/learning strategy) */
-.btn-brain-strategy {
-  background: #c026d3;
-  border-color: #a21caf;
-}
-
-.btn-brain-strategy:hover {
-  background: #a21caf;
-  border-color: #86198f;
-}
-
-.btn-brain-strategy:active {
-  background: #86198f;
-  border-color: #701a75;
+  background: #7f8794;
+  border-color: #5a6370;
 }
 
 /* Graph View */
