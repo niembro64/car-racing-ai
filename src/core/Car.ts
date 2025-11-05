@@ -495,10 +495,26 @@ export class Car {
     // If in vis-activity mode, compute forward pass to get current activations
     let activations: ForwardPassActivations | null = null;
     if (visualizationMode === 'vis-activity') {
-      // Get current ray distances (the input to the network)
-      const inputArray = this.lastRayDistances;
-      if (inputArray && inputArray.length > 0) {
-        activations = this.brain.forwardWithActivations(inputArray);
+      // Get current ray distances and preprocess them the same way as during update()
+      const distances = this.lastRayDistances;
+      if (distances && distances.length > 0) {
+        let inputRays: number[];
+
+        if (this.inputModification === 'pair') {
+          // Differential mode: forward ray + (left - right) pairs
+          inputRays = [distances[0]]; // Forward ray (index 0)
+
+          // Add differential pairs (left - right)
+          for (const [leftIdx, rightIdx] of CONFIG.neuralNetwork.sensorRays.pairs) {
+            const differential = distances[leftIdx] - distances[rightIdx];
+            inputRays.push(differential);
+          }
+        } else {
+          // Direct mode: all raw ray distances
+          inputRays = distances;
+        }
+
+        activations = this.brain.forwardWithActivations(inputRays);
       }
     }
 
@@ -524,14 +540,46 @@ export class Car {
       const sectionTop = detailedHeight / 2 - currentSectionIdx * sectionHeight;
       const sectionBottom = sectionTop - sectionHeight;
 
-      // Draw input type color background
-      ctx.fillStyle = this.alive ? this.getInputColor() : CONFIG.car.colors.bodyDead;
-      ctx.fillRect(
-        -detailedWidth / 2,
-        sectionBottom,
-        detailedWidth,
-        sectionHeight
-      );
+      // In vis-activity mode, split section into two parts:
+      // - Top 1/4: Input type indicator (colored)
+      // - Bottom 3/4: Input values (grayscale boxes showing actual ray distances)
+      if (visualizationMode === 'vis-activity' && activations && this.alive) {
+        const quarterHeight = sectionHeight / 4;
+        const inputValuesHeight = sectionHeight * 3 / 4;
+
+        // Top 1/4: Input type color indicator
+        const inputTypeBottom = sectionTop - quarterHeight;
+        ctx.fillStyle = this.getInputColor();
+        ctx.fillRect(
+          -detailedWidth / 2,
+          inputTypeBottom,
+          detailedWidth,
+          quarterHeight
+        );
+
+        // Bottom 3/4: Input values as grayscale boxes
+        const inputValuesBottom = sectionBottom;
+        const inputValues = activations.inputValues;
+        const numInputs = inputValues.length;
+        const inputBoxWidth = detailedWidth / numInputs;
+
+        for (let inputIdx = 0; inputIdx < numInputs; inputIdx++) {
+          const inputValue = inputValues[inputIdx];
+          const boxLeft = -detailedWidth / 2 + inputIdx * inputBoxWidth;
+
+          ctx.fillStyle = this.valueToGrayscale(inputValue);
+          ctx.fillRect(boxLeft, inputValuesBottom, inputBoxWidth, inputValuesHeight);
+        }
+      } else {
+        // vis-weights mode or vis-medium mode: just show input type color
+        ctx.fillStyle = this.alive ? this.getInputColor() : CONFIG.car.colors.bodyDead;
+        ctx.fillRect(
+          -detailedWidth / 2,
+          sectionBottom,
+          detailedWidth,
+          sectionHeight
+        );
+      }
 
       // Draw section border
       ctx.strokeStyle = this.alive ? CONFIG.car.colors.bodyAliveStroke : CONFIG.car.colors.bodyDeadStroke;
