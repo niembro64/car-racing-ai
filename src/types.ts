@@ -320,7 +320,7 @@ export const BRAIN_SELECTION_STRATEGIES: StrategyInfo[] = [
 
 export const ACTIVATION_COLORS: Record<ActivationType, string> = {
   '-': '#888',       // Gray (no activation)
-  'linear': '#888',  // Gray (linear activation)
+  'linear': '#ea0',  // Orange-yellow (linear activation)
   'relu': '#58c',    // Blue family
   'gelu': '#4a8',    // Green-cyan family
   'step': '#c5c',    // Purple-magenta family

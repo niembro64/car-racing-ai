@@ -52,6 +52,7 @@ export interface CarPhysicsConfig {
 export interface CarDimensionsMode {
   width: number;
   height: number;
+  borderWidth: number;
 }
 
 export interface CarDimensionsConfig {
@@ -78,6 +79,7 @@ export interface CarConfig {
   dimensions: CarDimensionsConfig;
   spawn: CarSpawnConfig;
   colors: CarColorsConfig;
+  eliteSizeMultiplier: number;
 }
 
 // ============================================================================

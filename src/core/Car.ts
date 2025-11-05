@@ -39,9 +39,9 @@ export class Car {
   frameCount: number; // Number of frames this car has been alive
   elapsedTime: number; // Total time this car has been alive (in seconds)
 
-  // Dimensions (use detailed for physics/collision, rendering varies by mode)
-  width: number = CONFIG.car.dimensions.detailed.width;
-  height: number = CONFIG.car.dimensions.detailed.height;
+  // Dimensions (always use simple/small for physics/collision)
+  width: number = CONFIG.car.dimensions.simple.width;
+  height: number = CONFIG.car.dimensions.simple.height;
   sizeMultiplier: number = 1.0; // Scale factor for elite cars
 
   // Neural network
@@ -416,56 +416,69 @@ export class Car {
       ctx.restore();
     }
 
-    // Render car body
+    // ========================================================================
+    // ALWAYS RENDER SMALL CAR (the physical car)
+    // ========================================================================
     ctx.save();
     ctx.translate(this.x, this.y);
     // Rotate by angle - 90° so visual front matches physics heading
     // (angle=0 in physics = moving right, so visual should point right)
     ctx.rotate(this.angle - Math.PI / 2);
 
-    // Get dimensions based on visualization mode
-    const dimensions = vizMode === 'simple'
-      ? CONFIG.car.dimensions.simple
-      : CONFIG.car.dimensions.detailed;
-    const scaledWidth = dimensions.width;
-    const scaledHeight = dimensions.height * this.sizeMultiplier;
+    // Small car dimensions (the actual physical car)
+    const smallWidth = this.width * this.sizeMultiplier;
+    const smallHeight = this.height * this.sizeMultiplier;
+
+    // Simple rectangle with car type color
+    ctx.fillStyle = this.alive ? this.color : CONFIG.car.colors.bodyDead;
+    ctx.fillRect(
+      -smallWidth / 2,
+      -smallHeight / 2,
+      smallWidth,
+      smallHeight
+    );
+
+    // Draw border
+    ctx.strokeStyle = this.alive ? this.color : CONFIG.car.colors.bodyDeadStroke;
+    ctx.lineWidth = CONFIG.car.dimensions.simple.borderWidth;
+    ctx.strokeRect(
+      -smallWidth / 2,
+      -smallHeight / 2,
+      smallWidth,
+      smallHeight
+    );
+
+    // Draw windshield
+    ctx.fillStyle = this.alive ? CONFIG.car.colors.directionIndicatorAlive : CONFIG.car.colors.directionIndicatorDead;
+    const windshieldHeight = 4;
+    const windshieldY = smallHeight / 2 - windshieldHeight;
+    ctx.fillRect(-smallWidth / 4, windshieldY, smallWidth / 2, windshieldHeight);
+
+    ctx.restore();
 
     // ========================================================================
-    // SIMPLE MODE: Just show car with its color
+    // If SIMPLE mode, we're done
     // ========================================================================
     if (vizMode === 'simple') {
-      // Simple rectangle with car type color
-      ctx.fillStyle = this.alive ? this.color : CONFIG.car.colors.bodyDead;
-      ctx.fillRect(
-        -scaledWidth / 2,
-        -scaledHeight / 2,
-        scaledWidth,
-        scaledHeight
-      );
-
-      // Draw border
-      ctx.strokeStyle = this.alive ? this.color : CONFIG.car.colors.bodyDeadStroke;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(
-        -scaledWidth / 2,
-        -scaledHeight / 2,
-        scaledWidth,
-        scaledHeight
-      );
-
-      // Draw windshield
-      ctx.fillStyle = this.alive ? CONFIG.car.colors.directionIndicatorAlive : CONFIG.car.colors.directionIndicatorDead;
-      const windshieldHeight = 4;
-      const windshieldY = scaledHeight / 2 - windshieldHeight;
-      ctx.fillRect(-scaledWidth / 4, windshieldY, scaledWidth / 2, windshieldHeight);
-
-      ctx.restore();
       return;
     }
 
     // ========================================================================
-    // DETAILED MODE: Show full neural network visualization
+    // DETAILED MODE: Draw neural network visualization overlay on top
     // ========================================================================
+    // This is purely visual and doesn't affect physics/collision
+    if (!this.alive) {
+      return; // Don't show detailed view for dead cars
+    }
+
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle - Math.PI / 2);
+
+    // Use large dimensions for detailed visualization
+    const detailedWidth = CONFIG.car.dimensions.detailed.width * this.sizeMultiplier;
+    const detailedHeight = CONFIG.car.dimensions.detailed.height * this.sizeMultiplier;
+
     // GET CAR NEURAL NETWORK STRUCTURE
     // This is the ONLY source of truth for rendering
     // Structure: { inputType, hiddenLayers[], outputLayer, color }
@@ -483,7 +496,7 @@ export class Car {
     // N. Output layer (carNetwork.outputLayer.neuron)
     const numHiddenLayers = carNetwork.hiddenLayers.length;
     const totalSections = 1 + numHiddenLayers + 1; // input + hidden layers + output
-    const sectionHeight = scaledHeight / totalSections; // Equal partitions
+    const sectionHeight = detailedHeight / totalSections; // Equal partitions
 
     let currentSectionIdx = 0;
 
@@ -491,15 +504,15 @@ export class Car {
     // SECTION 0: INPUT TYPE (from carNetwork.inputType)
     // ========================================================================
     {
-      const sectionTop = scaledHeight / 2 - currentSectionIdx * sectionHeight;
+      const sectionTop = detailedHeight / 2 - currentSectionIdx * sectionHeight;
       const sectionBottom = sectionTop - sectionHeight;
 
       // Draw input type color background
       ctx.fillStyle = this.alive ? this.getInputColor() : CONFIG.car.colors.bodyDead;
       ctx.fillRect(
-        -scaledWidth / 2,
+        -detailedWidth / 2,
         sectionBottom,
-        scaledWidth,
+        detailedWidth,
         sectionHeight
       );
 
@@ -507,9 +520,9 @@ export class Car {
       ctx.strokeStyle = this.alive ? CONFIG.car.colors.bodyAliveStroke : CONFIG.car.colors.bodyDeadStroke;
       ctx.lineWidth = 0.5;
       ctx.strokeRect(
-        -scaledWidth / 2,
+        -detailedWidth / 2,
         sectionBottom,
-        scaledWidth,
+        detailedWidth,
         sectionHeight
       );
 
@@ -521,18 +534,18 @@ export class Car {
     // ========================================================================
     // Each hidden layer contains neurons with their OWN activation functions
     for (let hiddenLayerIdx = 0; hiddenLayerIdx < numHiddenLayers; hiddenLayerIdx++) {
-      const sectionTop = scaledHeight / 2 - currentSectionIdx * sectionHeight;
+      const sectionTop = detailedHeight / 2 - currentSectionIdx * sectionHeight;
       const sectionBottom = sectionTop - sectionHeight;
 
       // Get this hidden layer's neurons from carNetwork
       const hiddenLayer = carNetwork.hiddenLayers[hiddenLayerIdx];
       const neurons = hiddenLayer.neurons;
       const numNeurons = neurons.length;
-      const neuronWidth = scaledWidth / numNeurons;
+      const neuronWidth = detailedWidth / numNeurons;
 
       // Render each neuron in this hidden layer (left to right)
       for (let neuronIdx = 0; neuronIdx < numNeurons; neuronIdx++) {
-        const neuronLeft = -scaledWidth / 2 + neuronIdx * neuronWidth;
+        const neuronLeft = -detailedWidth / 2 + neuronIdx * neuronWidth;
 
         // Get THIS neuron's data (weights, bias, activation) from carNetwork
         const neuron = neurons[neuronIdx];
@@ -588,9 +601,9 @@ export class Car {
       ctx.strokeStyle = this.alive ? CONFIG.car.colors.bodyAliveStroke : CONFIG.car.colors.bodyDeadStroke;
       ctx.lineWidth = 0.5;
       ctx.strokeRect(
-        -scaledWidth / 2,
+        -detailedWidth / 2,
         sectionBottom,
-        scaledWidth,
+        detailedWidth,
         sectionHeight
       );
 
@@ -602,13 +615,13 @@ export class Car {
     // ========================================================================
     // Output layer has a SINGLE neuron with its own activation (typically 'linear')
     {
-      const sectionTop = scaledHeight / 2 - currentSectionIdx * sectionHeight;
+      const sectionTop = detailedHeight / 2 - currentSectionIdx * sectionHeight;
       const sectionBottom = sectionTop - sectionHeight;
 
       // Get the output neuron from carNetwork
       const outputNeuron = carNetwork.outputLayer.neuron;
-      const neuronWidth = scaledWidth; // Single neuron spans full width
-      const neuronLeft = -scaledWidth / 2;
+      const neuronWidth = detailedWidth; // Single neuron spans full width
+      const neuronLeft = -detailedWidth / 2;
 
       // Fill neuron background
       ctx.fillStyle = this.alive ? '#444' : CONFIG.car.colors.bodyDead;
@@ -660,30 +673,30 @@ export class Car {
       ctx.strokeStyle = this.alive ? CONFIG.car.colors.bodyAliveStroke : CONFIG.car.colors.bodyDeadStroke;
       ctx.lineWidth = 0.5;
       ctx.strokeRect(
-        -scaledWidth / 2,
+        -detailedWidth / 2,
         sectionBottom,
-        scaledWidth,
+        detailedWidth,
         sectionHeight
       );
     }
 
     // Draw overall car border using the car type color
     ctx.strokeStyle = this.alive ? carNetwork.color : CONFIG.car.colors.bodyDeadStroke;
-    ctx.lineWidth = 2; // Thicker border to make car type color more visible
+    ctx.lineWidth = CONFIG.car.dimensions.detailed.borderWidth;
     ctx.strokeRect(
-      -scaledWidth / 2,
-      -scaledHeight / 2,
-      scaledWidth,
-      scaledHeight
+      -detailedWidth / 2,
+      -detailedHeight / 2,
+      detailedWidth,
+      detailedHeight
     );
 
     // Draw windshield (direction indicator) inside the input section
     // Drawn last so it appears on top of everything
     ctx.fillStyle = this.alive ? CONFIG.car.colors.directionIndicatorAlive : CONFIG.car.colors.directionIndicatorDead;
     // Position at the very front edge of the car (top of input section)
-    const windshieldHeight = 4;
-    const windshieldY = scaledHeight / 2 - windshieldHeight;
-    ctx.fillRect(-scaledWidth / 4, windshieldY, scaledWidth / 2, windshieldHeight);
+    const detailedWindshieldHeight = 4;
+    const detailedWindshieldY = detailedHeight / 2 - detailedWindshieldHeight;
+    ctx.fillRect(-detailedWidth / 4, detailedWindshieldY, detailedWidth / 2, detailedWindshieldHeight);
 
     ctx.restore();
   }

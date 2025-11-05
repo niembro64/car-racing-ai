@@ -1610,7 +1610,7 @@ const restartCurrentGeneration = (config: CarBrainConfig) => {
           config.colors.dark,
           config.nn.inputModification,
           config.shortName,
-          1.5 // Elite cars are 1.5x larger
+          CONFIG.car.eliteSizeMultiplier
         )
       );
     } else {

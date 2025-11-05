@@ -123,10 +123,12 @@ export const CONFIG: Config = {
       simple: {
         width: 20,
         height: 30,
+        borderWidth: 2,
       },
       detailed: {
-        width: 60,
-        height: 80,
+        width: 200,
+        height: 300,
+        borderWidth: 8,
       },
     },
     spawn: {
@@ -141,6 +143,7 @@ export const CONFIG: Config = {
       directionIndicatorAlive: '#ffffff',
       directionIndicatorDead: '#666',
     },
+    eliteSizeMultiplier: 1,
   },
 
   sensors: {
