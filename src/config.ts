@@ -6,6 +6,7 @@ import type {
   SpeedMultiplier,
   InfoView,
   CarUsageLevel,
+  VisualizationMode,
 } from './types';
 import type { Config } from './config.types';
 import {
@@ -291,6 +292,7 @@ export const CONFIG: Config = {
     showRays: true,
     defaultInfoView: 'graph-score' as InfoView,
     defaultCarUsageLevel: 'use-many' as CarUsageLevel,
+    defaultVisualizationMode: 'vis-medium' as VisualizationMode,
   },
 };
 

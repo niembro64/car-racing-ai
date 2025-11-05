@@ -24,18 +24,15 @@
           {{ getCarUsageLevelInfo(carUsageLevel).name }}
         </button>
         <button
-          @click="toggleShowRays"
-          class="btn-toggle-rays"
-          :class="{ active: showRays }"
+          @click="cycleVisualizationMode"
+          class="btn-toggle-viz"
+          :class="{
+            'viz-simple': visualizationMode === 'vis-simple',
+            'viz-medium': visualizationMode === 'vis-medium',
+            'viz-full': visualizationMode === 'vis-full',
+          }"
         >
-          VIS DEBUG
-        </button>
-        <button
-          @click="toggleCarVizMode"
-          class="btn-toggle-car-viz"
-          :class="{ active: carVizMode === 'detailed' }"
-        >
-          {{ carVizMode === 'simple' ? 'SIMPLE' : 'DETAILED' }}
+          {{ getVisualizationModeLabel(visualizationMode) }}
         </button>
         <button
           @click="toggleCarSpeed"
@@ -375,8 +372,9 @@ import type {
   ViewMode,
   InfoView,
   CarVizMode,
+  VisualizationMode,
 } from '@/types';
-import { BRAIN_SELECTION_STRATEGIES, ACTIVATION_COLORS, INPUT_COLORS } from '@/types';
+import { BRAIN_SELECTION_STRATEGIES, ACTIVATION_COLORS, INPUT_COLORS, VISUALIZATION_MODES } from '@/types';
 import { SPEED_MULTIPLIERS } from '@/types';
 import {
   CONFIG,
@@ -422,8 +420,12 @@ let randomSeed = Date.now() + Math.random() * 1000000;
 const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed));
 
 const population = ref<Car[]>([]) as Ref<Car[]>;
-const showRays = ref(CONFIG.defaults.showRays);
-const carVizMode = ref<CarVizMode>('simple'); // 'simple' or 'detailed'
+const visualizationMode = ref<VisualizationMode>(CONFIG.defaults.defaultVisualizationMode);
+
+// Computed properties derived from visualizationMode
+const showRays = computed(() => visualizationMode.value !== 'vis-simple');
+const carVizMode = computed<CarVizMode>(() => visualizationMode.value === 'vis-full' ? 'detailed' : 'simple');
+
 const speedMultiplier = ref(1);
 const carSpeedMultiplier = ref<SpeedMultiplier>(
   CONFIG.defaults.speedMultiplier
@@ -1686,14 +1688,24 @@ const reset = () => {
   averageCarsPerTypeFrameCounter = 0;
 };
 
-// Toggle Show Rays mode
-const toggleShowRays = () => {
-  showRays.value = !showRays.value;
+// Cycle through visualization modes: vis-simple -> vis-medium -> vis-full -> vis-simple
+const cycleVisualizationMode = () => {
+  const currentIndex = VISUALIZATION_MODES.indexOf(visualizationMode.value);
+  const nextIndex = (currentIndex + 1) % VISUALIZATION_MODES.length;
+  visualizationMode.value = VISUALIZATION_MODES[nextIndex];
+  print(`[Visualization] Mode: ${getVisualizationModeLabel(visualizationMode.value)}`);
 };
 
-// Toggle Car Visualization Mode (simple <-> detailed)
-const toggleCarVizMode = () => {
-  carVizMode.value = carVizMode.value === 'simple' ? 'detailed' : 'simple';
+// Get button label for visualization mode
+const getVisualizationModeLabel = (mode: VisualizationMode): string => {
+  switch (mode) {
+    case 'vis-simple':
+      return 'VIS SIMPLE';
+    case 'vis-medium':
+      return 'VIS MEDIUM';
+    case 'vis-full':
+      return 'VIS FULL';
+  }
 };
 
 // Cycle through car usage levels: use-few -> use-many -> use-all -> use-few
@@ -2403,20 +2415,35 @@ button:active {
   border-color: #374151;
 }
 
-/* Active state for toggle buttons */
-.btn-toggle-rays.active {
+/* Visualization mode button states */
+.btn-toggle-viz.viz-simple {
+  background: #4b5563;
+  border-color: #374151;
+}
+
+.btn-toggle-viz.viz-simple:hover {
+  background: #6b7280;
+  border-color: #4b5563;
+}
+
+.btn-toggle-viz.viz-medium {
+  background: #7f8794;
+  border-color: #5a6370;
+}
+
+.btn-toggle-viz.viz-medium:hover {
   background: #9ca3af;
   border-color: #6b7280;
 }
 
-.btn-toggle-rays.active:hover {
-  background: #b0b6c0;
-  border-color: #7f8794;
+.btn-toggle-viz.viz-full {
+  background: #9ca3af;
+  border-color: #6b7280;
 }
 
-.btn-toggle-rays.active:active {
-  background: #7f8794;
-  border-color: #5a6370;
+.btn-toggle-viz.viz-full:hover {
+  background: #b0b6c0;
+  border-color: #7f8794;
 }
 
 /* Graph View */

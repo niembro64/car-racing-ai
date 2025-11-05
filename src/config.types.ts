@@ -1,4 +1,4 @@
-import type { Point, BrainSelectionStrategy, SpeedMultiplier, InfoView, CarUsageLevel } from './types';
+import type { Point, BrainSelectionStrategy, SpeedMultiplier, InfoView, CarUsageLevel, VisualizationMode } from './types';
 
 // ============================================================================
 // CANVAS CONFIG
@@ -301,6 +301,7 @@ export interface DefaultsConfig {
   showRays: boolean;
   defaultInfoView: InfoView;
   defaultCarUsageLevel: CarUsageLevel;
+  defaultVisualizationMode: VisualizationMode;
 }
 
 // ============================================================================
