@@ -30,16 +30,17 @@ const clampedPercentage = computed(() => {
 <style scoped>
 .percentage-bar-container {
   width: 100%;
-  height: 16px;
+  height: 100%;
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
   overflow: hidden;
   position: relative;
+  min-height: 8px;
 }
 
 .percentage-bar-container.compact {
-  height: 8px;
   border-radius: 1px;
+  min-height: 6px;
 }
 
 .percentage-bar-fill {

@@ -2202,6 +2202,8 @@ canvas {
 
 .stats-table td.bar-cell {
   padding: 2px 4px;
+  align-self: stretch;
+  align-items: stretch;
 }
 
 /* Compact mode for when ALL TYPES is toggled on */
