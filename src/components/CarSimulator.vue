@@ -1871,10 +1871,10 @@ const renderGraph = () => {
   ctx.textAlign = 'center';
   const graphTitle =
     graphType.value === 'completion'
-      ? 'Track Completion vs Recent Generations'
+      ? 'Lap Completion'
       : graphType.value === 'rate'
-      ? 'Track Completion Rate vs Recent Generations'
-      : 'Comprehensive Score vs Recent Generations';
+      ? 'Lap Efficiency'
+      : 'Score';
   ctx.fillText(graphTitle, width / 2, topPadding - 8);
 
   // Draw grid lines and labels
