@@ -5,7 +5,9 @@ import type {
   NeuralInput,
   NeuralOutput,
   InputModificationType,
+  CarNeuralNetwork,
 } from '@/types';
+import { ACTIVATION_COLORS, INPUT_COLORS } from '@/types';
 import {
   createCarPolygon,
   updateCarPolygon,
@@ -292,6 +294,41 @@ export class Car {
     }
   }
 
+  // Helper: Convert a weight/bias value to grayscale color
+  // Values around 0 are gray, positive values are whiter, negative values are blacker
+  private valueToGrayscale(value: number): string {
+    // Clamp value to reasonable range for visualization
+    const clampedValue = Math.max(-3, Math.min(3, value));
+
+    // Map [-3, 3] to [0, 255] with 0 mapping to gray (136 = 0x88)
+    // Negative: [0, 136], Positive: [136, 255]
+    const gray = 136; // Mid-gray (#888)
+
+    if (clampedValue >= 0) {
+      // Positive: interpolate from gray to white
+      const t = clampedValue / 3; // [0, 1]
+      const brightness = Math.round(gray + t * (255 - gray));
+      const hex = brightness.toString(16).padStart(2, '0');
+      return `#${hex}${hex}${hex}`;
+    } else {
+      // Negative: interpolate from black to gray
+      const t = (clampedValue + 3) / 3; // [0, 1]
+      const brightness = Math.round(t * gray);
+      const hex = brightness.toString(16).padStart(2, '0');
+      return `#${hex}${hex}${hex}`;
+    }
+  }
+
+  // Helper: Get activation function color (uses centralized colors from types.ts)
+  private getActivationColor(activationType: string): string {
+    return ACTIVATION_COLORS[activationType as keyof typeof ACTIVATION_COLORS] || '#888';
+  }
+
+  // Helper: Get input modification color (uses centralized colors from types.ts)
+  private getInputColor(): string {
+    return INPUT_COLORS[this.inputModification];
+  }
+
   // Render car on canvas
   render(ctx: CanvasRenderingContext2D, showRays: boolean = false): void {
     // Find the config for this car type by shortName (check all defined configs)
@@ -378,31 +415,222 @@ export class Car {
       ctx.restore();
     }
 
-    // Render car body
+    // Render car body with neural network visualization
     ctx.save();
     ctx.translate(this.x, this.y);
     // Rotate by angle - 90° so visual front matches physics heading
     // (angle=0 in physics = moving right, so visual should point right)
     ctx.rotate(this.angle - Math.PI / 2);
 
-    // Car color based on state
-    if (this.alive) {
-      ctx.fillStyle = this.color;
-      ctx.strokeStyle = CONFIG.car.colors.bodyAliveStroke;
-    } else {
-      ctx.fillStyle = CONFIG.car.colors.bodyDead;
-      ctx.strokeStyle = CONFIG.car.colors.bodyDeadStroke;
-    }
-
-    ctx.lineWidth = 1;
     const scaledWidth = this.width;
     const scaledHeight = this.height * this.sizeMultiplier;
-    ctx.fillRect(
-      -scaledWidth / 2,
-      -scaledHeight / 2,
-      scaledWidth,
-      scaledHeight
-    );
+
+    // ========================================================================
+    // GET CAR NEURAL NETWORK STRUCTURE
+    // ========================================================================
+    // This is the ONLY source of truth for rendering
+    // Structure: { inputType, hiddenLayers[], outputLayer, color }
+    // Each neuron has: { weights[], bias, activation }
+    const carNetwork: CarNeuralNetwork = this.brain.toCarNetwork(this.inputModification, this.color);
+
+    // ========================================================================
+    // CALCULATE EQUAL PARTITIONS FOR ALL SECTIONS
+    // ========================================================================
+    // Sections (front to back):
+    // 1. Input type (carNetwork.inputType)
+    // 2. Hidden layer 1 (carNetwork.hiddenLayers[0].neurons[])
+    // 3. Hidden layer 2 (carNetwork.hiddenLayers[1].neurons[]) - if exists
+    // ...
+    // N. Output layer (carNetwork.outputLayer.neuron)
+    const numHiddenLayers = carNetwork.hiddenLayers.length;
+    const totalSections = 1 + numHiddenLayers + 1; // input + hidden layers + output
+    const sectionHeight = scaledHeight / totalSections; // Equal partitions
+
+    let currentSectionIdx = 0;
+
+    // ========================================================================
+    // SECTION 0: INPUT TYPE (from carNetwork.inputType)
+    // ========================================================================
+    {
+      const sectionTop = scaledHeight / 2 - currentSectionIdx * sectionHeight;
+      const sectionBottom = sectionTop - sectionHeight;
+
+      // Draw input type color background
+      ctx.fillStyle = this.alive ? this.getInputColor() : CONFIG.car.colors.bodyDead;
+      ctx.fillRect(
+        -scaledWidth / 2,
+        sectionBottom,
+        scaledWidth,
+        sectionHeight
+      );
+
+      // Draw section border
+      ctx.strokeStyle = this.alive ? CONFIG.car.colors.bodyAliveStroke : CONFIG.car.colors.bodyDeadStroke;
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(
+        -scaledWidth / 2,
+        sectionBottom,
+        scaledWidth,
+        sectionHeight
+      );
+
+      currentSectionIdx++;
+    }
+
+    // ========================================================================
+    // SECTIONS 1 to N: HIDDEN LAYERS (from carNetwork.hiddenLayers[])
+    // ========================================================================
+    // Each hidden layer contains neurons with their OWN activation functions
+    for (let hiddenLayerIdx = 0; hiddenLayerIdx < numHiddenLayers; hiddenLayerIdx++) {
+      const sectionTop = scaledHeight / 2 - currentSectionIdx * sectionHeight;
+      const sectionBottom = sectionTop - sectionHeight;
+
+      // Get this hidden layer's neurons from carNetwork
+      const hiddenLayer = carNetwork.hiddenLayers[hiddenLayerIdx];
+      const neurons = hiddenLayer.neurons;
+      const numNeurons = neurons.length;
+      const neuronWidth = scaledWidth / numNeurons;
+
+      // Render each neuron in this hidden layer (left to right)
+      for (let neuronIdx = 0; neuronIdx < numNeurons; neuronIdx++) {
+        const neuronLeft = -scaledWidth / 2 + neuronIdx * neuronWidth;
+
+        // Get THIS neuron's data (weights, bias, activation) from carNetwork
+        const neuron = neurons[neuronIdx];
+
+        // Fill neuron background
+        ctx.fillStyle = this.alive ? '#444' : CONFIG.car.colors.bodyDead;
+        ctx.fillRect(
+          neuronLeft,
+          sectionBottom,
+          neuronWidth,
+          sectionHeight
+        );
+
+        // Draw neuron contents: weights -> bias -> activation (only if alive)
+        if (this.alive) {
+          // Read directly from THIS neuron (no top-level activation)
+          const weights = neuron.weights;
+          const bias = neuron.bias;
+          const activation = neuron.activation; // Per-neuron activation
+          const numWeights = weights.length;
+
+          // Divide neuron into 3 EQUAL parts (front to back):
+          // 1/3 weights (array of grayscale items) - at FRONT
+          // 1/3 bias (single grayscale item) - in MIDDLE
+          // 1/3 activation (colorful item) - at BACK
+          const thirdHeight = sectionHeight / 3;
+
+          // WEIGHTS (front third - from sectionTop backwards by 1/3)
+          const weightsTop = sectionTop - thirdHeight;
+          const weightBoxWidth = neuronWidth / numWeights;
+
+          for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
+            const weight = weights[weightIdx];
+            const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
+
+            ctx.fillStyle = this.valueToGrayscale(weight);
+            ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, thirdHeight);
+          }
+
+          // BIAS (middle third - from sectionTop backwards by 2/3)
+          const biasTop = sectionTop - 2 * thirdHeight;
+          ctx.fillStyle = this.valueToGrayscale(bias);
+          ctx.fillRect(neuronLeft, biasTop, neuronWidth, thirdHeight);
+
+          // ACTIVATION (back third - at sectionBottom)
+          const activationTop = sectionBottom;
+          ctx.fillStyle = this.getActivationColor(activation);
+          ctx.fillRect(neuronLeft, activationTop, neuronWidth, thirdHeight);
+        }
+      }
+
+      // Draw hidden layer section border
+      ctx.strokeStyle = this.alive ? CONFIG.car.colors.bodyAliveStroke : CONFIG.car.colors.bodyDeadStroke;
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(
+        -scaledWidth / 2,
+        sectionBottom,
+        scaledWidth,
+        sectionHeight
+      );
+
+      currentSectionIdx++;
+    }
+
+    // ========================================================================
+    // LAST SECTION: OUTPUT LAYER (from carNetwork.outputLayer.neuron)
+    // ========================================================================
+    // Output layer has a SINGLE neuron with its own activation (typically 'linear')
+    {
+      const sectionTop = scaledHeight / 2 - currentSectionIdx * sectionHeight;
+      const sectionBottom = sectionTop - sectionHeight;
+
+      // Get the output neuron from carNetwork
+      const outputNeuron = carNetwork.outputLayer.neuron;
+      const neuronWidth = scaledWidth; // Single neuron spans full width
+      const neuronLeft = -scaledWidth / 2;
+
+      // Fill neuron background
+      ctx.fillStyle = this.alive ? '#444' : CONFIG.car.colors.bodyDead;
+      ctx.fillRect(
+        neuronLeft,
+        sectionBottom,
+        neuronWidth,
+        sectionHeight
+      );
+
+      // Draw neuron contents: weights -> bias -> activation (only if alive)
+      if (this.alive) {
+        // Read directly from the output neuron (no top-level activation)
+        const weights = outputNeuron.weights;
+        const bias = outputNeuron.bias;
+        const activation = outputNeuron.activation; // This neuron's activation
+        const numWeights = weights.length;
+
+        // Divide neuron into 3 EQUAL parts (front to back):
+        // 1/3 weights (array of grayscale items) - at FRONT
+        // 1/3 bias (single grayscale item) - in MIDDLE
+        // 1/3 activation (colorful item) - at BACK
+        const thirdHeight = sectionHeight / 3;
+
+        // WEIGHTS (front third - from sectionTop backwards by 1/3)
+        const weightsTop = sectionTop - thirdHeight;
+        const weightBoxWidth = neuronWidth / numWeights;
+
+        for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
+          const weight = weights[weightIdx];
+          const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
+
+          ctx.fillStyle = this.valueToGrayscale(weight);
+          ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, thirdHeight);
+        }
+
+        // BIAS (middle third - from sectionTop backwards by 2/3)
+        const biasTop = sectionTop - 2 * thirdHeight;
+        ctx.fillStyle = this.valueToGrayscale(bias);
+        ctx.fillRect(neuronLeft, biasTop, neuronWidth, thirdHeight);
+
+        // ACTIVATION (back third - at sectionBottom)
+        const activationTop = sectionBottom;
+        ctx.fillStyle = this.getActivationColor(activation);
+        ctx.fillRect(neuronLeft, activationTop, neuronWidth, thirdHeight);
+      }
+
+      // Draw output layer section border
+      ctx.strokeStyle = this.alive ? CONFIG.car.colors.bodyAliveStroke : CONFIG.car.colors.bodyDeadStroke;
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(
+        -scaledWidth / 2,
+        sectionBottom,
+        scaledWidth,
+        sectionHeight
+      );
+    }
+
+    // Draw overall car border using the car type color
+    ctx.strokeStyle = this.alive ? carNetwork.color : CONFIG.car.colors.bodyDeadStroke;
+    ctx.lineWidth = 2; // Thicker border to make car type color more visible
     ctx.strokeRect(
       -scaledWidth / 2,
       -scaledHeight / 2,
@@ -410,9 +638,13 @@ export class Car {
       scaledHeight
     );
 
-    // Draw direction indicator (white stripe at front)
+    // Draw windshield (direction indicator) inside the input section
+    // Drawn last so it appears on top of everything
     ctx.fillStyle = this.alive ? CONFIG.car.colors.directionIndicatorAlive : CONFIG.car.colors.directionIndicatorDead;
-    ctx.fillRect(-scaledWidth / 4, scaledHeight / 2 - 4, scaledWidth / 2, 4);
+    // Position at the very front edge of the car (top of input section)
+    const windshieldHeight = 4;
+    const windshieldY = scaledHeight / 2 - windshieldHeight;
+    ctx.fillRect(-scaledWidth / 4, windshieldY, scaledWidth / 2, windshieldHeight);
 
     ctx.restore();
   }

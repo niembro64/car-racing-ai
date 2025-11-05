@@ -368,7 +368,7 @@ import type {
   ViewMode,
   InfoView,
 } from '@/types';
-import { BRAIN_SELECTION_STRATEGIES } from '@/types';
+import { BRAIN_SELECTION_STRATEGIES, ACTIVATION_COLORS, INPUT_COLORS } from '@/types';
 import { SPEED_MULTIPLIERS } from '@/types';
 import {
   CONFIG,
@@ -791,36 +791,14 @@ const mutationRatePercentByConfigId = computed(() => {
   return percentages;
 });
 
-// Get background color for activation type
+// Get background color for activation type (uses centralized colors from types.ts)
 const getActivationColor = (activationType: ActivationType): string => {
-  switch (activationType) {
-    case '-':
-      return '#888'; // Gray (no activation)
-    case 'linear':
-      return '#b85'; // Orange-yellow family
-    case 'relu':
-      return '#58c'; // Blue family
-    case 'gelu':
-      return '#4a8'; // Green-cyan family
-    case 'step':
-      return '#c5c'; // Purple-magenta family
-    case 'swiglu':
-      return '#f69'; // Red-pink family
-    default:
-      throw new Error(`Unknown activation type: ${activationType}`);
-  }
+  return ACTIVATION_COLORS[activationType];
 };
 
-// Get background color for input modification type
+// Get background color for input modification type (uses centralized colors from types.ts)
 const getInputColor = (inputModification: InputModificationType): string => {
-  switch (inputModification) {
-    case 'pair':
-      return '#843'; // Warmer (reddish-brown)
-    case 'dir':
-      return '#368'; // Cooler (blue)
-    default:
-      throw new Error(`Unknown input modification type: ${inputModification}`);
-  }
+  return INPUT_COLORS[inputModification];
 };
 
 const getHiddenLayers = (architecture: number[]): string => {

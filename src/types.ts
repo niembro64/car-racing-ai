@@ -41,13 +41,46 @@ export type ActivationType =
 
 export type InputModificationType = 'dir' | 'pair';
 
-// Network layer structure
+// ============================================================================
+// CAR NEURAL NETWORK TYPE (New structure)
+// ============================================================================
+
+// A single neuron with its learned parameters and activation function
+export interface CarNeuron {
+  weights: number[];    // Input weights for this neuron
+  bias: number;         // Bias for this neuron
+  activation: ActivationType; // Activation function for this neuron
+}
+
+// A hidden layer contains multiple neurons
+export interface CarHiddenLayer {
+  neurons: CarNeuron[];
+}
+
+// Output layer contains a single neuron (steering output)
+export interface CarOutputLayer {
+  neuron: CarNeuron;
+}
+
+// Complete car neural network structure
+export interface CarNeuralNetwork {
+  inputType: InputModificationType;  // How inputs are processed (pair/dir)
+  hiddenLayers: CarHiddenLayer[];    // Array of hidden layers (can be empty)
+  outputLayer: CarOutputLayer;       // Single output neuron
+  color: string;                     // Car type color (for border rendering)
+}
+
+// ============================================================================
+// LEGACY NETWORK STRUCTURE (For backward compatibility)
+// ============================================================================
+
+// Network layer structure (legacy)
 export interface Layer {
   weights: number[][];
   biases: number[];
 }
 
-// Complete network structure
+// Complete network structure (legacy)
 export interface NetworkStructure {
   layers: Layer[];
 }
@@ -58,6 +91,83 @@ export interface NetworkWeights {
     weights: number[][];
     biases: number[];
   }[];
+}
+
+// ============================================================================
+// CONVERSION UTILITIES
+// ============================================================================
+
+/**
+ * Convert legacy NetworkStructure to new CarNeuralNetwork format
+ */
+export function legacyToCarNetwork(
+  legacy: NetworkStructure,
+  inputType: InputModificationType,
+  hiddenActivation: ActivationType,
+  color: string
+): CarNeuralNetwork {
+  const hiddenLayers: CarHiddenLayer[] = [];
+
+  // Process all layers except the last (output layer)
+  for (let i = 0; i < legacy.layers.length - 1; i++) {
+    const layer = legacy.layers[i];
+    const neurons: CarNeuron[] = [];
+
+    for (let j = 0; j < layer.weights.length; j++) {
+      neurons.push({
+        weights: layer.weights[j],
+        bias: layer.biases[j],
+        activation: hiddenActivation
+      });
+    }
+
+    hiddenLayers.push({ neurons });
+  }
+
+  // Process output layer (always linear activation)
+  const outputLayerData = legacy.layers[legacy.layers.length - 1];
+  const outputLayer: CarOutputLayer = {
+    neuron: {
+      weights: outputLayerData.weights[0],  // Output layer has 1 neuron
+      bias: outputLayerData.biases[0],
+      activation: 'linear'
+    }
+  };
+
+  return {
+    inputType,
+    hiddenLayers,
+    outputLayer,
+    color
+  };
+}
+
+/**
+ * Convert new CarNeuralNetwork to legacy NetworkStructure format
+ */
+export function carNetworkToLegacy(car: CarNeuralNetwork): NetworkStructure {
+  const layers: Layer[] = [];
+
+  // Convert hidden layers
+  for (const hiddenLayer of car.hiddenLayers) {
+    const weights: number[][] = [];
+    const biases: number[] = [];
+
+    for (const neuron of hiddenLayer.neurons) {
+      weights.push(neuron.weights);
+      biases.push(neuron.bias);
+    }
+
+    layers.push({ weights, biases });
+  }
+
+  // Convert output layer
+  layers.push({
+    weights: [car.outputLayer.neuron.weights],
+    biases: [car.outputLayer.neuron.bias]
+  });
+
+  return { layers };
 }
 
 // Genome data for serialization
@@ -196,6 +306,27 @@ export const BRAIN_SELECTION_STRATEGIES: StrategyInfo[] = [
     emoji: TEXT_CHARACTER.rocket,
   },
 ];
+
+// ============================================================================
+// VISUALIZATION COLORS
+// ============================================================================
+
+// Centralized color definitions for neural network visualization
+// Used in both the car rendering and the info table
+
+export const ACTIVATION_COLORS: Record<ActivationType, string> = {
+  '-': '#888',       // Gray (no activation)
+  'linear': '#888',  // Gray (linear activation)
+  'relu': '#58c',    // Blue family
+  'gelu': '#4a8',    // Green-cyan family
+  'step': '#c5c',    // Purple-magenta family
+  'swiglu': '#f69',  // Red-pink family
+};
+
+export const INPUT_COLORS: Record<InputModificationType, string> = {
+  'pair': '#e84',    // Bright orange-red (differential pairs)
+  'dir': '#3bd',     // Bright cyan (direct inputs)
+};
 
 // ============================================================================
 // UTILITY TYPES

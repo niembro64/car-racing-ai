@@ -4,7 +4,10 @@ import type {
   Layer,
   NetworkStructure,
   ActivationType,
+  CarNeuralNetwork,
+  InputModificationType,
 } from '@/types';
+import { legacyToCarNetwork, carNetworkToLegacy } from '@/types';
 import { SeededRandom } from './math/geom';
 
 export class NeuralNetwork {
@@ -180,9 +183,31 @@ export class NeuralNetwork {
     return { direction };
   }
 
-  // Export weights as JSON
+  // Export weights as JSON (legacy format)
   toJSON(): NetworkStructure {
     return JSON.parse(JSON.stringify(this.structure));
+  }
+
+  // Export as new CarNeuralNetwork format
+  toCarNetwork(inputType: InputModificationType, color: string): CarNeuralNetwork {
+    return legacyToCarNetwork(this.structure, inputType, this.activationType, color);
+  }
+
+  // Create network from CarNeuralNetwork format
+  static fromCarNetwork(
+    carNetwork: CarNeuralNetwork,
+    seed: number,
+    architecture: number[]
+  ): NeuralNetwork {
+    // Extract activation type from first hidden layer neuron, or use '-' if no hidden layers
+    const hiddenActivation = carNetwork.hiddenLayers.length > 0
+      ? carNetwork.hiddenLayers[0].neurons[0].activation
+      : '-';
+
+    // Convert to legacy format
+    const legacy = carNetworkToLegacy(carNetwork);
+
+    return new NeuralNetwork(legacy, seed, architecture, hiddenActivation);
   }
 
   // Create a mutated copy of this network

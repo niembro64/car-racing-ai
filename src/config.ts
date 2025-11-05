@@ -120,8 +120,8 @@ export const CONFIG: Config = {
       steeringDelaySeconds: 0.2,
     },
     dimensions: {
-      width: 20,
-      height: 30,
+      width: 60,
+      height: 80,
     },
     spawn: {
       angleWiggle: Math.PI / 2000000,
