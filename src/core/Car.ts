@@ -627,27 +627,34 @@ export class Car {
           const numWeights = weights.length;
 
           if (visualizationMode === 'vis-think' && activations && activations.hiddenLayers[hiddenLayerIdx]) {
-            // vis-think mode: only show dynamic values (weighted inputs and pre-activation sum)
-            // Divide neuron into 2 EQUAL parts:
-            // 1/2 weighted inputs (front half)
-            // 1/2 pre-activation sum (back half)
-            const halfHeight = sectionHeight / 2;
+            // vis-think mode: only show dynamic values
+            // Divide neuron into 3 EQUAL parts:
+            // 1/3 weighted inputs (front third)
+            // 1/3 pre-activation sum (middle third)
+            // 1/3 post-activation output (back third)
+            const thirdHeight = sectionHeight / 3;
 
-            // WEIGHTED INPUTS (front half)
-            const weightsTop = sectionTop - halfHeight;
+            // WEIGHTED INPUTS (front third)
+            const weightsTop = sectionTop - thirdHeight;
             const weightBoxWidth = neuronWidth / numWeights;
 
             for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
               const weightedInput = activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx].weightedInputs[weightIdx];
               const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
               ctx.fillStyle = this.valueToGrayscale(weightedInput);
-              ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, halfHeight);
+              ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, thirdHeight);
             }
 
-            // PRE-ACTIVATION SUM (back half)
+            // PRE-ACTIVATION SUM (middle third)
+            const preActivationTop = sectionTop - 2 * thirdHeight;
             const preActivationSum = activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx].preActivationSum;
             ctx.fillStyle = this.valueToGrayscale(preActivationSum);
-            ctx.fillRect(neuronLeft, sectionBottom, neuronWidth, halfHeight);
+            ctx.fillRect(neuronLeft, preActivationTop, neuronWidth, thirdHeight);
+
+            // POST-ACTIVATION OUTPUT (back third)
+            const postActivationOutput = activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx].postActivationOutput;
+            ctx.fillStyle = this.valueToGrayscale(postActivationOutput);
+            ctx.fillRect(neuronLeft, sectionBottom, neuronWidth, thirdHeight);
           } else {
             // vis-weights mode: show static values (weights, bias, activation function)
             // Divide neuron into 3 EQUAL parts (front to back):
@@ -724,27 +731,34 @@ export class Car {
         const numWeights = weights.length;
 
         if (visualizationMode === 'vis-think' && activations && activations.outputLayer) {
-          // vis-think mode: only show dynamic values (weighted inputs and pre-activation sum)
-          // Divide neuron into 2 EQUAL parts:
-          // 1/2 weighted inputs (front half)
-          // 1/2 pre-activation sum (back half)
-          const halfHeight = sectionHeight / 2;
+          // vis-think mode: only show dynamic values
+          // Divide neuron into 3 EQUAL parts:
+          // 1/3 weighted inputs (front third)
+          // 1/3 pre-activation sum (middle third)
+          // 1/3 post-activation output (back third)
+          const thirdHeight = sectionHeight / 3;
 
-          // WEIGHTED INPUTS (front half)
-          const weightsTop = sectionTop - halfHeight;
+          // WEIGHTED INPUTS (front third)
+          const weightsTop = sectionTop - thirdHeight;
           const weightBoxWidth = neuronWidth / numWeights;
 
           for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
             const weightedInput = activations.outputLayer.neurons[0].weightedInputs[weightIdx];
             const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
             ctx.fillStyle = this.valueToGrayscale(weightedInput);
-            ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, halfHeight);
+            ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, thirdHeight);
           }
 
-          // PRE-ACTIVATION SUM (back half)
+          // PRE-ACTIVATION SUM (middle third)
+          const preActivationTop = sectionTop - 2 * thirdHeight;
           const preActivationSum = activations.outputLayer.neurons[0].preActivationSum;
           ctx.fillStyle = this.valueToGrayscale(preActivationSum);
-          ctx.fillRect(neuronLeft, sectionBottom, neuronWidth, halfHeight);
+          ctx.fillRect(neuronLeft, preActivationTop, neuronWidth, thirdHeight);
+
+          // POST-ACTIVATION OUTPUT (back third)
+          const postActivationOutput = activations.outputLayer.neurons[0].postActivationOutput;
+          ctx.fillStyle = this.valueToGrayscale(postActivationOutput);
+          ctx.fillRect(neuronLeft, sectionBottom, neuronWidth, thirdHeight);
         } else {
           // vis-weights mode: show static values (weights, bias, activation function)
           // Divide neuron into 3 EQUAL parts (front to back):
