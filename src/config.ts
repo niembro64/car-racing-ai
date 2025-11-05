@@ -279,7 +279,7 @@ export const CONFIG: Config = {
     mutationByDistance: true,
     delayedSteering: true,
     speedMultiplier: 1 as SpeedMultiplier,
-    showRays: false,
+    showRays: true,
     defaultInfoView: 'graph-score' as InfoView,
     defaultCarUsageLevel: 'use-all' as CarUsageLevel,
   },
