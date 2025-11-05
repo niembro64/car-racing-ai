@@ -49,9 +49,14 @@ export interface CarPhysicsConfig {
   steeringDelaySeconds: number;
 }
 
-export interface CarDimensionsConfig {
+export interface CarDimensionsMode {
   width: number;
   height: number;
+}
+
+export interface CarDimensionsConfig {
+  simple: CarDimensionsMode;
+  detailed: CarDimensionsMode;
 }
 
 export interface CarSpawnConfig {

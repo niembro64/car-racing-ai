@@ -31,6 +31,13 @@
           VIS DEBUG
         </button>
         <button
+          @click="toggleCarVizMode"
+          class="btn-toggle-car-viz"
+          :class="{ active: carVizMode === 'detailed' }"
+        >
+          {{ carVizMode === 'simple' ? 'SIMPLE' : 'DETAILED' }}
+        </button>
+        <button
           @click="toggleCarSpeed"
           class="btn-speed"
           :class="{
@@ -367,6 +374,7 @@ import type {
   CarUsageLevel,
   ViewMode,
   InfoView,
+  CarVizMode,
 } from '@/types';
 import { BRAIN_SELECTION_STRATEGIES, ACTIVATION_COLORS, INPUT_COLORS } from '@/types';
 import { SPEED_MULTIPLIERS } from '@/types';
@@ -415,6 +423,7 @@ const ga = ref<GeneticAlgorithm>(new GeneticAlgorithm(randomSeed));
 
 const population = ref<Car[]>([]) as Ref<Car[]>;
 const showRays = ref(CONFIG.defaults.showRays);
+const carVizMode = ref<CarVizMode>('simple'); // 'simple' or 'detailed'
 const speedMultiplier = ref(1);
 const carSpeedMultiplier = ref<SpeedMultiplier>(
   CONFIG.defaults.speedMultiplier
@@ -1323,17 +1332,17 @@ const render = (ctx: CanvasRenderingContext2D) => {
 
   // Render dead cars first
   for (const car of deadCars) {
-    car.render(ctx, false);
+    car.render(ctx, false, carVizMode.value);
   }
 
   // Render other alive cars
   for (const car of others) {
-    car.render(ctx, showRays.value);
+    car.render(ctx, showRays.value, carVizMode.value);
   }
 
   // Render elites last (on top) with rays if enabled
   for (const car of elites) {
-    car.render(ctx, showRays.value);
+    car.render(ctx, showRays.value, carVizMode.value);
   }
 };
 
@@ -1680,6 +1689,11 @@ const reset = () => {
 // Toggle Show Rays mode
 const toggleShowRays = () => {
   showRays.value = !showRays.value;
+};
+
+// Toggle Car Visualization Mode (simple <-> detailed)
+const toggleCarVizMode = () => {
+  carVizMode.value = carVizMode.value === 'simple' ? 'detailed' : 'simple';
 };
 
 // Cycle through car usage levels: use-few -> use-many -> use-all -> use-few

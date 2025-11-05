@@ -196,6 +196,10 @@ export interface CarUsageLevelInfo {
 export const VIEW_MODES = ['table', 'graph', 'performance'] as const;
 export type ViewMode = (typeof VIEW_MODES)[number];
 
+// Car visualization mode
+export const CAR_VIZ_MODES = ['simple', 'detailed'] as const;
+export type CarVizMode = (typeof CAR_VIZ_MODES)[number];
+
 // Info section view types (all 5 clickable views)
 export const INFO_VIEWS = [
   'table-cars',

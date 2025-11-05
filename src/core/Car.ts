@@ -6,6 +6,7 @@ import type {
   NeuralOutput,
   InputModificationType,
   CarNeuralNetwork,
+  CarVizMode,
 } from '@/types';
 import { ACTIVATION_COLORS, INPUT_COLORS } from '@/types';
 import {
@@ -38,9 +39,9 @@ export class Car {
   frameCount: number; // Number of frames this car has been alive
   elapsedTime: number; // Total time this car has been alive (in seconds)
 
-  // Dimensions
-  width: number = CONFIG.car.dimensions.width;
-  height: number = CONFIG.car.dimensions.height;
+  // Dimensions (use detailed for physics/collision, rendering varies by mode)
+  width: number = CONFIG.car.dimensions.detailed.width;
+  height: number = CONFIG.car.dimensions.detailed.height;
   sizeMultiplier: number = 1.0; // Scale factor for elite cars
 
   // Neural network
@@ -330,7 +331,7 @@ export class Car {
   }
 
   // Render car on canvas
-  render(ctx: CanvasRenderingContext2D, showRays: boolean = false): void {
+  render(ctx: CanvasRenderingContext2D, showRays: boolean = false, vizMode: CarVizMode = 'simple'): void {
     // Find the config for this car type by shortName (check all defined configs)
     const config = CAR_BRAIN_CONFIGS_DEFINED.find(
       (c) => c.shortName === this.configShortName
@@ -415,19 +416,57 @@ export class Car {
       ctx.restore();
     }
 
-    // Render car body with neural network visualization
+    // Render car body
     ctx.save();
     ctx.translate(this.x, this.y);
     // Rotate by angle - 90° so visual front matches physics heading
     // (angle=0 in physics = moving right, so visual should point right)
     ctx.rotate(this.angle - Math.PI / 2);
 
-    const scaledWidth = this.width;
-    const scaledHeight = this.height * this.sizeMultiplier;
+    // Get dimensions based on visualization mode
+    const dimensions = vizMode === 'simple'
+      ? CONFIG.car.dimensions.simple
+      : CONFIG.car.dimensions.detailed;
+    const scaledWidth = dimensions.width;
+    const scaledHeight = dimensions.height * this.sizeMultiplier;
 
     // ========================================================================
-    // GET CAR NEURAL NETWORK STRUCTURE
+    // SIMPLE MODE: Just show car with its color
     // ========================================================================
+    if (vizMode === 'simple') {
+      // Simple rectangle with car type color
+      ctx.fillStyle = this.alive ? this.color : CONFIG.car.colors.bodyDead;
+      ctx.fillRect(
+        -scaledWidth / 2,
+        -scaledHeight / 2,
+        scaledWidth,
+        scaledHeight
+      );
+
+      // Draw border
+      ctx.strokeStyle = this.alive ? this.color : CONFIG.car.colors.bodyDeadStroke;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        -scaledWidth / 2,
+        -scaledHeight / 2,
+        scaledWidth,
+        scaledHeight
+      );
+
+      // Draw windshield
+      ctx.fillStyle = this.alive ? CONFIG.car.colors.directionIndicatorAlive : CONFIG.car.colors.directionIndicatorDead;
+      const windshieldHeight = 4;
+      const windshieldY = scaledHeight / 2 - windshieldHeight;
+      ctx.fillRect(-scaledWidth / 4, windshieldY, scaledWidth / 2, windshieldHeight);
+
+      ctx.restore();
+      return;
+    }
+
+    // ========================================================================
+    // DETAILED MODE: Show full neural network visualization
+    // ========================================================================
+    // GET CAR NEURAL NETWORK STRUCTURE
     // This is the ONLY source of truth for rendering
     // Structure: { inputType, hiddenLayers[], outputLayer, color }
     // Each neuron has: { weights[], bias, activation }
