@@ -201,7 +201,7 @@ export const CAR_VIZ_MODES = ['simple', 'detailed'] as const;
 export type CarVizMode = (typeof CAR_VIZ_MODES)[number];
 
 // Visualization mode - controls what debug info is shown
-export const VISUALIZATION_MODES = ['vis-simple', 'vis-medium', 'vis-full'] as const;
+export const VISUALIZATION_MODES = ['vis-simple', 'vis-medium', 'vis-weights', 'vis-activity'] as const;
 export type VisualizationMode = (typeof VISUALIZATION_MODES)[number];
 
 // Info section view types (all 5 clickable views)
@@ -369,4 +369,21 @@ export interface GenerationMarker {
   score: number; // Comprehensive score (0-100)
   isAllTimeBest: boolean; // Maps to bestWeightsAllTime brain (trophy emoji)
   isLastGenBest: boolean; // Maps to bestWeightsLastGeneration brain (repeat emoji)
+}
+
+// Type for neural network forward pass intermediate values
+export interface NeuronActivation {
+  weightedInputs: number[]; // weight[i] * input[i] for each input
+  preActivationSum: number; // sum of weighted inputs + bias
+  postActivationOutput: number; // output after applying activation function
+}
+
+export interface LayerActivations {
+  neurons: NeuronActivation[];
+}
+
+export interface ForwardPassActivations {
+  inputValues: number[]; // Initial input to the network
+  hiddenLayers: LayerActivations[]; // Activations for each hidden layer
+  outputLayer: LayerActivations; // Activations for output layer
 }

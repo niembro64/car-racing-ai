@@ -7,6 +7,8 @@ import type {
   InputModificationType,
   CarNeuralNetwork,
   CarVizMode,
+  VisualizationMode,
+  ForwardPassActivations,
 } from '@/types';
 import { ACTIVATION_COLORS, INPUT_COLORS } from '@/types';
 import {
@@ -331,7 +333,12 @@ export class Car {
   }
 
   // Render car on canvas
-  render(ctx: CanvasRenderingContext2D, showRays: boolean = false, vizMode: CarVizMode = 'simple'): void {
+  render(
+    ctx: CanvasRenderingContext2D,
+    showRays: boolean = false,
+    vizMode: CarVizMode = 'simple',
+    visualizationMode: VisualizationMode = 'vis-simple'
+  ): void {
     // Find the config for this car type by shortName (check all defined configs)
     const config = CAR_BRAIN_CONFIGS_DEFINED.find(
       (c) => c.shortName === this.configShortName
@@ -485,6 +492,16 @@ export class Car {
     // Each neuron has: { weights[], bias, activation }
     const carNetwork: CarNeuralNetwork = this.brain.toCarNetwork(this.inputModification, this.color);
 
+    // If in vis-activity mode, compute forward pass to get current activations
+    let activations: ForwardPassActivations | null = null;
+    if (visualizationMode === 'vis-activity') {
+      // Get current ray distances (the input to the network)
+      const inputArray = this.lastRayDistances;
+      if (inputArray && inputArray.length > 0) {
+        activations = this.brain.forwardWithActivations(inputArray);
+      }
+    }
+
     // ========================================================================
     // CALCULATE EQUAL PARTITIONS FOR ALL SECTIONS
     // ========================================================================
@@ -578,21 +595,42 @@ export class Car {
           const weightBoxWidth = neuronWidth / numWeights;
 
           for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
-            const weight = weights[weightIdx];
             const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
 
-            ctx.fillStyle = this.valueToGrayscale(weight);
+            // In vis-activity mode, show weighted input (weight * input)
+            // In vis-weights mode, show the static weight value
+            if (visualizationMode === 'vis-activity' && activations && activations.hiddenLayers[hiddenLayerIdx]) {
+              const weightedInput = activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx].weightedInputs[weightIdx];
+              ctx.fillStyle = this.valueToGrayscale(weightedInput);
+            } else {
+              const weight = weights[weightIdx];
+              ctx.fillStyle = this.valueToGrayscale(weight);
+            }
             ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, thirdHeight);
           }
 
           // BIAS (middle third - from sectionTop backwards by 2/3)
           const biasTop = sectionTop - 2 * thirdHeight;
-          ctx.fillStyle = this.valueToGrayscale(bias);
+          // In vis-activity mode, show pre-activation sum
+          // In vis-weights mode, show the static bias value
+          if (visualizationMode === 'vis-activity' && activations && activations.hiddenLayers[hiddenLayerIdx]) {
+            const preActivationSum = activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx].preActivationSum;
+            ctx.fillStyle = this.valueToGrayscale(preActivationSum);
+          } else {
+            ctx.fillStyle = this.valueToGrayscale(bias);
+          }
           ctx.fillRect(neuronLeft, biasTop, neuronWidth, thirdHeight);
 
           // ACTIVATION (back third - at sectionBottom)
           const activationTop = sectionBottom;
-          ctx.fillStyle = this.getActivationColor(activation);
+          // In vis-activity mode, show post-activation output value as grayscale
+          // In vis-weights mode, show activation function type as color
+          if (visualizationMode === 'vis-activity' && activations && activations.hiddenLayers[hiddenLayerIdx]) {
+            const postActivationOutput = activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx].postActivationOutput;
+            ctx.fillStyle = this.valueToGrayscale(postActivationOutput);
+          } else {
+            ctx.fillStyle = this.getActivationColor(activation);
+          }
           ctx.fillRect(neuronLeft, activationTop, neuronWidth, thirdHeight);
         }
       }
@@ -651,21 +689,42 @@ export class Car {
         const weightBoxWidth = neuronWidth / numWeights;
 
         for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
-          const weight = weights[weightIdx];
           const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
 
-          ctx.fillStyle = this.valueToGrayscale(weight);
+          // In vis-activity mode, show weighted input (weight * input)
+          // In vis-weights mode, show the static weight value
+          if (visualizationMode === 'vis-activity' && activations && activations.outputLayer) {
+            const weightedInput = activations.outputLayer.neurons[0].weightedInputs[weightIdx];
+            ctx.fillStyle = this.valueToGrayscale(weightedInput);
+          } else {
+            const weight = weights[weightIdx];
+            ctx.fillStyle = this.valueToGrayscale(weight);
+          }
           ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, thirdHeight);
         }
 
         // BIAS (middle third - from sectionTop backwards by 2/3)
         const biasTop = sectionTop - 2 * thirdHeight;
-        ctx.fillStyle = this.valueToGrayscale(bias);
+        // In vis-activity mode, show pre-activation sum
+        // In vis-weights mode, show the static bias value
+        if (visualizationMode === 'vis-activity' && activations && activations.outputLayer) {
+          const preActivationSum = activations.outputLayer.neurons[0].preActivationSum;
+          ctx.fillStyle = this.valueToGrayscale(preActivationSum);
+        } else {
+          ctx.fillStyle = this.valueToGrayscale(bias);
+        }
         ctx.fillRect(neuronLeft, biasTop, neuronWidth, thirdHeight);
 
         // ACTIVATION (back third - at sectionBottom)
         const activationTop = sectionBottom;
-        ctx.fillStyle = this.getActivationColor(activation);
+        // In vis-activity mode, show post-activation output value as grayscale
+        // In vis-weights mode, show activation function type as color
+        if (visualizationMode === 'vis-activity' && activations && activations.outputLayer) {
+          const postActivationOutput = activations.outputLayer.neurons[0].postActivationOutput;
+          ctx.fillStyle = this.valueToGrayscale(postActivationOutput);
+        } else {
+          ctx.fillStyle = this.getActivationColor(activation);
+        }
         ctx.fillRect(neuronLeft, activationTop, neuronWidth, thirdHeight);
       }
 

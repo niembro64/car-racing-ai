@@ -6,6 +6,9 @@ import type {
   ActivationType,
   CarNeuralNetwork,
   InputModificationType,
+  ForwardPassActivations,
+  NeuronActivation,
+  LayerActivations,
 } from '@/types';
 import { legacyToCarNetwork, carNetworkToLegacy } from '@/types';
 import { SeededRandom } from './math/geom';
@@ -147,6 +150,77 @@ export class NeuralNetwork {
     }
 
     return current;
+  }
+
+  // Forward pass that captures all intermediate values for visualization
+  forwardWithActivations(input: number[]): ForwardPassActivations {
+    const hiddenLayers: LayerActivations[] = [];
+    let currentInput = input;
+
+    for (let i = 0; i < this.structure.layers.length; i++) {
+      const layer = this.structure.layers[i];
+      const neurons: NeuronActivation[] = [];
+      const isOutputLayer = i === this.structure.layers.length - 1;
+      const nextLayerInputs: number[] = [];
+
+      for (let j = 0; j < layer.weights.length; j++) {
+        const weightedInputs: number[] = [];
+        let preActivationSum = layer.biases[j];
+
+        // Compute weighted inputs
+        for (let k = 0; k < currentInput.length; k++) {
+          const weightedInput = currentInput[k] * layer.weights[j][k];
+          weightedInputs.push(weightedInput);
+          preActivationSum += weightedInput;
+        }
+
+        // Apply activation function
+        let postActivationOutput: number;
+        if (isOutputLayer) {
+          postActivationOutput = this.linear(preActivationSum);
+        } else if (this.activationType === 'relu') {
+          postActivationOutput = this.relu(preActivationSum);
+        } else if (this.activationType === 'gelu') {
+          postActivationOutput = this.gelu(preActivationSum);
+        } else if (this.activationType === 'step') {
+          postActivationOutput = this.step(preActivationSum);
+        } else if (this.activationType === 'swiglu') {
+          postActivationOutput = this.swiglu(preActivationSum);
+        } else if (this.activationType === 'linear') {
+          postActivationOutput = this.linear(preActivationSum);
+        } else if (this.activationType === '-') {
+          postActivationOutput = this.linear(preActivationSum);
+        } else {
+          throw new Error('Unknown activation type: ' + this.activationType);
+        }
+
+        neurons.push({
+          weightedInputs,
+          preActivationSum,
+          postActivationOutput,
+        });
+
+        nextLayerInputs.push(postActivationOutput);
+      }
+
+      if (isOutputLayer) {
+        return {
+          inputValues: input,
+          hiddenLayers,
+          outputLayer: { neurons },
+        };
+      } else {
+        hiddenLayers.push({ neurons });
+        currentInput = nextLayerInputs;
+      }
+    }
+
+    // Should never reach here, but handle the case of no layers
+    return {
+      inputValues: input,
+      hiddenLayers: [],
+      outputLayer: { neurons: [] },
+    };
   }
 
   // Run the network with sensor inputs

@@ -29,7 +29,8 @@
           :class="{
             'viz-simple': visualizationMode === 'vis-simple',
             'viz-medium': visualizationMode === 'vis-medium',
-            'viz-full': visualizationMode === 'vis-full',
+            'viz-weights': visualizationMode === 'vis-weights',
+            'viz-activity': visualizationMode === 'vis-activity',
           }"
         >
           {{ getVisualizationModeLabel(visualizationMode) }}
@@ -424,7 +425,11 @@ const visualizationMode = ref<VisualizationMode>(CONFIG.defaults.defaultVisualiz
 
 // Computed properties derived from visualizationMode
 const showRays = computed(() => visualizationMode.value !== 'vis-simple');
-const carVizMode = computed<CarVizMode>(() => visualizationMode.value === 'vis-full' ? 'detailed' : 'simple');
+const carVizMode = computed<CarVizMode>(() =>
+  (visualizationMode.value === 'vis-weights' || visualizationMode.value === 'vis-activity')
+    ? 'detailed'
+    : 'simple'
+);
 
 const speedMultiplier = ref(1);
 const carSpeedMultiplier = ref<SpeedMultiplier>(
@@ -1334,17 +1339,17 @@ const render = (ctx: CanvasRenderingContext2D) => {
 
   // Render dead cars first
   for (const car of deadCars) {
-    car.render(ctx, false, carVizMode.value);
+    car.render(ctx, false, carVizMode.value, visualizationMode.value);
   }
 
   // Render other alive cars
   for (const car of others) {
-    car.render(ctx, showRays.value, carVizMode.value);
+    car.render(ctx, showRays.value, carVizMode.value, visualizationMode.value);
   }
 
   // Render elites last (on top) with rays if enabled
   for (const car of elites) {
-    car.render(ctx, showRays.value, carVizMode.value);
+    car.render(ctx, showRays.value, carVizMode.value, visualizationMode.value);
   }
 };
 
@@ -1703,8 +1708,10 @@ const getVisualizationModeLabel = (mode: VisualizationMode): string => {
       return 'VIS SIMPLE';
     case 'vis-medium':
       return 'VIS MEDIUM';
-    case 'vis-full':
-      return 'VIS FULL';
+    case 'vis-weights':
+      return 'VIS WEIGHTS';
+    case 'vis-activity':
+      return 'VIS ACTIVITY';
   }
 };
 
@@ -2436,14 +2443,24 @@ button:active {
   border-color: #6b7280;
 }
 
-.btn-toggle-viz.viz-full {
+.btn-toggle-viz.viz-weights {
   background: #9ca3af;
   border-color: #6b7280;
 }
 
-.btn-toggle-viz.viz-full:hover {
+.btn-toggle-viz.viz-weights:hover {
   background: #b0b6c0;
   border-color: #7f8794;
+}
+
+.btn-toggle-viz.viz-activity {
+  background: #c0c7d0;
+  border-color: #9ca3af;
+}
+
+.btn-toggle-viz.viz-activity:hover {
+  background: #d0d7e0;
+  border-color: #b0b6c0;
 }
 
 /* Graph View */
