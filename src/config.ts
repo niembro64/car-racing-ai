@@ -282,7 +282,7 @@ export const CONFIG: Config = {
     // speedMultiplier: 1 as SpeedMultiplier,
     showRays: true,
     defaultInfoView: 'graph-score' as InfoView,
-    defaultCarUsageLevel: 'use-many' as CarUsageLevel,
+    defaultCarUsageLevel: 'use-all' as CarUsageLevel,
   },
 };
 

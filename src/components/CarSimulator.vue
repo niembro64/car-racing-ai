@@ -63,6 +63,7 @@
               'stats-table',
               { 'stats-table-compact': carUsageLevel !== 'use-few' },
             ]"
+            :style="{ fontSize: tableFontSize }"
             @click="cycleView"
           >
             <thead>
@@ -75,8 +76,8 @@
                 <th>{{ isMobile() ? 'NR' : 'NEAR' }}</th>
                 <th>Mean</th>
                 <th>Best</th>
-                <th>Duration</th>
-                <th>Hidden</th>
+                <th>{{ isMobile() ? 'DUR' : 'Duration' }}</th>
+                <th>{{ isMobile() ? 'HID' : 'Hidden' }}</th>
                 <th>{{ isMobile() ? 'A' : 'Activ' }}</th>
                 <th>{{ isMobile() ? 'I' : 'Input' }}</th>
               </tr>
@@ -451,6 +452,20 @@ const graphCanvasRef = ref<HTMLCanvasElement | null>(null);
 
 const activeCarConfigs = computed(() => {
   return getCarBrainConfigsByLevel(carUsageLevel.value);
+});
+
+// Dynamic font size based on number of car types
+const tableFontSize = computed(() => {
+  const count = activeCarConfigs.value.length;
+  if (count <= 3) {
+    return '16px'; // Large text for few cars
+  } else if (count <= 6) {
+    return '14px'; // Normal text for moderate number
+  } else if (count <= 10) {
+    return '11px'; // Smaller text for many cars
+  } else {
+    return '9px'; // Very small text for lots of cars
+  }
 });
 
 // ============================================================================
@@ -2224,10 +2239,6 @@ canvas {
 
 /* Performance view container */
 .performance-view {
-  background: rgba(0, 0, 0, 0.7);
-  border-radius: 6px;
-  padding: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   cursor: pointer;
   width: 100%;
   height: 100%;
@@ -2250,26 +2261,63 @@ canvas {
 
 /* Performance table specific styling */
 .perf-table {
+  position: relative !important;
   flex: 1;
-  height: 100%;
+  min-width: 0;
+  width: auto !important;
   display: flex;
   flex-direction: column;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  table-layout: fixed;
+  font-family: 'Courier New', 'Courier', monospace;
+  font-weight: bold;
 }
 
 .perf-table thead {
   flex-shrink: 0;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.perf-table thead tr {
+  display: table-row;
+}
+
+.perf-table thead th {
+  display: table-cell;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  padding: 6px 8px;
+  text-align: center;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .perf-table tbody {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .perf-table tbody tr {
   flex: 1;
   display: flex;
   min-height: 0;
+  align-items: center;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.perf-table tbody tr:last-child {
+  border-bottom: none;
 }
 
 .perf-table tbody tr td {
