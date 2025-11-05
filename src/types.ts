@@ -99,17 +99,17 @@ export type InfoView = (typeof INFO_VIEWS)[number];
 export const CAR_USAGE_LEVELS: CarUsageLevelInfo[] = [
   {
     id: 'use-few',
-    name: 'FEW',
+    name: 'TWO ' + TEXT_CHARACTER.car,
     description: 'FEW (2 types)',
   },
   {
     id: 'use-many',
-    name: 'MANY',
+    name: 'A FEW ' + TEXT_CHARACTER.car,
     description: 'MANY (5 types)',
   },
   {
     id: 'use-all',
-    name: 'ALL',
+    name: 'ALL ' + TEXT_CHARACTER.car,
     description: 'ALL types',
   },
 ];
@@ -156,9 +156,9 @@ export interface ConfigEvolutionState {
 
 // Brain selection strategy for evolution
 export type BrainSelectionStrategy =
-  | 'generation'   // Always save current generation's best
-  | 'alltime'      // Only save if equal or better than all-time best
-  | 'averaging'    // Average saved brain with current generation's best
+  | 'generation' // Always save current generation's best
+  | 'alltime' // Only save if equal or better than all-time best
+  | 'averaging' // Average saved brain with current generation's best
   | 'overcorrect'; // All-time best + (all-time - generation), extrapolates opposite direction
 
 // Strategy metadata for UI display
@@ -173,27 +173,28 @@ export const BRAIN_SELECTION_STRATEGIES: StrategyInfo[] = [
   {
     id: 'generation',
     name: 'GEN',
-    description: 'Always save current generation\'s best',
-    emoji: TEXT_CHARACTER.repeat
+    description: "Always save current generation's best",
+    emoji: TEXT_CHARACTER.repeat,
   },
   {
     id: 'alltime',
     name: 'BEST',
     description: 'Only save if equal or better than all-time best',
-    emoji: TEXT_CHARACTER.trophy
+    emoji: TEXT_CHARACTER.trophy,
   },
   {
     id: 'averaging',
     name: 'AVG',
-    description: 'Average saved brain with current generation\'s best',
-    emoji: TEXT_CHARACTER.sexual
+    description: "Average saved brain with current generation's best",
+    emoji: TEXT_CHARACTER.sexual,
   },
   {
     id: 'overcorrect',
     name: 'OVER',
-    description: 'All-time best + (all-time - generation), extrapolates opposite direction',
-    emoji: TEXT_CHARACTER.rocket
-  }
+    description:
+      'All-time best + (all-time - generation), extrapolates opposite direction',
+    emoji: TEXT_CHARACTER.rocket,
+  },
 ];
 
 // ============================================================================
@@ -225,8 +226,8 @@ export interface GenerationMarker {
   y: number;
   generation: number;
   fitness: number;
-  duration: number;  // How long this generation lasted in seconds
-  score: number;  // Comprehensive score (0-100)
-  isAllTimeBest: boolean;  // Maps to bestWeightsAllTime brain (trophy emoji)
-  isLastGenBest: boolean;  // Maps to bestWeightsLastGeneration brain (repeat emoji)
+  duration: number; // How long this generation lasted in seconds
+  score: number; // Comprehensive score (0-100)
+  isAllTimeBest: boolean; // Maps to bestWeightsAllTime brain (trophy emoji)
+  isLastGenBest: boolean; // Maps to bestWeightsLastGeneration brain (repeat emoji)
 }

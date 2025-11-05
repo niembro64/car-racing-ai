@@ -23,8 +23,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: '-',
     },
     colors: {
-      light: '#b8b8b8', // Light gray - differential, no hidden
-      dark: '#7a7a7a',
+      light: '#c7c2c2', // Light gray - differential, no hidden
+      dark: '#8c8080',
     },
   },
   {
@@ -38,8 +38,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: '-',
     },
     colors: {
-      light: '#999999', // Medium gray - direct, no hidden
-      dark: '#5a5a5a',
+      light: '#a3adb8', // Blue-gray - direct, no hidden
+      dark: '#616e7a',
     },
   },
 
@@ -56,8 +56,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      light: '#e89f3c', // Bright orange - differential, 1 hidden
-      dark: '#c2742a',
+      light: '#e8d447', // Bright yellow-orange - differential, 1 hidden
+      dark: '#a89530',
     },
   },
   {
@@ -72,8 +72,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      light: '#d67020', // Deep orange - differential, 2 hidden
-      dark: '#a85518',
+      light: '#e89658', // Pure orange - differential, 2 hidden
+      dark: '#a8683c',
     },
   },
   {
@@ -87,8 +87,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      light: '#d9a550', // Amber - direct, 1 hidden
-      dark: '#b5803c',
+      light: '#d9a847', // Golden amber - direct, 1 hidden
+      dark: '#a27a2f',
     },
   },
   {
@@ -102,8 +102,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      light: '#c28835', // Dark amber - direct, 2 hidden
-      dark: '#986828',
+      light: '#cc6633', // Brown-orange - direct, 2 hidden
+      dark: '#944822',
     },
   },
 
@@ -120,8 +120,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'relu',
     },
     colors: {
-      light: '#5b9bd5', // Sky blue - differential, 1 hidden
-      dark: '#3a78b5',
+      light: '#6db5dd', // Sky blue - differential, 1 hidden
+      dark: '#3d81a3',
     },
   },
   {
@@ -135,8 +135,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'relu',
     },
     colors: {
-      light: '#3470b8', // Deep blue - differential, 2 hidden
-      dark: '#285590',
+      light: '#6687e8', // Royal blue - differential, 2 hidden
+      dark: '#3a5ea8',
     },
   },
   {
@@ -150,8 +150,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'relu',
     },
     colors: {
-      light: '#6eb8d8', // Cyan-blue - direct, 1 hidden
-      dark: '#4a95b5',
+      light: '#66ccd4', // Cyan - direct, 1 hidden
+      dark: '#429ca3',
     },
   },
   {
@@ -165,8 +165,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'relu',
     },
     colors: {
-      light: '#4a8fb8', // Teal-blue - direct, 2 hidden
-      dark: '#3a6f95',
+      light: '#5fa3b8', // Teal - direct, 2 hidden
+      dark: '#3b7485',
     },
   },
 
@@ -183,8 +183,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'gelu',
     },
     colors: {
-      light: '#5bb85d', // Grass green - differential, 1 hidden
-      dark: '#3a9540',
+      light: '#8fcc5c', // Lime green - differential, 1 hidden
+      dark: '#649438',
     },
   },
   {
@@ -198,8 +198,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'gelu',
     },
     colors: {
-      light: '#3a9540', // Forest green - differential, 2 hidden
-      dark: '#2a7530',
+      light: '#3ba857', // Forest green - differential, 2 hidden
+      dark: '#28753c',
     },
   },
   {
@@ -213,8 +213,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'gelu',
     },
     colors: {
-      light: '#5bbf98', // Teal-green - direct, 1 hidden
-      dark: '#3a9d78',
+      light: '#70ccaa', // Mint/seafoam - direct, 1 hidden
+      dark: '#429470',
     },
   },
   {
@@ -228,8 +228,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'gelu',
     },
     colors: {
-      light: '#3a9d78', // Deep teal - direct, 2 hidden
-      dark: '#2a7d5a',
+      light: '#4db89e', // Teal-green - direct, 2 hidden
+      dark: '#328569',
     },
   },
 
@@ -246,8 +246,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'step',
     },
     colors: {
-      light: '#9b6bb8', // Violet - differential, 1 hidden
-      dark: '#7a4a95',
+      light: '#ac70cc', // Purple - differential, 1 hidden
+      dark: '#7a4294',
     },
   },
   {
@@ -261,8 +261,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'step',
     },
     colors: {
-      light: '#7a4a95', // Deep violet - differential, 2 hidden
-      dark: '#5a3575',
+      light: '#b366cc', // Deep violet - differential, 2 hidden
+      dark: '#804294',
     },
   },
   {
@@ -276,8 +276,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'step',
     },
     colors: {
-      light: '#b880d5', // Lavender - direct, 1 hidden
-      dark: '#9560b5',
+      light: '#c4a3e8', // Lavender - direct, 1 hidden
+      dark: '#8756b8',
     },
   },
   {
@@ -291,8 +291,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'step',
     },
     colors: {
-      light: '#9560b5', // Deep lavender - direct, 2 hidden
-      dark: '#754595',
+      light: '#8070e8', // Indigo - direct, 2 hidden
+      dark: '#5442a8',
     },
   },
 
@@ -309,8 +309,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'swiglu',
     },
     colors: {
-      light: '#d85b70', // Rose red - differential, 1 hidden
-      dark: '#b53a50',
+      light: '#e8668f', // Rose/magenta - differential, 1 hidden
+      dark: '#a83d64',
     },
   },
 ];

@@ -13,20 +13,6 @@
         <button @click="nextGeneration" class="btn-sync">SYNC</button>
         <button @click="reset" class="btn-restart">RESTART</button>
         <button
-          @click="toggleMutationByDistance"
-          class="btn-toggle-mutation"
-          :class="{ active: mutationByDistance }"
-        >
-          MUT DIST
-        </button>
-        <button
-          @click="toggleDelayedSteering"
-          class="btn-toggle-delay"
-          :class="{ active: delayedSteering }"
-        >
-          DELAY TURN
-        </button>
-        <button
           @click="toggleAllCarTypes"
           class="btn-car-usage"
           :class="{
@@ -42,7 +28,7 @@
           class="btn-toggle-rays"
           :class="{ active: showRays }"
         >
-          SHOW RAYS
+          VIS DEBUG
         </button>
         <button
           @click="toggleCarSpeed"
@@ -101,7 +87,7 @@
                 :key="config.shortName"
                 :style="{ backgroundColor: config.colors.dark }"
               >
-                <td v-if="!isMobile()">
+                <td v-if="!isMobile()" class="bar-cell">
                   <PercentageBar
                     :percentage="scoreByConfigId.get(config.shortName) ?? 0"
                     variant="white"
@@ -117,7 +103,7 @@
                 <td>
                   {{ ga.getGeneration(config.shortName) }}
                 </td>
-                <td>
+                <td class="bar-cell">
                   <PercentageBar
                     :percentage="
                       mutationRatePercentByConfigId.get(config.shortName) ?? 0
@@ -126,7 +112,7 @@
                     :compact="carUsageLevel !== 'use-few'"
                   />
                 </td>
-                <td>
+                <td class="bar-cell">
                   <PercentageBar
                     :percentage="
                       nearnessPercentByConfigId.get(config.shortName) ?? 0
@@ -135,14 +121,14 @@
                     :compact="carUsageLevel !== 'use-few'"
                   />
                 </td>
-                <td>
+                <td class="bar-cell">
                   <PercentageBar
                     :percentage="getMeanFitnessPercentRaw(config.shortName)"
                     variant="white"
                     :compact="carUsageLevel !== 'use-few'"
                   />
                 </td>
-                <td>
+                <td class="bar-cell">
                   <PercentageBar
                     :percentage="getBestFitnessPercentRaw(config.shortName)"
                     variant="white"
@@ -156,6 +142,7 @@
                   {{ getHiddenLayers(config.nn.architecture) }}
                 </td>
                 <td
+                  class="colored-cell"
                   :style="{
                     backgroundColor: getActivationColor(
                       config.nn.activationType
@@ -169,6 +156,7 @@
                   }}
                 </td>
                 <td
+                  class="colored-cell"
                   :style="{
                     backgroundColor: getInputColor(config.nn.inputModification),
                   }"
@@ -194,9 +182,9 @@
 
           <!-- Performance View -->
           <div v-else class="performance-view" @click="cycleView">
-            <div style="display: flex; gap: 10px; width: 100%">
+            <div class="perf-tables-container">
               <!-- Left Column -->
-              <table class="stats-table perf-table" style="flex: 1">
+              <table class="stats-table perf-table">
                 <thead>
                   <tr>
                     <th colspan="2">Frame Rate</th>
@@ -249,7 +237,7 @@
               </table>
 
               <!-- Right Column -->
-              <table class="stats-table perf-table" style="flex: 1">
+              <table class="stats-table perf-table">
                 <thead>
                   <tr>
                     <th colspan="2">System Status</th>
@@ -1264,68 +1252,70 @@ const render = (ctx: CanvasRenderingContext2D) => {
     }
   }
 
-  // Render generation markers dynamically for active configs
-  ctx.font = `bold ${CONFIG.visualization.generationMarker.fontSize}px monospace`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
+  // Render generation markers dynamically for active configs (only if showRays is enabled)
+  if (showRays.value) {
+    ctx.font = `bold ${CONFIG.visualization.generationMarker.fontSize}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
 
-  for (const config of activeCarConfigs.value) {
-    const markers =
-      generationMarkersByConfigId.value.get(config.shortName) ?? [];
+    for (const config of activeCarConfigs.value) {
+      const markers =
+        generationMarkersByConfigId.value.get(config.shortName) ?? [];
 
-    ctx.fillStyle = config.colors.dark;
+      ctx.fillStyle = config.colors.dark;
 
-    for (const marker of markers) {
-      // Draw the marker dot
-      ctx.beginPath();
-      ctx.arc(
-        marker.x,
-        marker.y,
-        CONFIG.visualization.generationMarker.radius,
-        0,
-        Math.PI * 2
-      );
-      ctx.fill();
-
-      // Draw generation number above the dot (if enabled)
-      if (CONFIG.visualization.generationMarker.showGenerationNumber) {
-        ctx.fillText(
-          marker.generation.toString(),
+      for (const marker of markers) {
+        // Draw the marker dot
+        ctx.beginPath();
+        ctx.arc(
           marker.x,
-          marker.y -
-            CONFIG.visualization.generationMarker.radius +
-            CONFIG.visualization.generationMarker.textOffset
+          marker.y,
+          CONFIG.visualization.generationMarker.radius,
+          0,
+          Math.PI * 2
         );
-      }
+        ctx.fill();
 
-      // Conditionally show emojis based on brain selection strategy
-      const showRepeat =
-        (brainSelectionStrategy.value === 'generation' ||
-          brainSelectionStrategy.value === 'averaging' ||
-          brainSelectionStrategy.value === 'overcorrect') &&
-        marker.isLastGenBest;
-      const showTrophy =
-        (brainSelectionStrategy.value === 'alltime' ||
-          brainSelectionStrategy.value === 'averaging' ||
-          brainSelectionStrategy.value === 'overcorrect') &&
-        marker.isAllTimeBest;
+        // Draw generation number above the dot (if enabled)
+        if (CONFIG.visualization.generationMarker.showGenerationNumber) {
+          ctx.fillText(
+            marker.generation.toString(),
+            marker.x,
+            marker.y -
+              CONFIG.visualization.generationMarker.radius +
+              CONFIG.visualization.generationMarker.textOffset
+          );
+        }
 
-      // Draw repeat emoji to the left if this is last generation's best (and strategy uses it)
-      if (showRepeat) {
-        ctx.fillText(
-          TEXT_CHARACTER.repeat,
-          marker.x - CONFIG.visualization.generationMarker.radius * 3,
-          marker.y
-        );
-      }
+        // Conditionally show emojis based on brain selection strategy
+        const showRepeat =
+          (brainSelectionStrategy.value === 'generation' ||
+            brainSelectionStrategy.value === 'averaging' ||
+            brainSelectionStrategy.value === 'overcorrect') &&
+          marker.isLastGenBest;
+        const showTrophy =
+          (brainSelectionStrategy.value === 'alltime' ||
+            brainSelectionStrategy.value === 'averaging' ||
+            brainSelectionStrategy.value === 'overcorrect') &&
+          marker.isAllTimeBest;
 
-      // Draw trophy emoji to the right if this is all-time best (and strategy uses it)
-      if (showTrophy) {
-        ctx.fillText(
-          TEXT_CHARACTER.trophy,
-          marker.x + CONFIG.visualization.generationMarker.radius * 3,
-          marker.y
-        );
+        // Draw repeat emoji to the left if this is last generation's best (and strategy uses it)
+        if (showRepeat) {
+          ctx.fillText(
+            TEXT_CHARACTER.repeat,
+            marker.x - CONFIG.visualization.generationMarker.radius * 3,
+            marker.y
+          );
+        }
+
+        // Draw trophy emoji to the right if this is all-time best (and strategy uses it)
+        if (showTrophy) {
+          ctx.fillText(
+            TEXT_CHARACTER.trophy,
+            marker.x + CONFIG.visualization.generationMarker.radius * 3,
+            marker.y
+          );
+        }
       }
     }
   }
@@ -1699,19 +1689,9 @@ const toggleShowRays = () => {
   showRays.value = !showRays.value;
 };
 
-// Toggle Mutation by Distance mode
-const toggleMutationByDistance = () => {
-  mutationByDistance.value = !mutationByDistance.value;
-};
-
 // Cycle through car usage levels: use-few -> use-many -> use-all -> use-few
 const toggleAllCarTypes = () => {
   carUsageLevel.value = getNextCarUsageLevel(carUsageLevel.value);
-};
-
-// Toggle Delayed Steering mode
-const toggleDelayedSteering = () => {
-  delayedSteering.value = !delayedSteering.value;
 };
 
 // Toggle Car Speed (cycle through speed multipliers)
@@ -2136,7 +2116,7 @@ canvas {
 
 .stats-table {
   width: 100%;
-  border-collapse: collapse;
+  height: 100%;
   table-layout: fixed;
   font-family: 'Courier New', 'Courier', monospace;
   font-size: 14px;
@@ -2146,6 +2126,22 @@ canvas {
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.stats-table thead {
+  flex-shrink: 0;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.stats-table thead tr {
+  display: table-row;
 }
 
 .stats-table th {
@@ -2158,25 +2154,54 @@ canvas {
   font-size: 10px;
   letter-spacing: 0.3px;
   border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  display: table-cell;
 }
 
-.stats-table td {
-  padding: 6px 8px;
-  color: #ffffff;
-  text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.stats-table tbody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .stats-table tbody tr {
+  flex: 1;
   color: #ffffff;
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.stats-table tbody tr:last-child td {
+.stats-table tbody tr:last-child {
   border-bottom: none;
 }
 
 .stats-table tbody tr:hover {
   background: rgba(255, 255, 255, 0.05);
+}
+
+.stats-table td {
+  padding: 0 8px;
+  color: #ffffff;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.stats-table td.colored-cell {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background-clip: padding-box;
+}
+
+.stats-table td.bar-cell {
+  padding: 2px 4px;
 }
 
 /* Compact mode for when ALL TYPES is toggled on */
@@ -2185,26 +2210,83 @@ canvas {
 }
 
 .stats-table-compact th {
-  padding: 1px 3px !important;
+  padding: 3px !important;
   font-size: 8px !important;
   letter-spacing: 0px !important;
 }
 
 .stats-table-compact td {
-  padding: 1px 3px !important;
+  padding: 0 3px !important;
   line-height: 1.1;
 }
 
+/* Performance view container */
+.performance-view {
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.perf-tables-container {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
 /* Performance table specific styling */
+.perf-table {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.perf-table thead {
+  flex-shrink: 0;
+}
+
+.perf-table tbody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.perf-table tbody tr {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.perf-table tbody tr td {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+}
+
 .perf-table .label-cell {
   text-align: left;
   width: 60%;
   font-weight: bold;
+  justify-content: flex-start;
 }
 
 .perf-table .value-cell {
   text-align: right;
   width: 40%;
+  justify-content: flex-end;
 }
 
 /* Mobile layout: Table on top, buttons below */
@@ -2303,48 +2385,6 @@ button:active {
 .btn-restart:active {
   background: #991b1b;
   border-color: #7f1d1d;
-}
-
-/* Mutation toggle - Green when active (genetic/evolution) */
-.btn-toggle-mutation {
-  background: #4b5563;
-  border-color: #374151;
-}
-
-.btn-toggle-mutation.active {
-  background: #059669;
-  border-color: #047857;
-}
-
-.btn-toggle-mutation.active:hover {
-  background: #047857;
-  border-color: #065f46;
-}
-
-.btn-toggle-mutation.active:active {
-  background: #065f46;
-  border-color: #064e3b;
-}
-
-/* Delay toggle - Purple when active (control modification) */
-.btn-toggle-delay {
-  background: #4b5563;
-  border-color: #374151;
-}
-
-.btn-toggle-delay.active {
-  background: #9333ea;
-  border-color: #7e22ce;
-}
-
-.btn-toggle-delay.active:hover {
-  background: #7e22ce;
-  border-color: #6b21a8;
-}
-
-.btn-toggle-delay.active:active {
-  background: #6b21a8;
-  border-color: #581c87;
 }
 
 /* Car usage button - Different colors for each level */
