@@ -540,35 +540,29 @@ export class Car {
       const sectionTop = detailedHeight / 2 - currentSectionIdx * sectionHeight;
       const sectionBottom = sectionTop - sectionHeight;
 
-      // In vis-think mode, split section into two parts:
-      // - Top 1/4: Input type indicator (colored)
-      // - Bottom 3/4: Input values (grayscale boxes showing actual ray distances)
+      // In vis-think mode, only show input values (dynamic, changing)
       if (visualizationMode === 'vis-think' && activations && this.alive) {
-        const quarterHeight = sectionHeight / 4;
-        const inputValuesHeight = sectionHeight * 3 / 4;
-
-        // Top 1/4: Input type color indicator
-        const inputTypeBottom = sectionTop - quarterHeight;
-        ctx.fillStyle = this.getInputColor();
-        ctx.fillRect(
-          -detailedWidth / 2,
-          inputTypeBottom,
-          detailedWidth,
-          quarterHeight
-        );
-
-        // Bottom 3/4: Input values as grayscale boxes
-        const inputValuesBottom = sectionBottom;
+        // Show input values as grayscale boxes (no colored indicator)
         const inputValues = activations.inputValues;
         const numInputs = inputValues.length;
         const inputBoxWidth = detailedWidth / numInputs;
 
+        // Fill background first
+        ctx.fillStyle = '#444';
+        ctx.fillRect(
+          -detailedWidth / 2,
+          sectionBottom,
+          detailedWidth,
+          sectionHeight
+        );
+
+        // Draw input values
         for (let inputIdx = 0; inputIdx < numInputs; inputIdx++) {
           const inputValue = inputValues[inputIdx];
           const boxLeft = -detailedWidth / 2 + inputIdx * inputBoxWidth;
 
           ctx.fillStyle = this.valueToGrayscale(inputValue);
-          ctx.fillRect(boxLeft, inputValuesBottom, inputBoxWidth, inputValuesHeight);
+          ctx.fillRect(boxLeft, sectionBottom, inputBoxWidth, sectionHeight);
         }
       } else {
         // vis-weights mode or vis-medium mode: just show input type color
@@ -632,48 +626,57 @@ export class Car {
           const activation = neuron.activation; // Per-neuron activation
           const numWeights = weights.length;
 
-          // Divide neuron into 3 EQUAL parts (front to back):
-          // 1/3 weights (array of grayscale items) - at FRONT
-          // 1/3 bias (single grayscale item) - in MIDDLE
-          // 1/3 activation (colorful item) - at BACK
-          const thirdHeight = sectionHeight / 3;
-
-          // WEIGHTS (front third - from sectionTop backwards by 1/3)
-          const weightsTop = sectionTop - thirdHeight;
-          const weightBoxWidth = neuronWidth / numWeights;
-
-          for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
-            const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
-
-            // In vis-think mode, show weighted input (weight * input)
-            // In vis-weights mode, show the static weight value
-            if (visualizationMode === 'vis-think' && activations && activations.hiddenLayers[hiddenLayerIdx]) {
-              const weightedInput = activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx].weightedInputs[weightIdx];
-              ctx.fillStyle = this.valueToGrayscale(weightedInput);
-            } else {
-              const weight = weights[weightIdx];
-              ctx.fillStyle = this.valueToGrayscale(weight);
-            }
-            ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, thirdHeight);
-          }
-
-          // BIAS (middle third - from sectionTop backwards by 2/3)
-          const biasTop = sectionTop - 2 * thirdHeight;
-          // In vis-think mode, show pre-activation sum
-          // In vis-weights mode, show the static bias value
           if (visualizationMode === 'vis-think' && activations && activations.hiddenLayers[hiddenLayerIdx]) {
+            // vis-think mode: only show dynamic values (weighted inputs and pre-activation sum)
+            // Divide neuron into 2 EQUAL parts:
+            // 1/2 weighted inputs (front half)
+            // 1/2 pre-activation sum (back half)
+            const halfHeight = sectionHeight / 2;
+
+            // WEIGHTED INPUTS (front half)
+            const weightsTop = sectionTop - halfHeight;
+            const weightBoxWidth = neuronWidth / numWeights;
+
+            for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
+              const weightedInput = activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx].weightedInputs[weightIdx];
+              const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
+              ctx.fillStyle = this.valueToGrayscale(weightedInput);
+              ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, halfHeight);
+            }
+
+            // PRE-ACTIVATION SUM (back half)
             const preActivationSum = activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx].preActivationSum;
             ctx.fillStyle = this.valueToGrayscale(preActivationSum);
+            ctx.fillRect(neuronLeft, sectionBottom, neuronWidth, halfHeight);
           } else {
-            ctx.fillStyle = this.valueToGrayscale(bias);
-          }
-          ctx.fillRect(neuronLeft, biasTop, neuronWidth, thirdHeight);
+            // vis-weights mode: show static values (weights, bias, activation function)
+            // Divide neuron into 3 EQUAL parts (front to back):
+            // 1/3 weights (array of grayscale items) - at FRONT
+            // 1/3 bias (single grayscale item) - in MIDDLE
+            // 1/3 activation (colorful item) - at BACK
+            const thirdHeight = sectionHeight / 3;
 
-          // ACTIVATION (back third - at sectionBottom)
-          const activationTop = sectionBottom;
-          // Always show activation function type as color (this is part of the architecture)
-          ctx.fillStyle = this.getActivationColor(activation);
-          ctx.fillRect(neuronLeft, activationTop, neuronWidth, thirdHeight);
+            // WEIGHTS (front third)
+            const weightsTop = sectionTop - thirdHeight;
+            const weightBoxWidth = neuronWidth / numWeights;
+
+            for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
+              const weight = weights[weightIdx];
+              const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
+              ctx.fillStyle = this.valueToGrayscale(weight);
+              ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, thirdHeight);
+            }
+
+            // BIAS (middle third)
+            const biasTop = sectionTop - 2 * thirdHeight;
+            ctx.fillStyle = this.valueToGrayscale(bias);
+            ctx.fillRect(neuronLeft, biasTop, neuronWidth, thirdHeight);
+
+            // ACTIVATION (back third)
+            const activationTop = sectionBottom;
+            ctx.fillStyle = this.getActivationColor(activation);
+            ctx.fillRect(neuronLeft, activationTop, neuronWidth, thirdHeight);
+          }
         }
       }
 
@@ -720,48 +723,57 @@ export class Car {
         const activation = outputNeuron.activation; // This neuron's activation
         const numWeights = weights.length;
 
-        // Divide neuron into 3 EQUAL parts (front to back):
-        // 1/3 weights (array of grayscale items) - at FRONT
-        // 1/3 bias (single grayscale item) - in MIDDLE
-        // 1/3 activation (colorful item) - at BACK
-        const thirdHeight = sectionHeight / 3;
-
-        // WEIGHTS (front third - from sectionTop backwards by 1/3)
-        const weightsTop = sectionTop - thirdHeight;
-        const weightBoxWidth = neuronWidth / numWeights;
-
-        for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
-          const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
-
-          // In vis-think mode, show weighted input (weight * input)
-          // In vis-weights mode, show the static weight value
-          if (visualizationMode === 'vis-think' && activations && activations.outputLayer) {
-            const weightedInput = activations.outputLayer.neurons[0].weightedInputs[weightIdx];
-            ctx.fillStyle = this.valueToGrayscale(weightedInput);
-          } else {
-            const weight = weights[weightIdx];
-            ctx.fillStyle = this.valueToGrayscale(weight);
-          }
-          ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, thirdHeight);
-        }
-
-        // BIAS (middle third - from sectionTop backwards by 2/3)
-        const biasTop = sectionTop - 2 * thirdHeight;
-        // In vis-think mode, show pre-activation sum
-        // In vis-weights mode, show the static bias value
         if (visualizationMode === 'vis-think' && activations && activations.outputLayer) {
+          // vis-think mode: only show dynamic values (weighted inputs and pre-activation sum)
+          // Divide neuron into 2 EQUAL parts:
+          // 1/2 weighted inputs (front half)
+          // 1/2 pre-activation sum (back half)
+          const halfHeight = sectionHeight / 2;
+
+          // WEIGHTED INPUTS (front half)
+          const weightsTop = sectionTop - halfHeight;
+          const weightBoxWidth = neuronWidth / numWeights;
+
+          for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
+            const weightedInput = activations.outputLayer.neurons[0].weightedInputs[weightIdx];
+            const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
+            ctx.fillStyle = this.valueToGrayscale(weightedInput);
+            ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, halfHeight);
+          }
+
+          // PRE-ACTIVATION SUM (back half)
           const preActivationSum = activations.outputLayer.neurons[0].preActivationSum;
           ctx.fillStyle = this.valueToGrayscale(preActivationSum);
+          ctx.fillRect(neuronLeft, sectionBottom, neuronWidth, halfHeight);
         } else {
-          ctx.fillStyle = this.valueToGrayscale(bias);
-        }
-        ctx.fillRect(neuronLeft, biasTop, neuronWidth, thirdHeight);
+          // vis-weights mode: show static values (weights, bias, activation function)
+          // Divide neuron into 3 EQUAL parts (front to back):
+          // 1/3 weights (array of grayscale items) - at FRONT
+          // 1/3 bias (single grayscale item) - in MIDDLE
+          // 1/3 activation (colorful item) - at BACK
+          const thirdHeight = sectionHeight / 3;
 
-        // ACTIVATION (back third - at sectionBottom)
-        const activationTop = sectionBottom;
-        // Always show activation function type as color (this is part of the architecture)
-        ctx.fillStyle = this.getActivationColor(activation);
-        ctx.fillRect(neuronLeft, activationTop, neuronWidth, thirdHeight);
+          // WEIGHTS (front third)
+          const weightsTop = sectionTop - thirdHeight;
+          const weightBoxWidth = neuronWidth / numWeights;
+
+          for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
+            const weight = weights[weightIdx];
+            const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
+            ctx.fillStyle = this.valueToGrayscale(weight);
+            ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, thirdHeight);
+          }
+
+          // BIAS (middle third)
+          const biasTop = sectionTop - 2 * thirdHeight;
+          ctx.fillStyle = this.valueToGrayscale(bias);
+          ctx.fillRect(neuronLeft, biasTop, neuronWidth, thirdHeight);
+
+          // ACTIVATION (back third)
+          const activationTop = sectionBottom;
+          ctx.fillStyle = this.getActivationColor(activation);
+          ctx.fillRect(neuronLeft, activationTop, neuronWidth, thirdHeight);
+        }
       }
 
       // Draw output layer section border
