@@ -2328,14 +2328,14 @@ canvas {
 
 .perf-table .label-cell {
   text-align: left;
-  width: 60%;
+  flex: 3;
   font-weight: bold;
   justify-content: flex-start;
 }
 
 .perf-table .value-cell {
   text-align: right;
-  width: 40%;
+  flex: 2;
   justify-content: flex-end;
 }
 
