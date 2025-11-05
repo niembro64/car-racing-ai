@@ -68,7 +68,7 @@
           >
             <thead>
               <tr>
-                <th v-if="!isMobile()">Score</th>
+                <th>Score</th>
                 <th>Type</th>
                 <th>{{ isMobile() ? '#' : '# Alive' }}</th>
                 <th>Gen</th>
@@ -88,7 +88,7 @@
                 :key="config.shortName"
                 :style="{ backgroundColor: config.colors.dark }"
               >
-                <td v-if="!isMobile()" class="bar-cell">
+                <td class="bar-cell">
                   <PercentageBar
                     :percentage="scoreByConfigId.get(config.shortName) ?? 0"
                     variant="white"
@@ -96,7 +96,7 @@
                   />
                 </td>
                 <td style="font-weight: bold">
-                  {{ isMobile() ? config.shortName : config.displayName }}
+                  {{ config.displayName }}
                 </td>
                 <td>
                   {{ getAliveCount(config.shortName) }}
