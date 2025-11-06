@@ -36,7 +36,7 @@ export type ActivationType =
   | 'linear'
   | 'gelu'
   | 'step'
-  | 'swiglu'
+  | 'swish'
   | '-';
 
 export type InputModificationType = 'dir' | 'pair';
@@ -341,7 +341,7 @@ export const ACTIVATION_COLORS: Record<ActivationType, string> = {
   relu: '#58c', // Blue family
   gelu: '#4a8', // Green-cyan family
   step: '#c5c', // Purple-magenta family
-  swiglu: '#f69', // Red-pink family
+  swish: '#f69', // Red-pink family
 };
 
 export const INPUT_COLORS: Record<InputModificationType, string> = {

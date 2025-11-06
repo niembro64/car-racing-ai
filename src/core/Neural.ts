@@ -50,12 +50,12 @@ export class NeuralNetwork {
       const biases: number[] = [];
 
       // Standard deviation for Gaussian initialization
-      // He initialization: std = sqrt(2 / n_in) for ReLU/GELU/SWIGLU
+      // He initialization: std = sqrt(2 / n_in) for ReLU/GELU/SWISH
       // Xavier initialization: std = sqrt(2 / (n_in + n_out)) for linear/tanh/sigmoid
       const stddev =
         this.activationType === 'relu' ||
         this.activationType === 'gelu' ||
-        this.activationType === 'swiglu'
+        this.activationType === 'swish'
           ? Math.sqrt(2.0 / inputSize) // He initialization
           : Math.sqrt(2.0 / (inputSize + outputSize)); // Xavier/Glorot initialization
 
@@ -100,10 +100,10 @@ export class NeuralNetwork {
     return x >= 0 ? 1 : 0;
   }
 
-  // SWIGLU activation (Swish-Gated Linear Unit)
-  // SWIGLU(x) = x * swish(x) where swish(x) = x * sigmoid(x)
-  // This gives: SWIGLU(x) = x * (x / (1 + e^(-x))) = x² / (1 + e^(-x))
-  private swiglu(x: number): number {
+  // SWISH activation (Swish-Gated Linear Unit)
+  // SWISH(x) = x * swish(x) where swish(x) = x * sigmoid(x)
+  // This gives: SWISH(x) = x * (x / (1 + e^(-x))) = x² / (1 + e^(-x))
+  private swish(x: number): number {
     const sigmoid = 1.0 / (1.0 + Math.exp(-x));
     return x * x * sigmoid;
   }
@@ -134,8 +134,8 @@ export class NeuralNetwork {
           next.push(this.gelu(sum)); // GELU for hidden layers
         } else if (this.activationType === 'step') {
           next.push(this.step(sum)); // Step for hidden layers
-        } else if (this.activationType === 'swiglu') {
-          next.push(this.swiglu(sum)); // SWIGLU for hidden layers
+        } else if (this.activationType === 'swish') {
+          next.push(this.swish(sum)); // SWISH for hidden layers
         } else if (this.activationType === 'linear') {
           next.push(this.linear(sum)); // Linear for hidden layers
         } else if (this.activationType === '-') {
@@ -184,8 +184,8 @@ export class NeuralNetwork {
           postActivationOutput = this.gelu(preActivationSum);
         } else if (this.activationType === 'step') {
           postActivationOutput = this.step(preActivationSum);
-        } else if (this.activationType === 'swiglu') {
-          postActivationOutput = this.swiglu(preActivationSum);
+        } else if (this.activationType === 'swish') {
+          postActivationOutput = this.swish(preActivationSum);
         } else if (this.activationType === 'linear') {
           postActivationOutput = this.linear(preActivationSum);
         } else if (this.activationType === '-') {

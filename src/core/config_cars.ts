@@ -190,11 +190,11 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     useCar: 'use-few',
     displayName: 'Surge',
     shortName: 'SG',
-    description: 'SWIGLU activation, direct inputs, 3 hidden layers (4, 3, 2)',
+    description: 'SWISH activation, direct inputs, 3 hidden layers (4, 3, 2)',
     nn: {
       architecture: NN_ARCH_PAIR_XL,
       inputModification: 'pair',
-      activationType: 'swiglu',
+      activationType: 'swish',
     },
     colors: {
       light: '#4d8fb8', // Deep blue - direct, 2 hidden (larger)
@@ -328,17 +328,17 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
 
-  // === SWIGLU activation (red/pink family) ===
+  // === SWISH activation (red/pink family) ===
   // Red hues - advanced, gated activation
   {
     useCar: 'use-all',
     displayName: 'Neo',
     shortName: 'NE',
-    description: 'SWIGLU activation, differential inputs, 1 hidden layer (3)',
+    description: 'SWISH activation, differential inputs, 1 hidden layer (3)',
     nn: {
       architecture: NN_ARCH_PAIR_M,
       inputModification: 'pair',
-      activationType: 'swiglu',
+      activationType: 'swish',
     },
     colors: {
       light: '#e8668f', // Rose/magenta - differential, 1 hidden
