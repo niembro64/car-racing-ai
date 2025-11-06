@@ -38,9 +38,6 @@
         <button @click="cycleBrainStrategy" class="btn-brain-strategy">
           <span v-html="getBrainStrategyLabel(brainSelectionStrategy)"></span>
         </button>
-        <button @click="toggleBrainRotation" class="btn-brain-rotation">
-          {{ TEXT_CHARACTER.brain }} OVERLAY<br />{{ rotateBrainOverlay ? 'TURNS' : 'UPRIGHT' }}
-        </button>
       </div>
 
       <div class="hud">
@@ -479,7 +476,11 @@ const initialView = parseInfoView(CONFIG.defaults.defaultInfoView);
 const viewMode = ref<ViewMode>(initialView.viewMode);
 const graphType = ref<'completion' | 'rate' | 'score'>(initialView.graphType);
 const graphCanvasRef = ref<HTMLCanvasElement | null>(null);
-const rotateBrainOverlay = ref(CONFIG.visualization.rotateBrainOverlay);
+
+// Brain overlay rotates with car for 'vis-weights' and 'vis-think', stays upright for 'vis-upright'
+const rotateBrainOverlay = computed(() => {
+  return visualizationMode.value === 'vis-weights' || visualizationMode.value === 'vis-think';
+});
 
 const activeCarConfigs = computed(() => {
   return getCarBrainConfigsByLevel(carUsageLevel.value);
@@ -1397,7 +1398,8 @@ const render = (ctx: CanvasRenderingContext2D) => {
   // THIRD PASS: Render detailed overlays for lead cars on top of everything
   const isDetailedMode =
     visualizationMode.value === 'vis-weights' ||
-    visualizationMode.value === 'vis-think';
+    visualizationMode.value === 'vis-think' ||
+    visualizationMode.value === 'vis-upright';
   if (isDetailedMode) {
     for (const car of population.value) {
       if (!car.alive) continue; // Only show overlays for alive cars
@@ -1775,6 +1777,8 @@ const getVisualizationModeLabel = (mode: VisualizationMode): string => {
       return 'SHOW<br />BRAIN';
     case 'vis-think':
       return 'SHOW<br />THINKING';
+    case 'vis-upright':
+      return 'SHOW<br />UPRIGHT';
   }
 };
 
@@ -1832,11 +1836,6 @@ const cycleBrainStrategy = () => {
   );
 };
 
-// Toggle brain overlay rotation
-const toggleBrainRotation = () => {
-  rotateBrainOverlay.value = !rotateBrainOverlay.value;
-  print(`[Visualization] Brain overlay rotation: ${rotateBrainOverlay.value ? 'ON (rotates with car)' : 'OFF (stays upright)'}`);
-};
 
 // Render graph
 const renderGraph = () => {

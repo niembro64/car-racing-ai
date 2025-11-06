@@ -495,9 +495,9 @@ export class Car {
       this.color
     );
 
-    // If in vis-think mode, compute forward pass to get current activations
+    // If in vis-think or vis-upright mode, compute forward pass to get current activations
     let activations: ForwardPassActivations | null = null;
-    if (visualizationMode === 'vis-think') {
+    if (visualizationMode === 'vis-think' || visualizationMode === 'vis-upright') {
       // Get current ray distances and preprocess them the same way as during update()
       const distances = this.lastRayDistances;
       if (distances && distances.length > 0) {
@@ -544,8 +544,8 @@ export class Car {
       const sectionTop = detailedHeight / 2 - currentSectionIdx * sectionHeight;
       const sectionBottom = sectionTop - sectionHeight;
 
-      // In vis-think mode, only show input values (dynamic, changing)
-      if (visualizationMode === 'vis-think' && activations && this.alive) {
+      // In vis-think or vis-upright mode, only show input values (dynamic, changing)
+      if ((visualizationMode === 'vis-think' || visualizationMode === 'vis-upright') && activations && this.alive) {
         // Show input values as grayscale boxes (no colored indicator)
         const inputValues = activations.inputValues;
         const numInputs = inputValues.length;
@@ -634,11 +634,11 @@ export class Car {
           const numWeights = weights.length;
 
           if (
-            visualizationMode === 'vis-think' &&
+            (visualizationMode === 'vis-think' || visualizationMode === 'vis-upright') &&
             activations &&
             activations.hiddenLayers[hiddenLayerIdx]
           ) {
-            // vis-think mode: only show dynamic values
+            // vis-think or vis-upright mode: only show dynamic values
             // Divide neuron into 3 EQUAL parts:
             // 1/3 weighted inputs (front third)
             // 1/3 pre-activation sum (middle third)
@@ -745,11 +745,11 @@ export class Car {
         const numWeights = weights.length;
 
         if (
-          visualizationMode === 'vis-think' &&
+          (visualizationMode === 'vis-think' || visualizationMode === 'vis-upright') &&
           activations &&
           activations.outputLayer
         ) {
-          // vis-think mode: only show dynamic values
+          // vis-think or vis-upright mode: only show dynamic values
           // Divide neuron into 3 EQUAL parts:
           // 1/3 weighted inputs (front third)
           // 1/3 pre-activation sum (middle third)

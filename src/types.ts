@@ -214,6 +214,7 @@ export const VISUALIZATION_MODES = [
   'vis-medium',
   'vis-weights',
   'vis-think',
+  'vis-upright',
 ] as const;
 export type VisualizationMode = (typeof VISUALIZATION_MODES)[number];
 

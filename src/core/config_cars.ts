@@ -8,341 +8,406 @@ import {
   NN_ARCH_DIRECT_L,
   NN_ARCH_DIRECT_M,
   NN_ARCH_DIRECT_S,
+  NN_ARCH_DIRECT_XL,
 } from '@/config_nn';
 
 export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
-  // === None/Raw (no hidden layers, no activation function) ===
-  // Gray family - neutral/basic
+  // ============================================================================
+  // NO ACTIVATION - Gray family (neutral/minimal)
+  // ============================================================================
   {
     useCar: 'use-all',
-    displayName: 'Pico',
-    shortName: 'PC',
-    description: 'No hidden layers, differential inputs (1 fwd + 4 L-R pairs)',
+    displayName: 'Minimal',
+    shortName: 'MN',
+    description: 'No activation, pair inputs, no hidden layers',
     nn: {
       architecture: NN_ARCH_PAIR_S,
       inputModification: 'pair',
       activationType: '-',
     },
     colors: {
-      light: '#c7c2c2', // Light gray - differential, no hidden
+      light: '#c7c2c2', // Light gray
       dark: '#8c8080',
     },
   },
   {
     useCar: 'use-all',
-    displayName: 'Nano',
-    shortName: 'NA',
-    description: 'No hidden layers, direct raw sensor inputs (9 rays)',
+    displayName: 'Basic',
+    shortName: 'BS',
+    description: 'No activation, direct inputs, no hidden layers',
     nn: {
       architecture: NN_ARCH_DIRECT_S,
       inputModification: 'dir',
       activationType: '-',
     },
     colors: {
-      light: '#a3adb8', // Blue-gray - direct, no hidden
+      light: '#a3adb8', // Blue-gray
       dark: '#616e7a',
     },
   },
 
-  // === Linear activation (orange/amber family) ===
-  // Orange hues - warm, simple transformation
+  // ============================================================================
+  // LINEAR ACTIVATION - Orange/amber family (warm tones)
+  // ============================================================================
   {
     useCar: 'use-all',
     displayName: 'Spark',
     shortName: 'SP',
-    description: 'Linear activation, differential inputs, 1 hidden layer (3)',
+    description: 'Linear activation, pair inputs, 1 hidden layer',
     nn: {
       architecture: NN_ARCH_PAIR_M,
       inputModification: 'pair',
       activationType: 'linear',
     },
     colors: {
-      light: '#e8d447', // Bright yellow-orange - differential, 1 hidden
-      dark: '#a89530',
+      light: '#FFD700', // Gold - bright yellow
+      dark: '#B8960A',
     },
   },
   {
     useCar: 'use-many',
-    displayName: 'Flame',
+    displayName: 'Flare',
     shortName: 'FL',
-    description:
-      'Linear activation, differential inputs, 2 hidden layers (3, 2)',
+    description: 'Linear activation, pair inputs, 2 hidden layers',
     nn: {
       architecture: NN_ARCH_PAIR_L,
       inputModification: 'pair',
       activationType: 'linear',
     },
     colors: {
-      light: '#e89658', // Pure orange - differential, 2 hidden
-      dark: '#a8683c',
-    },
-  },
-  {
-    useCar: 'use-many',
-    displayName: 'Glow',
-    shortName: 'GL',
-    description: 'Linear activation, direct inputs, 1 hidden layer (3)',
-    nn: {
-      architecture: NN_ARCH_DIRECT_M,
-      inputModification: 'dir',
-      activationType: 'linear',
-    },
-    colors: {
-      light: '#d9a847', // Golden amber - direct, 1 hidden
-      dark: '#a27a2f',
-    },
-  },
-  {
-    useCar: 'use-all',
-    displayName: 'Shine',
-    shortName: 'SH',
-    description: 'Linear activation, direct inputs, 2 hidden layers (3, 2)',
-    nn: {
-      architecture: NN_ARCH_DIRECT_L,
-      inputModification: 'dir',
-      activationType: 'linear',
-    },
-    colors: {
-      light: '#cc6633', // Brown-orange - direct, 2 hidden
-      dark: '#944822',
+      light: '#FF8C00', // Dark orange
+      dark: '#B86300',
     },
   },
   {
     useCar: 'use-few',
     displayName: 'Blaze',
     shortName: 'BL',
-    description:
-      'Linear activation, differential inputs, 3 hidden layers (4, 3, 2)',
+    description: 'Linear activation, pair inputs, 3 hidden layers',
     nn: {
       architecture: NN_ARCH_PAIR_XL,
       inputModification: 'pair',
       activationType: 'linear',
     },
     colors: {
-      light: '#e85833', // Deep red-orange - differential, 3 hidden (largest)
-      dark: '#a83820',
+      light: '#FF4500', // Orange-red
+      dark: '#B83100',
+    },
+  },
+  {
+    useCar: 'use-all',
+    displayName: 'Glow',
+    shortName: 'GL',
+    description: 'Linear activation, direct inputs, 1 hidden layer',
+    nn: {
+      architecture: NN_ARCH_DIRECT_M,
+      inputModification: 'dir',
+      activationType: 'linear',
+    },
+    colors: {
+      light: '#FFA500', // Orange/amber
+      dark: '#B87400',
+    },
+  },
+  {
+    useCar: 'use-all',
+    displayName: 'Ember',
+    shortName: 'EM',
+    description: 'Linear activation, direct inputs, 2 hidden layers',
+    nn: {
+      architecture: NN_ARCH_DIRECT_L,
+      inputModification: 'dir',
+      activationType: 'linear',
+    },
+    colors: {
+      light: '#D2691E', // Chocolate - brown-orange
+      dark: '#954A15',
     },
   },
 
-  // === ReLU activation (blue family) ===
-  // Blue hues - cool, rectified activation
+  // ============================================================================
+  // RELU ACTIVATION - Blue family (cool tones)
+  // ============================================================================
   {
     useCar: 'use-all',
-    displayName: 'Drop',
-    shortName: 'DR',
-    description: 'ReLU activation, differential inputs, 1 hidden layer (3)',
+    displayName: 'Ripple',
+    shortName: 'RP',
+    description: 'ReLU activation, pair inputs, 1 hidden layer',
     nn: {
       architecture: NN_ARCH_PAIR_M,
       inputModification: 'pair',
       activationType: 'relu',
     },
     colors: {
-      light: '#6db5dd', // Sky blue - differential, 1 hidden
-      dark: '#3d81a3',
+      light: '#87CEEB', // Sky blue - light
+      dark: '#5B99B8',
     },
   },
   {
     useCar: 'use-all',
     displayName: 'Wave',
     shortName: 'WV',
-    description: 'ReLU activation, differential inputs, 2 hidden layers (3, 2)',
+    description: 'ReLU activation, pair inputs, 2 hidden layers',
     nn: {
       architecture: NN_ARCH_PAIR_L,
       inputModification: 'pair',
       activationType: 'relu',
     },
     colors: {
-      light: '#6687e8', // Royal blue - differential, 2 hidden
-      dark: '#3a5ea8',
+      light: '#4169E1', // Royal blue - deep
+      dark: '#2E4A9D',
     },
   },
   {
     useCar: 'use-all',
     displayName: 'Mist',
     shortName: 'MI',
-    description: 'ReLU activation, direct inputs, 1 hidden layer (3)',
+    description: 'ReLU activation, direct inputs, 1 hidden layer',
     nn: {
       architecture: NN_ARCH_DIRECT_M,
       inputModification: 'dir',
-      activationType: 'swish',
+      activationType: 'relu',
     },
     colors: {
-      light: '#66ccd4', // Cyan - direct, 1 hidden
-      dark: '#429ca3',
+      light: '#00CED1', // Dark turquoise
+      dark: '#009194',
     },
   },
   {
     useCar: 'use-all',
     displayName: 'Tide',
     shortName: 'TD',
-    description: 'ReLU activation, direct inputs, 2 hidden layers (3, 2)',
+    description: 'ReLU activation, direct inputs, 2 hidden layers',
     nn: {
       architecture: NN_ARCH_DIRECT_L,
       inputModification: 'dir',
       activationType: 'relu',
     },
     colors: {
-      light: '#5fa3b8', // Teal - direct, 2 hidden
-      dark: '#3b7485',
-    },
-  },
-  {
-    useCar: 'use-few',
-    displayName: 'Surge',
-    shortName: 'SG',
-    description: 'SWISH activation, direct inputs, 3 hidden layers (4, 3, 2)',
-    nn: {
-      architecture: NN_ARCH_PAIR_XL,
-      inputModification: 'pair',
-      activationType: 'swish',
-    },
-    colors: {
-      light: '#4d8fb8', // Deep blue - direct, 2 hidden (larger)
-      dark: '#2f5c85',
+      light: '#008B8B', // Dark cyan/teal
+      dark: '#006161',
     },
   },
 
-  // === GELU activation (green/teal family) ===
-  // Green hues - natural, smooth activation
+  // ============================================================================
+  // GELU ACTIVATION - Green family (natural tones)
+  // ============================================================================
   {
     useCar: 'use-all',
-    displayName: 'Leaf',
-    shortName: 'LF',
-    description: 'GELU activation, differential inputs, 1 hidden layer (3)',
+    displayName: 'Sprout',
+    shortName: 'SR',
+    description: 'GELU activation, pair inputs, 1 hidden layer',
     nn: {
       architecture: NN_ARCH_PAIR_M,
       inputModification: 'pair',
       activationType: 'gelu',
     },
     colors: {
-      light: '#8fcc5c', // Lime green - differential, 1 hidden
-      dark: '#649438',
+      light: '#9ACD32', // Yellow-green
+      dark: '#6B8F23',
     },
   },
   {
     useCar: 'use-all',
     displayName: 'Vine',
     shortName: 'VN',
-    description: 'GELU activation, differential inputs, 2 hidden layers (3, 2)',
+    description: 'GELU activation, pair inputs, 2 hidden layers',
     nn: {
       architecture: NN_ARCH_PAIR_L,
       inputModification: 'pair',
       activationType: 'gelu',
     },
     colors: {
-      light: '#3ba857', // Forest green - differential, 2 hidden
-      dark: '#28753c',
+      light: '#228B22', // Forest green
+      dark: '#186118',
     },
   },
   {
     useCar: 'use-all',
     displayName: 'Moss',
     shortName: 'MS',
-    description: 'GELU activation, direct inputs, 1 hidden layer (3)',
+    description: 'GELU activation, direct inputs, 1 hidden layer',
     nn: {
       architecture: NN_ARCH_DIRECT_M,
       inputModification: 'dir',
       activationType: 'gelu',
     },
     colors: {
-      light: '#70ccaa', // Mint/seafoam - direct, 1 hidden
-      dark: '#429470',
+      light: '#00FF7F', // Spring green - bright
+      dark: '#00B358',
     },
   },
   {
     useCar: 'use-all',
     displayName: 'Fern',
     shortName: 'FN',
-    description: 'GELU activation, direct inputs, 2 hidden layers (3, 2)',
+    description: 'GELU activation, direct inputs, 2 hidden layers',
     nn: {
       architecture: NN_ARCH_DIRECT_L,
       inputModification: 'dir',
       activationType: 'gelu',
     },
     colors: {
-      light: '#4db89e', // Teal-green - direct, 2 hidden
-      dark: '#328569',
+      light: '#2E8B57', // Sea green
+      dark: '#20613D',
     },
   },
 
-  // === Step activation (purple/violet family) ===
-  // Purple hues - digital, binary activation
+  // ============================================================================
+  // STEP ACTIVATION - Purple family (digital/binary tones)
+  // ============================================================================
   {
     useCar: 'use-all',
-    displayName: 'Bit',
-    shortName: 'BT',
-    description: 'Step activation, differential inputs, 1 hidden layer (3)',
+    displayName: 'Pulse',
+    shortName: 'PL',
+    description: 'Step activation, pair inputs, 1 hidden layer',
     nn: {
       architecture: NN_ARCH_PAIR_M,
       inputModification: 'pair',
       activationType: 'step',
     },
     colors: {
-      light: '#ac70cc', // Purple - differential, 1 hidden
-      dark: '#7a4294',
+      light: '#9370DB', // Medium purple
+      dark: '#66509E',
     },
   },
   {
     useCar: 'use-all',
     displayName: 'Byte',
     shortName: 'BY',
-    description: 'Step activation, differential inputs, 2 hidden layers (3, 2)',
+    description: 'Step activation, pair inputs, 2 hidden layers',
     nn: {
       architecture: NN_ARCH_PAIR_L,
       inputModification: 'pair',
       activationType: 'step',
     },
     colors: {
-      light: '#b366cc', // Deep violet - differential, 2 hidden
-      dark: '#804294',
+      light: '#8B00FF', // Electric violet
+      dark: '#6100B3',
     },
   },
   {
     useCar: 'use-all',
-    displayName: 'Chip',
-    shortName: 'CH',
-    description: 'Step activation, direct inputs, 1 hidden layer (3)',
+    displayName: 'Flip',
+    shortName: 'FP',
+    description: 'Step activation, direct inputs, 1 hidden layer',
     nn: {
       architecture: NN_ARCH_DIRECT_M,
       inputModification: 'dir',
       activationType: 'step',
     },
     colors: {
-      light: '#c4a3e8', // Lavender - direct, 1 hidden
-      dark: '#8756b8',
+      light: '#E6E6FA', // Lavender - light
+      dark: '#A1A1B8',
     },
   },
   {
     useCar: 'use-all',
     displayName: 'Core',
     shortName: 'CR',
-    description: 'Step activation, direct inputs, 2 hidden layers (3, 2)',
+    description: 'Step activation, direct inputs, 2 hidden layers',
     nn: {
       architecture: NN_ARCH_DIRECT_L,
       inputModification: 'dir',
       activationType: 'step',
     },
     colors: {
-      light: '#8070e8', // Indigo - direct, 2 hidden
-      dark: '#5442a8',
+      light: '#4B0082', // Indigo - dark
+      dark: '#34005C',
     },
   },
 
-  // === SWISH activation (red/pink family) ===
-  // Red hues - advanced, gated activation
+  // ============================================================================
+  // SWISH ACTIVATION - Red/pink family (advanced/gated tones)
+  // ============================================================================
   {
     useCar: 'use-all',
-    displayName: 'Neo',
-    shortName: 'NE',
-    description: 'SWISH activation, differential inputs, 1 hidden layer (3)',
+    displayName: 'Swirl',
+    shortName: 'SW',
+    description: 'SWISH activation, pair inputs, 1 hidden layer',
     nn: {
       architecture: NN_ARCH_PAIR_M,
       inputModification: 'pair',
       activationType: 'swish',
     },
     colors: {
-      light: '#e8668f', // Rose/magenta - differential, 1 hidden
-      dark: '#a83d64',
+      light: '#FF69B4', // Hot pink - bright
+      dark: '#B3497E',
+    },
+  },
+  {
+    useCar: 'use-few',
+    displayName: 'Twist',
+    shortName: 'TW',
+    description: 'SWISH activation, pair inputs, 2 hidden layers',
+    nn: {
+      architecture: NN_ARCH_PAIR_L,
+      inputModification: 'pair',
+      activationType: 'swish',
+    },
+    colors: {
+      light: '#FF1493', // Deep pink
+      dark: '#B30E68',
+    },
+  },
+  {
+    useCar: 'use-few',
+    displayName: 'Surge',
+    shortName: 'SG',
+    description: 'SWISH activation, pair inputs, 3 hidden layers',
+    nn: {
+      architecture: NN_ARCH_PAIR_XL,
+      inputModification: 'pair',
+      activationType: 'swish',
+    },
+    colors: {
+      light: '#DC143C', // Crimson - red-pink
+      dark: '#9B0E2A',
+    },
+  },
+  {
+    useCar: 'use-all',
+    displayName: 'Flow',
+    shortName: 'FW',
+    description: 'SWISH activation, direct inputs, 1 hidden layer',
+    nn: {
+      architecture: NN_ARCH_DIRECT_M,
+      inputModification: 'dir',
+      activationType: 'swish',
+    },
+    colors: {
+      light: '#FFB6C1', // Light pink
+      dark: '#B38087',
+    },
+  },
+  {
+    useCar: 'use-all',
+    displayName: 'Flux',
+    shortName: 'FX',
+    description: 'SWISH activation, direct inputs, 2 hidden layers',
+    nn: {
+      architecture: NN_ARCH_DIRECT_L,
+      inputModification: 'dir',
+      activationType: 'swish',
+    },
+    colors: {
+      light: '#C71585', // Medium violet-red
+      dark: '#8B0F5D',
+    },
+  },
+  {
+    useCar: 'use-few',
+    displayName: 'Whirl',
+    shortName: 'WH',
+    description: 'SWISH activation, direct inputs, 2 hidden layers (large)',
+    nn: {
+      architecture: NN_ARCH_DIRECT_XL,
+      inputModification: 'dir',
+      activationType: 'swish',
+    },
+    colors: {
+      light: '#8B008B', // Dark magenta
+      dark: '#610061',
     },
   },
 ];

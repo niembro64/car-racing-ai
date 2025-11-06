@@ -27,6 +27,7 @@ export const NN_ARCH_DIRECT_S = [SENSOR_RAY_ANGLES.length, 1];
 export const NN_ARCH_DIRECT_M = [SENSOR_RAY_ANGLES.length, 2, 1];
 export const NN_ARCH_DIRECT_L = [SENSOR_RAY_ANGLES.length, 3, 2, 1];
 export const NN_ARCH_DIRECT_XL = [SENSOR_RAY_ANGLES.length, 5, 5, 1];
+
 export const NN_ARCH_PAIR_S = [1 + SENSOR_RAY_PAIRS.length, 1];
 export const NN_ARCH_PAIR_M = [1 + SENSOR_RAY_PAIRS.length, 2, 1];
 export const NN_ARCH_PAIR_L = [1 + SENSOR_RAY_PAIRS.length, 3, 2, 1];
