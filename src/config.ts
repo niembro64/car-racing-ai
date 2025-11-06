@@ -280,7 +280,7 @@ export const CONFIG: Config = {
       color: '#fff',
       width: 0.3,
     },
-    rotateBrainOverlay: false, // Whether the brain overlay rotates with the car or stays upright
+    rotateBrainOverlay: true, // Whether the brain overlay rotates with the car or stays upright
   },
 
   debug: {

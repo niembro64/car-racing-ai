@@ -327,7 +327,8 @@ export class Car {
     ctx: CanvasRenderingContext2D,
     showRays: boolean = false,
     vizMode: CarVizMode = 'simple',
-    visualizationMode: VisualizationMode = 'vis-simple'
+    visualizationMode: VisualizationMode = 'vis-simple',
+    rotateBrainOverlay: boolean = false
   ): void {
     // Find the config for this car type by shortName (check all defined configs)
     const config = CAR_BRAIN_CONFIGS_DEFINED.find(
@@ -471,8 +472,8 @@ export class Car {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Conditionally rotate overlay based on config
-    if (CONFIG.visualization.rotateBrainOverlay) {
+    // Conditionally rotate overlay based on parameter
+    if (rotateBrainOverlay) {
       ctx.rotate(this.angle - Math.PI / 2);
     } else {
       ctx.rotate(Math.PI); // 180 degrees to flip it upside down when not rotating

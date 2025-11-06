@@ -11,10 +11,10 @@
     <div class="info-container">
       <div class="controls">
         <button @click="nextGeneration" class="btn-sync">
-          SYNC<br />GENERATIONS
+          SYNC<br />GEN
         </button>
         <button @click="reset" class="btn-restart">
-          RESTART<br />SIMULATION
+          RESTART<br />SIM
         </button>
         <button @click="toggleAllCarTypes" class="btn-car-usage">
           TYPES<br />{{
@@ -37,6 +37,9 @@
         </button>
         <button @click="cycleBrainStrategy" class="btn-brain-strategy">
           <span v-html="getBrainStrategyLabel(brainSelectionStrategy)"></span>
+        </button>
+        <button @click="toggleBrainRotation" class="btn-brain-rotation">
+          {{ TEXT_CHARACTER.brain }} OVERLAY<br />{{ rotateBrainOverlay ? 'TURNS' : 'UPRIGHT' }}
         </button>
       </div>
 
@@ -476,6 +479,7 @@ const initialView = parseInfoView(CONFIG.defaults.defaultInfoView);
 const viewMode = ref<ViewMode>(initialView.viewMode);
 const graphType = ref<'completion' | 'rate' | 'score'>(initialView.graphType);
 const graphCanvasRef = ref<HTMLCanvasElement | null>(null);
+const rotateBrainOverlay = ref(CONFIG.visualization.rotateBrainOverlay);
 
 const activeCarConfigs = computed(() => {
   return getCarBrainConfigsByLevel(carUsageLevel.value);
@@ -1365,17 +1369,17 @@ const render = (ctx: CanvasRenderingContext2D) => {
   // FIRST PASS: Render all cars with simple mode (physical bodies only)
   // Render dead cars first
   for (const car of deadCars) {
-    car.render(ctx, false, 'simple', visualizationMode.value);
+    car.render(ctx, false, 'simple', visualizationMode.value, rotateBrainOverlay.value);
   }
 
   // Render other alive cars
   for (const car of others) {
-    car.render(ctx, showRays.value, 'simple', visualizationMode.value);
+    car.render(ctx, showRays.value, 'simple', visualizationMode.value, rotateBrainOverlay.value);
   }
 
   // Render elites last (on top) with rays if enabled
   for (const car of elites) {
-    car.render(ctx, showRays.value, 'simple', visualizationMode.value);
+    car.render(ctx, showRays.value, 'simple', visualizationMode.value, rotateBrainOverlay.value);
   }
 
   // SECOND PASS: Render detailed overlays for lead cars on top of everything
@@ -1389,7 +1393,7 @@ const render = (ctx: CanvasRenderingContext2D) => {
       // Check if this car is the lead car for its type
       const leadCar = leadCarByConfigId.value.get(car.configShortName);
       if (car === leadCar) {
-        car.render(ctx, showRays.value, 'detailed', visualizationMode.value);
+        car.render(ctx, showRays.value, 'detailed', visualizationMode.value, rotateBrainOverlay.value);
       }
     }
   }
@@ -1741,18 +1745,11 @@ const cycleVisualizationMode = () => {
   const currentIndex = VISUALIZATION_MODES.indexOf(visualizationMode.value);
   const nextIndex = (currentIndex + 1) % VISUALIZATION_MODES.length;
   visualizationMode.value = VISUALIZATION_MODES[nextIndex];
-
-  // When switching to "show-thinking" mode, automatically set speed to lowest
-  if (visualizationMode.value === 'vis-think') {
-    carSpeedMultiplierIndex.value = 0; // Set to first/lowest speed
-    print(`[Visualization] Mode: ${getVisualizationModeLabel(visualizationMode.value)} (Speed auto-set to ${carSpeedMultiplier.value}x)`);
-  } else {
-    print(
-      `[Visualization] Mode: ${getVisualizationModeLabel(
-        visualizationMode.value
-      )}`
-    );
-  }
+  print(
+    `[Visualization] Mode: ${getVisualizationModeLabel(
+      visualizationMode.value
+    )}`
+  );
 };
 
 // Get button label for visualization mode
@@ -1821,6 +1818,12 @@ const cycleBrainStrategy = () => {
   print(
     `[Strategy] ${strategyInfo?.emoji} Switched to: ${strategyInfo?.name} - ${strategyInfo?.description}`
   );
+};
+
+// Toggle brain overlay rotation
+const toggleBrainRotation = () => {
+  rotateBrainOverlay.value = !rotateBrainOverlay.value;
+  print(`[Visualization] Brain overlay rotation: ${rotateBrainOverlay.value ? 'ON (rotates with car)' : 'OFF (stays upright)'}`);
 };
 
 // Render graph
@@ -2192,7 +2195,7 @@ canvas {
 
 .controls {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin: 0;
   padding: 0;
