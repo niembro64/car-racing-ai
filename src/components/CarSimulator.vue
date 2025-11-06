@@ -78,13 +78,13 @@
                 <th>{{ isMobile() ? '#' : '# Alive' }}</th>
                 <th>Gen</th>
                 <th>{{ isMobile() ? 'MUT' : 'NEXT MUT' }}</th>
-                <th>{{ isMobile() ? 'NR' : 'NEAR' }}</th>
+                <th>{{ isMobile() ? 'NEAR' : 'NEAR' }}</th>
                 <th>Mean</th>
                 <th>Best</th>
-                <th>{{ isMobile() ? 'DUR' : 'Duration' }}</th>
-                <th>{{ isMobile() ? 'HID' : 'Hidden' }}</th>
-                <th>{{ isMobile() ? 'A' : 'Activ' }}</th>
-                <th>{{ isMobile() ? 'I' : 'Input' }}</th>
+                <th>{{ isMobile() ? 'DUR' : 'DURATION' }}</th>
+                <th>{{ isMobile() ? 'HID' : 'HIDDEN' }}</th>
+                <th>{{ isMobile() ? 'ACTV' : 'ACTIVE' }}</th>
+                <th>{{ isMobile() ? 'INPT' : 'INPUT' }}</th>
               </tr>
             </thead>
             <tbody>
@@ -687,6 +687,16 @@ const sortedCarBrainConfigs = computed(() => {
 // Computed property for nearness to all-time best death point (0 to 1)
 const nearnessPercentByConfigId = computed(() => {
   void frameCounter.value; // Trigger on every frame
+
+  // If debug flag is set, return 0 for all configs
+  if (CONFIG.debug.disableNearnessCalculation) {
+    const nearnesses = new Map<string, number>();
+    for (const config of activeCarConfigs.value) {
+      nearnesses.set(config.shortName, 0);
+    }
+    return nearnesses;
+  }
+
   const trackLength = track.getTotalLength();
 
   const nearnesses = new Map<string, number>();

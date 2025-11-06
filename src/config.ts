@@ -117,7 +117,7 @@ export const CONFIG: Config = {
   car: {
     physics: {
       forwardSpeed: 400,
-      steeringSensitivity: 0.08,
+      steeringSensitivity: 0.05,
       steeringDelaySeconds: 0.2,
     },
     dimensions: {
@@ -172,16 +172,16 @@ export const CONFIG: Config = {
 
   geneticAlgorithm: {
     mutation: {
-      base: 0.1, // Standard starting mutation rate
+      base: 0.001, // Standard starting mutation rate
       min: 0.00001, // Minimum mutation rate when approaching track completion
       startingMutationParameterScaleAgainstSize: {
-        min: 0.8, // Larger networks get slightly lower mutation rates
+        min: 0.0, // Larger networks get slightly lower mutation rates
         max: 1.0,
       },
       bezierPoints: [0, 0, 1, 1], // Linear decay from base to min
       rankMultiplier: {
         min: 0.00000001, // Standard minimum multiplier (50% of base)
-        max: 2.0, // Standard maximum multiplier (200% of base)
+        max: 0.3, // Standard maximum multiplier (200% of base)
         curvePower: 2, // Quadratic curve for gradual increase
       },
       progressive: {
@@ -285,6 +285,10 @@ export const CONFIG: Config = {
       color: '#fff',
       width: 0.3,
     },
+  },
+
+  debug: {
+    disableNearnessCalculation: true,
   },
 
   defaults: {

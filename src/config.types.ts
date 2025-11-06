@@ -295,6 +295,14 @@ export interface VisualizationConfig {
 }
 
 // ============================================================================
+// DEBUG CONFIG
+// ============================================================================
+
+export interface DebugConfig {
+  disableNearnessCalculation: boolean;
+}
+
+// ============================================================================
 // DEFAULTS CONFIG
 // ============================================================================
 
@@ -325,5 +333,6 @@ export interface Config {
   lap: LapConfig;
   scoring: ScoringConfig;
   visualization: VisualizationConfig;
+  debug: DebugConfig;
   defaults: DefaultsConfig;
 }
