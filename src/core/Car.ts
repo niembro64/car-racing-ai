@@ -575,15 +575,17 @@ export class Car {
         );
       }
 
-      // Draw section border
-      ctx.strokeStyle = this.alive ? CONFIG.car.colors.bodyAliveStroke : CONFIG.car.colors.bodyDeadStroke;
-      ctx.lineWidth = 0.5;
-      ctx.strokeRect(
-        -detailedWidth / 2,
-        sectionBottom,
-        detailedWidth,
-        sectionHeight
-      );
+      // Draw border around input section (if width > 0)
+      if (CONFIG.visualization.neuronBorder.width > 0) {
+        ctx.strokeStyle = CONFIG.visualization.neuronBorder.color;
+        ctx.lineWidth = CONFIG.visualization.neuronBorder.width;
+        ctx.strokeRect(
+          -detailedWidth / 2,
+          sectionBottom,
+          detailedWidth,
+          sectionHeight
+        );
+      }
 
       currentSectionIdx++;
     }
@@ -685,17 +687,19 @@ export class Car {
             ctx.fillRect(neuronLeft, activationTop, neuronWidth, thirdHeight);
           }
         }
-      }
 
-      // Draw hidden layer section border
-      ctx.strokeStyle = this.alive ? CONFIG.car.colors.bodyAliveStroke : CONFIG.car.colors.bodyDeadStroke;
-      ctx.lineWidth = 0.5;
-      ctx.strokeRect(
-        -detailedWidth / 2,
-        sectionBottom,
-        detailedWidth,
-        sectionHeight
-      );
+        // Draw border around this neuron (if width > 0)
+        if (CONFIG.visualization.neuronBorder.width > 0) {
+          ctx.strokeStyle = CONFIG.visualization.neuronBorder.color;
+          ctx.lineWidth = CONFIG.visualization.neuronBorder.width;
+          ctx.strokeRect(
+            neuronLeft,
+            sectionBottom,
+            neuronWidth,
+            sectionHeight
+          );
+        }
+      }
 
       currentSectionIdx++;
     }
@@ -790,15 +794,17 @@ export class Car {
         }
       }
 
-      // Draw output layer section border
-      ctx.strokeStyle = this.alive ? CONFIG.car.colors.bodyAliveStroke : CONFIG.car.colors.bodyDeadStroke;
-      ctx.lineWidth = 0.5;
-      ctx.strokeRect(
-        -detailedWidth / 2,
-        sectionBottom,
-        detailedWidth,
-        sectionHeight
-      );
+      // Draw border around output neuron (if width > 0)
+      if (CONFIG.visualization.neuronBorder.width > 0) {
+        ctx.strokeStyle = CONFIG.visualization.neuronBorder.color;
+        ctx.lineWidth = CONFIG.visualization.neuronBorder.width;
+        ctx.strokeRect(
+          neuronLeft,
+          sectionBottom,
+          neuronWidth,
+          sectionHeight
+        );
+      }
     }
 
     // Draw overall car border using the car type color

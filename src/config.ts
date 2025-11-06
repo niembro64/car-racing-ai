@@ -281,6 +281,10 @@ export const CONFIG: Config = {
       recentGenerationsCount: 20,
       labelRightPadding: 60,
     },
+    neuronBorder: {
+      color: '#fff',
+      width: 0.3,
+    },
   },
 
   defaults: {

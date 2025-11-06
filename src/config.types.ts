@@ -280,12 +280,18 @@ export interface VisualizationGraphConfig {
   labelRightPadding: number;
 }
 
+export interface VisualizationNeuronBorderConfig {
+  color: string;
+  width: number;
+}
+
 export interface VisualizationConfig {
   showCarPercentages: boolean;
   debugShowWaypoints: boolean;
   waypoints: VisualizationWaypointsConfig;
   generationMarker: VisualizationGenerationMarkerConfig;
   graph: VisualizationGraphConfig;
+  neuronBorder: VisualizationNeuronBorderConfig;
 }
 
 // ============================================================================
