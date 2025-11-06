@@ -11,18 +11,6 @@ import {
   NN_ARCH_DIRECT_XL,
 } from '@/config_nn';
 
-// Helper function to convert hex to RGB
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? {
-        r: parseInt(result[1], 16) / 255,
-        g: parseInt(result[2], 16) / 255,
-        b: parseInt(result[3], 16) / 255,
-      }
-    : { r: 0, g: 0, b: 0 };
-}
-
 // Helper function to convert RGB to hex
 function rgbToHex(r: number, g: number, b: number): string {
   const toHex = (n: number) =>
@@ -39,38 +27,6 @@ function getLuminance(rgb: { r: number; g: number; b: number }): number {
   const adjust = (c: number) =>
     c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
   return 0.2126 * adjust(r) + 0.7152 * adjust(g) + 0.0722 * adjust(b);
-}
-
-// Convert RGB to HSL
-function rgbToHsl(rgb: {
-  r: number;
-  g: number;
-  b: number;
-}): { h: number; s: number; l: number } {
-  const { r, g, b } = rgb;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  let h = 0;
-  let s = 0;
-  const l = (max + min) / 2;
-
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r:
-        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-        break;
-      case g:
-        h = ((b - r) / d + 2) / 6;
-        break;
-      case b:
-        h = ((r - g) / d + 4) / 6;
-        break;
-    }
-  }
-
-  return { h, s, l };
 }
 
 // Convert HSL to RGB

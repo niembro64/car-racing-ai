@@ -179,14 +179,15 @@ export const CONFIG: Config = {
 
   geneticAlgorithm: {
     mutation: {
-      startingRates: [0.02, 0.2, 1, 2, 5], // Mutation rates (low, medium, high)
-      defaultStartingRate: 0, // Index into startingRates
-      minimumRate: 0.005, // Minimum mutation rate at track completion
+      startingRates: [0.05, 0.5, 1.8, 4, 6], // Mutation rates (low, medium, high)
+      defaultStartingRate: 2, // Index into startingRates
+      minimumRate: 0.01, // Minimum mutation rate at track completion
       networkSizeScale: {
         smallestNetwork: 1.0, // Smallest network gets full mutation
         largestNetwork: 0.5, // Largest network gets no mutation (no learning)
       },
-      trackProgressCurve: [0, 0, 1, 1], // Linear decay as cars progress through track
+      trackProgressCurve: [0, 0.5, 0.5, 1], // Linear decay as cars progress through track
+      // trackProgressCurve: [0, 0, 1, 1], // Linear decay as cars progress through track
       populationRankScale: {
         firstMutant: 0.001, // First mutant explores cautiously
         lastMutant: 1, // Last mutant explores aggressively
