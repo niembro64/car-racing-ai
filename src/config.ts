@@ -100,6 +100,12 @@ export const CONFIG: Config = {
         canvas_width
       ),
     },
+    // Preset start/finish line positions (as ratio of centerline length, 0 to 1)
+    // presetStartPositions: [0.485],
+    // presetStartPositions: [0.25],
+    // presetStartPositions: [0.43],
+    // presetStartPositions: [0.57],
+    presetStartPositions: [0.485, 0.25, 0.43, 0.57],
     colors: {
       surface: '#333',
       boundary: '#000',
@@ -175,7 +181,7 @@ export const CONFIG: Config = {
     mutation: {
       startingRates: [0.02, 0.2, 1, 2, 5], // Mutation rates (low, medium, high)
       defaultStartingRate: 0, // Index into startingRates
-      minimumRate: 0.02, // Minimum mutation rate at track completion
+      minimumRate: 0.005, // Minimum mutation rate at track completion
       networkSizeScale: {
         smallestNetwork: 1.0, // Smallest network gets full mutation
         largestNetwork: 0.5, // Largest network gets no mutation (no learning)

@@ -41,6 +41,7 @@ export interface TrackConfig {
   halfWidth: number;
   segmentsPerCurve: number;
   waypoints: TrackWaypointsConfig;
+  presetStartPositions: number[];
   colors: TrackColorsConfig;
   lineWidths: TrackLineWidthsConfig;
 }

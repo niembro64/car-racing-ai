@@ -72,10 +72,29 @@ export class Track {
     );
   }
 
-  // Randomize the start/finish line position
+  // Randomize the start/finish line position from preset positions
   randomizeStartPosition(): void {
-    const randomIndex = Math.floor(Math.random() * this.centerline.length);
-    this.setStartIndex(randomIndex);
+    const presetPositions = CONFIG.track.presetStartPositions;
+    const randomPreset = presetPositions[Math.floor(Math.random() * presetPositions.length)];
+
+    // Add ±5% randomness to the preset position
+    const randomOffset = (Math.random() - 0.5) * 0.1; // -0.05 to +0.05
+    const positionRatio = Math.max(0, Math.min(1, randomPreset + randomOffset));
+
+    // Convert distance ratio to centerline index using cumulative lengths
+    const targetDistance = positionRatio * this.getTotalLength();
+    let closestIndex = 0;
+    let minDiff = Math.abs(this.cumulativeLengths[0] - targetDistance);
+
+    for (let i = 1; i < this.cumulativeLengths.length; i++) {
+      const diff = Math.abs(this.cumulativeLengths[i] - targetDistance);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIndex = i;
+      }
+    }
+
+    this.setStartIndex(closestIndex);
   }
 
   // Catmull-Rom spline interpolation between points

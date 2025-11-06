@@ -11,6 +11,145 @@ import {
   NN_ARCH_DIRECT_XL,
 } from '@/config_nn';
 
+// Helper function to convert hex to RGB
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16) / 255,
+        g: parseInt(result[2], 16) / 255,
+        b: parseInt(result[3], 16) / 255,
+      }
+    : { r: 0, g: 0, b: 0 };
+}
+
+// Helper function to convert RGB to hex
+function rgbToHex(r: number, g: number, b: number): string {
+  const toHex = (n: number) =>
+    Math.round(Math.max(0, Math.min(255, n * 255)))
+      .toString(16)
+      .padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+// Calculate relative luminance (perceived brightness)
+function getLuminance(rgb: { r: number; g: number; b: number }): number {
+  const { r, g, b } = rgb;
+  // Apply gamma correction
+  const adjust = (c: number) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return 0.2126 * adjust(r) + 0.7152 * adjust(g) + 0.0722 * adjust(b);
+}
+
+// Convert RGB to HSL
+function rgbToHsl(rgb: {
+  r: number;
+  g: number;
+  b: number;
+}): { h: number; s: number; l: number } {
+  const { r, g, b } = rgb;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        break;
+      case g:
+        h = ((b - r) / d + 2) / 6;
+        break;
+      case b:
+        h = ((r - g) / d + 4) / 6;
+        break;
+    }
+  }
+
+  return { h, s, l };
+}
+
+// Convert HSL to RGB
+function hslToRgb(hsl: {
+  h: number;
+  s: number;
+  l: number;
+}): { r: number; g: number; b: number } {
+  const { h, s, l } = hsl;
+  let r, g, b;
+
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+
+  return { r, g, b };
+}
+
+// Adjust color to target luminance while preserving hue and saturation
+function adjustToLuminanceWithSaturation(
+  hue: number, // 0-1
+  saturation: number, // 0-1
+  targetLuminance: number
+): string {
+  // Binary search for the right lightness value
+  let minL = 0;
+  let maxL = 1;
+  let iterations = 0;
+  const maxIterations = 50;
+
+  while (iterations < maxIterations) {
+    const testL = (minL + maxL) / 2;
+    const testRgb = hslToRgb({ h: hue, s: saturation, l: testL });
+    const testLuminance = getLuminance(testRgb);
+
+    if (Math.abs(testLuminance - targetLuminance) < 0.001) {
+      return rgbToHex(testRgb.r, testRgb.g, testRgb.b);
+    }
+
+    if (testLuminance < targetLuminance) {
+      minL = testL;
+    } else {
+      maxL = testL;
+    }
+
+    iterations++;
+  }
+
+  const finalRgb = hslToRgb({ h: hue, s: saturation, l: (minL + maxL) / 2 });
+  return rgbToHex(finalRgb.r, finalRgb.g, finalRgb.b);
+}
+
+// Target luminance values for perceptually equal brightness
+const LIGHT_LUMINANCE = 0.9; // Moderate brightness for light colors
+const DARK_LUMINANCE = 0.3; // Darker for dark colors
+
+// Saturation levels for variety
+const SAT_HOT = 0.7; // Highly saturated, vibrant "hot" colors
+const SAT_VIVID = 0.6; // Vivid, saturated colors
+const SAT_MEDIUM = 0.5; // Medium saturation
+const SAT_PASTEL = 0.4; // Pastel, "easter" colors
+const SAT_SOFT = 0.3; // Very soft, whitish colors
+const SAT_NEUTRAL = 0.2; // Nearly grayscale
+
 export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   // ============================================================================
   // NO ACTIVATION - Gray family (neutral/minimal)
@@ -26,8 +165,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: '-',
     },
     colors: {
-      light: '#c7c2c2', // Light gray
-      dark: '#8c8080',
+      light: adjustToLuminanceWithSaturation(0, SAT_NEUTRAL, LIGHT_LUMINANCE), // Pure gray
+      dark: adjustToLuminanceWithSaturation(0, SAT_NEUTRAL, DARK_LUMINANCE),
     },
   },
   {
@@ -41,8 +180,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: '-',
     },
     colors: {
-      light: '#a3adb8', // Blue-gray
-      dark: '#616e7a',
+      light: adjustToLuminanceWithSaturation(0.58, SAT_SOFT, LIGHT_LUMINANCE), // Blue-gray pastel
+      dark: adjustToLuminanceWithSaturation(0.58, SAT_SOFT, DARK_LUMINANCE),
     },
   },
 
@@ -60,8 +199,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      light: '#FFD700', // Gold - bright yellow
-      dark: '#B8960A',
+      light: adjustToLuminanceWithSaturation(0.14, SAT_HOT, LIGHT_LUMINANCE), // Hot yellow-orange
+      dark: adjustToLuminanceWithSaturation(0.14, SAT_HOT, DARK_LUMINANCE),
     },
   },
   {
@@ -75,8 +214,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      light: '#FF8C00', // Dark orange
-      dark: '#B86300',
+      light: adjustToLuminanceWithSaturation(0.11, SAT_PASTEL, LIGHT_LUMINANCE), // Peach pastel
+      dark: adjustToLuminanceWithSaturation(0.11, SAT_PASTEL, DARK_LUMINANCE),
     },
   },
   {
@@ -90,8 +229,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      light: '#FF4500', // Orange-red
-      dark: '#B83100',
+      light: adjustToLuminanceWithSaturation(0.03, SAT_HOT, LIGHT_LUMINANCE), // Hot red-orange
+      dark: adjustToLuminanceWithSaturation(0.03, SAT_HOT, DARK_LUMINANCE),
     },
   },
   {
@@ -105,8 +244,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      light: '#FFA500', // Orange/amber
-      dark: '#B87400',
+      light: adjustToLuminanceWithSaturation(0.1, SAT_VIVID, LIGHT_LUMINANCE), // Vivid orange
+      dark: adjustToLuminanceWithSaturation(0.1, SAT_VIVID, DARK_LUMINANCE),
     },
   },
   {
@@ -120,8 +259,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'linear',
     },
     colors: {
-      light: '#D2691E', // Chocolate - brown-orange
-      dark: '#954A15',
+      light: adjustToLuminanceWithSaturation(0.08, SAT_MEDIUM, LIGHT_LUMINANCE), // Medium brown-orange
+      dark: adjustToLuminanceWithSaturation(0.08, SAT_MEDIUM, DARK_LUMINANCE),
     },
   },
 
@@ -139,8 +278,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'relu',
     },
     colors: {
-      light: '#87CEEB', // Sky blue - light
-      dark: '#5B99B8',
+      light: adjustToLuminanceWithSaturation(0.55, SAT_PASTEL, LIGHT_LUMINANCE), // Sky blue pastel
+      dark: adjustToLuminanceWithSaturation(0.55, SAT_PASTEL, DARK_LUMINANCE),
     },
   },
   {
@@ -154,8 +293,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'relu',
     },
     colors: {
-      light: '#4169E1', // Royal blue - deep
-      dark: '#2E4A9D',
+      light: adjustToLuminanceWithSaturation(0.61, SAT_HOT, LIGHT_LUMINANCE), // Hot royal blue
+      dark: adjustToLuminanceWithSaturation(0.61, SAT_HOT, DARK_LUMINANCE),
     },
   },
   {
@@ -169,8 +308,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'relu',
     },
     colors: {
-      light: '#00CED1', // Dark turquoise
-      dark: '#009194',
+      light: adjustToLuminanceWithSaturation(0.5, SAT_HOT, LIGHT_LUMINANCE), // Hot cyan
+      dark: adjustToLuminanceWithSaturation(0.5, SAT_HOT, DARK_LUMINANCE),
     },
   },
   {
@@ -184,8 +323,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'relu',
     },
     colors: {
-      light: '#008B8B', // Dark cyan/teal
-      dark: '#006161',
+      light: adjustToLuminanceWithSaturation(0.5, SAT_MEDIUM, LIGHT_LUMINANCE), // Medium teal
+      dark: adjustToLuminanceWithSaturation(0.5, SAT_MEDIUM, DARK_LUMINANCE),
     },
   },
 
@@ -203,8 +342,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'gelu',
     },
     colors: {
-      light: '#9ACD32', // Yellow-green
-      dark: '#6B8F23',
+      light: adjustToLuminanceWithSaturation(0.22, SAT_VIVID, LIGHT_LUMINANCE), // Vivid yellow-green
+      dark: adjustToLuminanceWithSaturation(0.22, SAT_VIVID, DARK_LUMINANCE),
     },
   },
   {
@@ -218,8 +357,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'gelu',
     },
     colors: {
-      light: '#228B22', // Forest green
-      dark: '#186118',
+      light: adjustToLuminanceWithSaturation(0.33, SAT_HOT, LIGHT_LUMINANCE), // Hot forest green
+      dark: adjustToLuminanceWithSaturation(0.33, SAT_HOT, DARK_LUMINANCE),
     },
   },
   {
@@ -233,8 +372,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'gelu',
     },
     colors: {
-      light: '#00FF7F', // Spring green - bright
-      dark: '#00B358',
+      light: adjustToLuminanceWithSaturation(0.4, SAT_HOT, LIGHT_LUMINANCE), // Hot spring green
+      dark: adjustToLuminanceWithSaturation(0.4, SAT_HOT, DARK_LUMINANCE),
     },
   },
   {
@@ -248,8 +387,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'gelu',
     },
     colors: {
-      light: '#2E8B57', // Sea green
-      dark: '#20613D',
+      light: adjustToLuminanceWithSaturation(0.38, SAT_PASTEL, LIGHT_LUMINANCE), // Mint pastel
+      dark: adjustToLuminanceWithSaturation(0.38, SAT_PASTEL, DARK_LUMINANCE),
     },
   },
 
@@ -267,8 +406,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'step',
     },
     colors: {
-      light: '#9370DB', // Medium purple
-      dark: '#66509E',
+      light: adjustToLuminanceWithSaturation(0.72, SAT_MEDIUM, LIGHT_LUMINANCE), // Medium purple
+      dark: adjustToLuminanceWithSaturation(0.72, SAT_MEDIUM, DARK_LUMINANCE),
     },
   },
   {
@@ -282,8 +421,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'step',
     },
     colors: {
-      light: '#8B00FF', // Electric violet
-      dark: '#6100B3',
+      light: adjustToLuminanceWithSaturation(0.75, SAT_HOT, LIGHT_LUMINANCE), // Hot electric violet
+      dark: adjustToLuminanceWithSaturation(0.75, SAT_HOT, DARK_LUMINANCE),
     },
   },
   {
@@ -297,8 +436,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'step',
     },
     colors: {
-      light: '#E6E6FA', // Lavender - light
-      dark: '#A1A1B8',
+      light: adjustToLuminanceWithSaturation(0.7, SAT_SOFT, LIGHT_LUMINANCE), // Lavender pastel
+      dark: adjustToLuminanceWithSaturation(0.7, SAT_SOFT, DARK_LUMINANCE),
     },
   },
   {
@@ -312,8 +451,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'step',
     },
     colors: {
-      light: '#4B0082', // Indigo - dark
-      dark: '#34005C',
+      light: adjustToLuminanceWithSaturation(0.73, SAT_VIVID, LIGHT_LUMINANCE), // Vivid indigo
+      dark: adjustToLuminanceWithSaturation(0.73, SAT_VIVID, DARK_LUMINANCE),
     },
   },
 
@@ -331,8 +470,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'swish',
     },
     colors: {
-      light: '#FF69B4', // Hot pink - bright
-      dark: '#B3497E',
+      light: adjustToLuminanceWithSaturation(0.92, SAT_PASTEL, LIGHT_LUMINANCE), // Pink pastel
+      dark: adjustToLuminanceWithSaturation(0.92, SAT_PASTEL, DARK_LUMINANCE),
     },
   },
   {
@@ -346,8 +485,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'swish',
     },
     colors: {
-      light: '#FF1493', // Deep pink
-      dark: '#B30E68',
+      light: adjustToLuminanceWithSaturation(0.92, SAT_HOT, LIGHT_LUMINANCE), // Hot deep pink
+      dark: adjustToLuminanceWithSaturation(0.92, SAT_HOT, DARK_LUMINANCE),
     },
   },
   {
@@ -361,8 +500,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'swish',
     },
     colors: {
-      light: '#DC143C', // Crimson - red-pink
-      dark: '#9B0E2A',
+      light: adjustToLuminanceWithSaturation(0.98, SAT_HOT, LIGHT_LUMINANCE), // Hot crimson
+      dark: adjustToLuminanceWithSaturation(0.98, SAT_HOT, DARK_LUMINANCE),
     },
   },
   {
@@ -376,8 +515,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'swish',
     },
     colors: {
-      light: '#FFB6C1', // Light pink
-      dark: '#B38087',
+      light: adjustToLuminanceWithSaturation(0.94, SAT_SOFT, LIGHT_LUMINANCE), // Light pink easter
+      dark: adjustToLuminanceWithSaturation(0.94, SAT_SOFT, DARK_LUMINANCE),
     },
   },
   {
@@ -391,8 +530,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'swish',
     },
     colors: {
-      light: '#C71585', // Medium violet-red
-      dark: '#8B0F5D',
+      light: adjustToLuminanceWithSaturation(0.89, SAT_VIVID, LIGHT_LUMINANCE), // Vivid magenta
+      dark: adjustToLuminanceWithSaturation(0.89, SAT_VIVID, DARK_LUMINANCE),
     },
   },
   {
@@ -406,8 +545,8 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
       activationType: 'swish',
     },
     colors: {
-      light: '#8B008B', // Dark magenta
-      dark: '#610061',
+      light: adjustToLuminanceWithSaturation(0.83, SAT_VIVID, LIGHT_LUMINANCE), // Vivid dark magenta
+      dark: adjustToLuminanceWithSaturation(0.83, SAT_VIVID, DARK_LUMINANCE),
     },
   },
 ];
