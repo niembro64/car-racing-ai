@@ -117,13 +117,14 @@ export const CONFIG: Config = {
   car: {
     physics: {
       forwardSpeed: 400,
-      steeringSensitivity: 0.006,
+      steeringSensitivityLow: 0.001,
+      steeringSensitivityMedium: 0.01,
+      steeringSensitivityHigh: 0.1,
       steeringDelaySeconds: 0.2,
     },
     dimensions: {
       simple: {
-        width: 20,
-        height: 30,
+        radius: 10, // Circular car for collision/physics
         borderWidth: 2,
       },
       detailed: {
@@ -149,8 +150,8 @@ export const CONFIG: Config = {
 
   sensors: {
     visualization: {
-      rayWidth: 0.3,
-      hitRadius: 3,
+      rayWidth: 1,
+      hitRadius: 6,
       centerlineHitColor: '#ffffff',
     },
   },
@@ -173,7 +174,9 @@ export const CONFIG: Config = {
 
   geneticAlgorithm: {
     mutation: {
-      startingRate: 0.2, // Initial mutation rate at track start
+      startingRateLow: 0.01, // Initial mutation rate at track start
+      startingRateMedium: 0.1, // Initial mutation rate at track start
+      startingRateHigh: 0.5, // Initial mutation rate at track start
       minimumRate: 0.01, // Minimum mutation rate at track completion
       networkSizeScale: {
         smallestNetwork: 1.0, // Smallest network gets full mutation
@@ -365,7 +368,8 @@ function bezierYForX(
 export function getMutationRate(
   mutationByDistance: boolean,
   bestDistance: number,
-  trackLength: number
+  trackLength: number,
+  mutationRateLevel: 'low' | 'medium' | 'high' = 'low'
 ): number {
   if (!mutationByDistance) {
     return CONFIG.geneticAlgorithm.mutation.minimumRate;
@@ -382,9 +386,14 @@ export function getMutationRate(
 
   const easingValue = bezierYForX(trackProgress, p0, p1, p2, p3);
   const decayFactor = 1 - easingValue;
-  const range =
-    CONFIG.geneticAlgorithm.mutation.startingRate -
-    CONFIG.geneticAlgorithm.mutation.minimumRate;
+
+  // Select starting rate based on level
+  const startingRate =
+    mutationRateLevel === 'low' ? CONFIG.geneticAlgorithm.mutation.startingRateLow :
+    mutationRateLevel === 'medium' ? CONFIG.geneticAlgorithm.mutation.startingRateMedium :
+    CONFIG.geneticAlgorithm.mutation.startingRateHigh;
+
+  const range = startingRate - CONFIG.geneticAlgorithm.mutation.minimumRate;
 
   return CONFIG.geneticAlgorithm.mutation.minimumRate + range * decayFactor;
 }

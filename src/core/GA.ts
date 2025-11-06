@@ -294,7 +294,8 @@ export class GeneticAlgorithm {
     const baseMutationRate = getMutationRate(
       mutationByDistance,
       bestCar.maxDistanceReached,
-      trackLength
+      trackLength,
+      'low' // Default to low mutation rate
     );
 
     // Apply parameter-based scaling (larger networks get lower mutation rates)
@@ -374,7 +375,7 @@ export class GeneticAlgorithm {
     if (!state) return 0;
 
     const trackLength = track.getTotalLength();
-    return getMutationRate(mutationByDistance, currentBestDistance, trackLength);
+    return getMutationRate(mutationByDistance, currentBestDistance, trackLength, 'low');
   }
 
   // Export weights as JSON

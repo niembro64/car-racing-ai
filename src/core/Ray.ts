@@ -14,7 +14,8 @@ export class RayCaster {
     position: Point,
     heading: number,
     wallSegments: Segment[],
-    spatialGrid?: SpatialGrid
+    spatialGrid?: SpatialGrid,
+    radius: number = 0
   ): RayCastResult {
     const distances: number[] = [];
     const hits: (RayHit | null)[] = [];
@@ -26,13 +27,21 @@ export class RayCaster {
         y: Math.sin(rayAngle)
       };
 
+      // Calculate ray origin from perimeter of circle (if radius > 0)
+      const rayOrigin: Point = radius > 0
+        ? {
+            x: position.x + radius * direction.x,
+            y: position.y + radius * direction.y
+          }
+        : position;
+
       // Use spatial grid for fast segment queries if available
       const segmentsToCheck = spatialGrid
-        ? spatialGrid.queryRay(position, direction, this.CAST_DISTANCE)
+        ? spatialGrid.queryRay(rayOrigin, direction, this.CAST_DISTANCE)
         : wallSegments;
 
       const hit = castRay(
-        position,
+        rayOrigin,
         direction,
         segmentsToCheck,
         this.CAST_DISTANCE
@@ -57,19 +66,37 @@ export class RayCaster {
   renderRays(
     ctx: CanvasRenderingContext2D,
     position: Point,
+    heading: number,
     hits: (RayHit | null)[],
     rayColor: string,
     hitColor: string,
     lineWidth: number,
-    hitRadius: number
+    hitRadius: number,
+    radius: number = 0
   ): void {
     ctx.strokeStyle = rayColor;
     ctx.lineWidth = lineWidth;
 
+    let rayIndex = 0;
     for (const hit of hits) {
       if (hit) {
+        // Calculate ray origin from perimeter (must match castRays logic)
+        const relativeAngle = CONFIG.neuralNetwork.sensorRays.angles[rayIndex];
+        const rayAngle = heading + relativeAngle;
+        const direction: Point = {
+          x: Math.cos(rayAngle),
+          y: Math.sin(rayAngle)
+        };
+
+        const rayOrigin: Point = radius > 0
+          ? {
+              x: position.x + radius * direction.x,
+              y: position.y + radius * direction.y
+            }
+          : position;
+
         ctx.beginPath();
-        ctx.moveTo(position.x, position.y);
+        ctx.moveTo(rayOrigin.x, rayOrigin.y);
         ctx.lineTo(hit.point.x, hit.point.y);
         ctx.stroke();
 
@@ -79,6 +106,7 @@ export class RayCaster {
         ctx.arc(hit.point.x, hit.point.y, hitRadius, 0, Math.PI * 2);
         ctx.fill();
       }
+      rayIndex++;
     }
   }
 }

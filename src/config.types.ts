@@ -1,4 +1,11 @@
-import type { Point, BrainSelectionStrategy, SpeedMultiplier, InfoView, CarUsageLevel, VisualizationMode } from './types';
+import type {
+  Point,
+  BrainSelectionStrategy,
+  SpeedMultiplier,
+  InfoView,
+  CarUsageLevel,
+  VisualizationMode,
+} from './types';
 
 // ============================================================================
 // CANVAS CONFIG
@@ -45,19 +52,26 @@ export interface TrackConfig {
 
 export interface CarPhysicsConfig {
   forwardSpeed: number;
-  steeringSensitivity: number;
+  steeringSensitivityLow: number;
+  steeringSensitivityMedium: number;
+  steeringSensitivityHigh: number;
   steeringDelaySeconds: number;
 }
 
-export interface CarDimensionsMode {
+export interface CarDimensionsSimple {
+  radius: number;
+  borderWidth: number;
+}
+
+export interface CarDimensionsDetailed {
   width: number;
   height: number;
   borderWidth: number;
 }
 
 export interface CarDimensionsConfig {
-  simple: CarDimensionsMode;
-  detailed: CarDimensionsMode;
+  simple: CarDimensionsSimple;
+  detailed: CarDimensionsDetailed;
 }
 
 export interface CarSpawnConfig {
@@ -126,18 +140,20 @@ export interface NeuralNetworkConfig {
 
 export interface NetworkSizeScaleConfig {
   smallestNetwork: number; // Scale for smallest network (most mutation)
-  largestNetwork: number;  // Scale for largest network (least mutation, 0 = no learning)
+  largestNetwork: number; // Scale for largest network (least mutation, 0 = no learning)
 }
 
 export interface PopulationRankScaleConfig {
-  firstMutant: number;     // Multiplier for first mutant (after elite)
-  lastMutant: number;      // Multiplier for last mutant (most exploration)
-  curvePower: number;      // Shape of progression curve (2 = quadratic)
+  firstMutant: number; // Multiplier for first mutant (after elite)
+  lastMutant: number; // Multiplier for last mutant (most exploration)
+  curvePower: number; // Shape of progression curve (2 = quadratic)
 }
 
 export interface MutationConfig {
-  startingRate: number;    // Initial mutation rate at track start
-  minimumRate: number;     // Minimum mutation rate at track completion
+  startingRateLow: number;
+  startingRateMedium: number; 
+  startingRateHigh: number;
+  minimumRate: number; // Minimum mutation rate at track completion
   networkSizeScale: NetworkSizeScaleConfig;
   trackProgressCurve: [number, number, number, number]; // Bezier curve for rate decay
   populationRankScale: PopulationRankScaleConfig;

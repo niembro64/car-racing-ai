@@ -128,7 +128,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   // === ReLU activation (blue family) ===
   // Blue hues - cool, rectified activation
   {
-    useCar: 'use-many',
+    useCar: 'use-all',
     displayName: 'Drop',
     shortName: 'DR',
     description: 'ReLU activation, differential inputs, 1 hidden layer (3)',

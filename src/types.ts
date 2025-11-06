@@ -179,6 +179,14 @@ export interface GenomeData {
 // Speed multiplier options - type is derived from this array
 export const SPEED_MULTIPLIERS = [0.2, 0.5, 1, 2, 3, 4] as const;
 export type SpeedMultiplier = (typeof SPEED_MULTIPLIERS)[number];
+
+// Steering sensitivity options - type is derived from this array
+export const STEERING_SENSITIVITIES = ['low', 'medium', 'high'] as const;
+export type SteeringSensitivity = (typeof STEERING_SENSITIVITIES)[number];
+
+// Mutation rate options - type is derived from this array
+export const MUTATION_RATES = ['low', 'medium', 'high'] as const;
+export type MutationRate = (typeof MUTATION_RATES)[number];
 // ============================================================================
 // CAR BRAIN CONFIGURATION TYPES
 // ============================================================================

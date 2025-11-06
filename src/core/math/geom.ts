@@ -234,6 +234,33 @@ export function polygonIntersectsSegments(
   return false;
 }
 
+// Check if a circle intersects with a line segment
+export function circleIntersectsSegment(
+  center: Point,
+  radius: number,
+  segment: Segment
+): boolean {
+  // Find the closest point on the segment to the circle center
+  const proj = projectPointOntoSegment(center, segment);
+
+  // If the closest point is within the radius, there's an intersection
+  return proj.distance <= radius;
+}
+
+// Check if a circle intersects with any segment from a list
+export function circleIntersectsSegments(
+  center: Point,
+  radius: number,
+  segments: Segment[]
+): boolean {
+  for (const seg of segments) {
+    if (circleIntersectsSegment(center, radius, seg)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Create a rectangle polygon centered at position with given angle
 export function createCarPolygon(
   x: number,

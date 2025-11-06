@@ -11,12 +11,7 @@ import type {
   ForwardPassActivations,
 } from '@/types';
 import { ACTIVATION_COLORS, INPUT_COLORS } from '@/types';
-import {
-  createCarPolygon,
-  updateCarPolygon,
-  polygonIntersectsSegments,
-  normalizeAngle,
-} from './math/geom';
+import { circleIntersectsSegments, normalizeAngle } from './math/geom';
 import { NeuralNetwork } from './Neural';
 import { RayCaster } from './Ray';
 import { CONFIG } from '@/config';
@@ -41,9 +36,8 @@ export class Car {
   frameCount: number; // Number of frames this car has been alive
   elapsedTime: number; // Total time this car has been alive (in seconds)
 
-  // Dimensions (always use simple/small for physics/collision)
-  width: number = CONFIG.car.dimensions.simple.width;
-  height: number = CONFIG.car.dimensions.simple.height;
+  // Dimensions (circle for physics/collision)
+  radius: number; // Radius of the circular car for collision
   sizeMultiplier: number = 1.0; // Scale factor for elite cars
 
   // Neural network
@@ -66,9 +60,6 @@ export class Car {
 
   // Config identifier (which brain config this car belongs to)
   configShortName: string;
-
-  // Object pooling - reused polygon for collision detection
-  private polygonCache: Point[];
 
   constructor(
     x: number,
@@ -101,13 +92,8 @@ export class Car {
     this.rayCaster = new RayCaster();
     this.color = color;
 
-    // Initialize polygon cache for object pooling (4 corners)
-    this.polygonCache = [
-      { x: 0, y: 0 },
-      { x: 0, y: 0 },
-      { x: 0, y: 0 },
-      { x: 0, y: 0 }
-    ];
+    // Set radius from config
+    this.radius = CONFIG.car.dimensions.simple.radius;
   }
 
   // Update physics and AI
@@ -117,7 +103,8 @@ export class Car {
     track: any,
     steeringDelayEnabled: boolean,
     steeringDelaySeconds: number,
-    speedMultiplier: number
+    speedMultiplier: number,
+    steeringSensitivity: 'low' | 'medium' | 'high' = 'low'
   ): void {
     if (!this.alive) return;
 
@@ -127,11 +114,13 @@ export class Car {
 
     // Cast rays for sensors using PHYSICS angle
     // Rays should be relative to direction of travel, not visual orientation
+    // Rays emit from the perimeter of the circular car
     const { distances, hits } = this.rayCaster.castRays(
       { x: this.x, y: this.y },
       this.angle,
       wallSegments,
-      track.spatialGrid
+      track.spatialGrid,
+      this.radius * this.sizeMultiplier
     );
 
     this.lastRayDistances = distances;
@@ -178,7 +167,7 @@ export class Car {
     }
 
     // Apply physics
-    this.applyPhysics(output, dt, speedMultiplier);
+    this.applyPhysics(output, dt, speedMultiplier, steeringSensitivity);
 
     // Check collision
     this.checkCollision(track);
@@ -188,7 +177,8 @@ export class Car {
   private applyPhysics(
     output: NeuralOutput,
     dt: number,
-    speedMultiplier: number = 1
+    speedMultiplier: number = 1,
+    steeringSensitivity: 'low' | 'medium' | 'high' = 'low'
   ): void {
     // Constant forward speed (with optional multiplier)
     this.speed = CONFIG.car.physics.forwardSpeed * speedMultiplier;
@@ -199,8 +189,14 @@ export class Car {
     this.x += headingX * this.speed * dt;
     this.y += headingY * this.speed * dt;
 
+    // Get the appropriate steering sensitivity value from config
+    const sensitivity =
+      steeringSensitivity === 'low' ? CONFIG.car.physics.steeringSensitivityLow :
+      steeringSensitivity === 'medium' ? CONFIG.car.physics.steeringSensitivityMedium :
+      CONFIG.car.physics.steeringSensitivityHigh;
+
     // Turning is proportional to speed (direction from neural network)
-    this.angle += output.direction * this.speed * CONFIG.car.physics.steeringSensitivity * dt;
+    this.angle += output.direction * this.speed * sensitivity * dt;
     this.angle = normalizeAngle(this.angle);
 
     // Prevent NaN propagation
@@ -273,25 +269,22 @@ export class Car {
   private checkCollision(track: any): void {
     if (!this.alive) return;
 
-    // Update polygon cache in place (object pooling - no allocation)
-    updateCarPolygon(
-      this.polygonCache,
-      this.x,
-      this.y,
-      this.angle - Math.PI / 2, // Match visual orientation
-      this.width * this.sizeMultiplier,
-      this.height * this.sizeMultiplier
-    );
-
     // Use spatial grid to query only nearby wall segments
-    // Query radius based on car diagonal + small margin
-    const queryRadius = Math.sqrt(this.width * this.width + this.height * this.height) * this.sizeMultiplier + 20;
+    // Query radius based on car radius + small margin
+    const queryRadius = this.radius * this.sizeMultiplier + 20;
     const nearbySegments = track.spatialGrid.queryPoint(
       { x: this.x, y: this.y },
       queryRadius
     );
 
-    if (polygonIntersectsSegments(this.polygonCache, nearbySegments)) {
+    // Check if the circular car intersects with any wall segments
+    if (
+      circleIntersectsSegments(
+        { x: this.x, y: this.y },
+        this.radius * this.sizeMultiplier,
+        nearbySegments
+      )
+    ) {
       this.alive = false;
       this.speed = 0;
     }
@@ -324,7 +317,10 @@ export class Car {
 
   // Helper: Get activation function color (uses centralized colors from types.ts)
   private getActivationColor(activationType: string): string {
-    return ACTIVATION_COLORS[activationType as keyof typeof ACTIVATION_COLORS] || '#888';
+    return (
+      ACTIVATION_COLORS[activationType as keyof typeof ACTIVATION_COLORS] ||
+      '#888'
+    );
   }
 
   // Helper: Get input modification color (uses centralized colors from types.ts)
@@ -356,8 +352,8 @@ export class Car {
     if (showRays && this.alive) {
       // Render centerline ray (showing distance from car to track center)
       if (this.lastCenterlinePoint) {
-        const rayColor = config.colors.light;
-        const hitColor = CONFIG.sensors.visualization.centerlineHitColor;
+        const rayColor = this.color;
+        const hitColor = this.color;
         const lineWidth = CONFIG.sensors.visualization.rayWidth;
         const hitRadius = CONFIG.sensors.visualization.hitRadius;
 
@@ -386,20 +382,22 @@ export class Car {
         ctx.restore();
       }
 
-      // Use colors and settings from config
-      const rayColor = config.colors.light;
-      const hitColor = config.colors.light;
+      // Use car's color for rays and hits
+      const rayColor = this.color;
+      const hitColor = this.color;
       const lineWidth = CONFIG.sensors.visualization.rayWidth;
       const hitRadius = CONFIG.sensors.visualization.hitRadius;
 
       this.rayCaster.renderRays(
         ctx,
         { x: this.x, y: this.y },
+        this.angle,
         this.lastRayHits,
         rayColor,
         hitColor,
         lineWidth,
-        hitRadius
+        hitRadius,
+        this.radius * this.sizeMultiplier
       );
     }
 
@@ -411,7 +409,9 @@ export class Car {
       const absValue = Math.abs(percentage);
       const formatted = absValue.toFixed(1).padStart(4, ' '); // "XX.X" format
       ctx.save();
-      ctx.fillStyle = this.alive ? CONFIG.car.colors.labelAlive : CONFIG.car.colors.labelDead;
+      ctx.fillStyle = this.alive
+        ? CONFIG.car.colors.labelAlive
+        : CONFIG.car.colors.labelDead;
       ctx.font = 'bold 16px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
@@ -424,42 +424,38 @@ export class Car {
     }
 
     // ========================================================================
-    // ALWAYS RENDER SMALL CAR (the physical car)
+    // ALWAYS RENDER SMALL CAR (the physical car as a circle)
     // ========================================================================
     ctx.save();
-    ctx.translate(this.x, this.y);
-    // Rotate by angle - 90° so visual front matches physics heading
-    // (angle=0 in physics = moving right, so visual should point right)
-    ctx.rotate(this.angle - Math.PI / 2);
 
-    // Small car dimensions (the actual physical car)
-    const smallWidth = this.width * this.sizeMultiplier;
-    const smallHeight = this.height * this.sizeMultiplier;
+    // Circle radius (the actual physical car)
+    const carRadius = this.radius * this.sizeMultiplier;
 
-    // Simple rectangle with car type color
+    // Draw circle body
     ctx.fillStyle = this.alive ? this.color : CONFIG.car.colors.bodyDead;
-    ctx.fillRect(
-      -smallWidth / 2,
-      -smallHeight / 2,
-      smallWidth,
-      smallHeight
-    );
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, carRadius, 0, Math.PI * 2);
+    ctx.fill();
 
     // Draw border
-    ctx.strokeStyle = this.alive ? this.color : CONFIG.car.colors.bodyDeadStroke;
+    ctx.strokeStyle = this.alive
+      ? this.color
+      : CONFIG.car.colors.bodyDeadStroke;
     ctx.lineWidth = CONFIG.car.dimensions.simple.borderWidth;
-    ctx.strokeRect(
-      -smallWidth / 2,
-      -smallHeight / 2,
-      smallWidth,
-      smallHeight
-    );
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, carRadius, 0, Math.PI * 2);
+    ctx.stroke();
 
-    // Draw windshield
-    ctx.fillStyle = this.alive ? CONFIG.car.colors.directionIndicatorAlive : CONFIG.car.colors.directionIndicatorDead;
-    const windshieldHeight = 4;
-    const windshieldY = smallHeight / 2 - windshieldHeight;
-    ctx.fillRect(-smallWidth / 4, windshieldY, smallWidth / 2, windshieldHeight);
+    // Draw windshield dot at the front edge of the circle
+    const windshieldRadius = 3;
+    const windshieldX = this.x + carRadius * Math.cos(this.angle);
+    const windshieldY = this.y + carRadius * Math.sin(this.angle);
+    ctx.fillStyle = this.alive
+      ? CONFIG.car.colors.directionIndicatorAlive
+      : CONFIG.car.colors.directionIndicatorDead;
+    ctx.beginPath();
+    ctx.arc(windshieldX, windshieldY, windshieldRadius, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.restore();
 
@@ -483,14 +479,19 @@ export class Car {
     ctx.rotate(this.angle - Math.PI / 2);
 
     // Use large dimensions for detailed visualization
-    const detailedWidth = CONFIG.car.dimensions.detailed.width * this.sizeMultiplier;
-    const detailedHeight = CONFIG.car.dimensions.detailed.height * this.sizeMultiplier;
+    const detailedWidth =
+      CONFIG.car.dimensions.detailed.width * this.sizeMultiplier;
+    const detailedHeight =
+      CONFIG.car.dimensions.detailed.height * this.sizeMultiplier;
 
     // GET CAR NEURAL NETWORK STRUCTURE
     // This is the ONLY source of truth for rendering
     // Structure: { inputType, hiddenLayers[], outputLayer, color }
     // Each neuron has: { weights[], bias, activation }
-    const carNetwork: CarNeuralNetwork = this.brain.toCarNetwork(this.inputModification, this.color);
+    const carNetwork: CarNeuralNetwork = this.brain.toCarNetwork(
+      this.inputModification,
+      this.color
+    );
 
     // If in vis-think mode, compute forward pass to get current activations
     let activations: ForwardPassActivations | null = null;
@@ -505,7 +506,8 @@ export class Car {
           inputRays = [distances[0]]; // Forward ray (index 0)
 
           // Add differential pairs (left - right)
-          for (const [leftIdx, rightIdx] of CONFIG.neuralNetwork.sensorRays.pairs) {
+          for (const [leftIdx, rightIdx] of CONFIG.neuralNetwork.sensorRays
+            .pairs) {
             const differential = distances[leftIdx] - distances[rightIdx];
             inputRays.push(differential);
           }
@@ -566,7 +568,9 @@ export class Car {
         }
       } else {
         // vis-weights mode or vis-medium mode: just show input type color
-        ctx.fillStyle = this.alive ? this.getInputColor() : CONFIG.car.colors.bodyDead;
+        ctx.fillStyle = this.alive
+          ? this.getInputColor()
+          : CONFIG.car.colors.bodyDead;
         ctx.fillRect(
           -detailedWidth / 2,
           sectionBottom,
@@ -594,7 +598,11 @@ export class Car {
     // SECTIONS 1 to N: HIDDEN LAYERS (from carNetwork.hiddenLayers[])
     // ========================================================================
     // Each hidden layer contains neurons with their OWN activation functions
-    for (let hiddenLayerIdx = 0; hiddenLayerIdx < numHiddenLayers; hiddenLayerIdx++) {
+    for (
+      let hiddenLayerIdx = 0;
+      hiddenLayerIdx < numHiddenLayers;
+      hiddenLayerIdx++
+    ) {
       const sectionTop = detailedHeight / 2 - currentSectionIdx * sectionHeight;
       const sectionBottom = sectionTop - sectionHeight;
 
@@ -613,12 +621,7 @@ export class Car {
 
         // Fill neuron background
         ctx.fillStyle = this.alive ? '#444' : CONFIG.car.colors.bodyDead;
-        ctx.fillRect(
-          neuronLeft,
-          sectionBottom,
-          neuronWidth,
-          sectionHeight
-        );
+        ctx.fillRect(neuronLeft, sectionBottom, neuronWidth, sectionHeight);
 
         // Draw neuron contents: weights -> bias -> activation (only if alive)
         if (this.alive) {
@@ -628,7 +631,11 @@ export class Car {
           const activation = neuron.activation; // Per-neuron activation
           const numWeights = weights.length;
 
-          if (visualizationMode === 'vis-think' && activations && activations.hiddenLayers[hiddenLayerIdx]) {
+          if (
+            visualizationMode === 'vis-think' &&
+            activations &&
+            activations.hiddenLayers[hiddenLayerIdx]
+          ) {
             // vis-think mode: only show dynamic values
             // Divide neuron into 3 EQUAL parts:
             // 1/3 weighted inputs (front third)
@@ -641,7 +648,9 @@ export class Car {
             const weightBoxWidth = neuronWidth / numWeights;
 
             for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
-              const weightedInput = activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx].weightedInputs[weightIdx];
+              const weightedInput =
+                activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx]
+                  .weightedInputs[weightIdx];
               const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
               ctx.fillStyle = this.valueToGrayscale(weightedInput);
               ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, thirdHeight);
@@ -649,12 +658,21 @@ export class Car {
 
             // PRE-ACTIVATION SUM (middle third)
             const preActivationTop = sectionTop - 2 * thirdHeight;
-            const preActivationSum = activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx].preActivationSum;
+            const preActivationSum =
+              activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx]
+                .preActivationSum;
             ctx.fillStyle = this.valueToGrayscale(preActivationSum);
-            ctx.fillRect(neuronLeft, preActivationTop, neuronWidth, thirdHeight);
+            ctx.fillRect(
+              neuronLeft,
+              preActivationTop,
+              neuronWidth,
+              thirdHeight
+            );
 
             // POST-ACTIVATION OUTPUT (back third)
-            const postActivationOutput = activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx].postActivationOutput;
+            const postActivationOutput =
+              activations.hiddenLayers[hiddenLayerIdx].neurons[neuronIdx]
+                .postActivationOutput;
             ctx.fillStyle = this.valueToGrayscale(postActivationOutput);
             ctx.fillRect(neuronLeft, sectionBottom, neuronWidth, thirdHeight);
           } else {
@@ -692,12 +710,7 @@ export class Car {
         if (CONFIG.visualization.neuronBorder.width > 0) {
           ctx.strokeStyle = CONFIG.visualization.neuronBorder.color;
           ctx.lineWidth = CONFIG.visualization.neuronBorder.width;
-          ctx.strokeRect(
-            neuronLeft,
-            sectionBottom,
-            neuronWidth,
-            sectionHeight
-          );
+          ctx.strokeRect(neuronLeft, sectionBottom, neuronWidth, sectionHeight);
         }
       }
 
@@ -719,12 +732,7 @@ export class Car {
 
       // Fill neuron background
       ctx.fillStyle = this.alive ? '#444' : CONFIG.car.colors.bodyDead;
-      ctx.fillRect(
-        neuronLeft,
-        sectionBottom,
-        neuronWidth,
-        sectionHeight
-      );
+      ctx.fillRect(neuronLeft, sectionBottom, neuronWidth, sectionHeight);
 
       // Draw neuron contents: weights -> bias -> activation (only if alive)
       if (this.alive) {
@@ -734,7 +742,11 @@ export class Car {
         const activation = outputNeuron.activation; // This neuron's activation
         const numWeights = weights.length;
 
-        if (visualizationMode === 'vis-think' && activations && activations.outputLayer) {
+        if (
+          visualizationMode === 'vis-think' &&
+          activations &&
+          activations.outputLayer
+        ) {
           // vis-think mode: only show dynamic values
           // Divide neuron into 3 EQUAL parts:
           // 1/3 weighted inputs (front third)
@@ -747,7 +759,8 @@ export class Car {
           const weightBoxWidth = neuronWidth / numWeights;
 
           for (let weightIdx = 0; weightIdx < numWeights; weightIdx++) {
-            const weightedInput = activations.outputLayer.neurons[0].weightedInputs[weightIdx];
+            const weightedInput =
+              activations.outputLayer.neurons[0].weightedInputs[weightIdx];
             const boxLeft = neuronLeft + weightIdx * weightBoxWidth;
             ctx.fillStyle = this.valueToGrayscale(weightedInput);
             ctx.fillRect(boxLeft, weightsTop, weightBoxWidth, thirdHeight);
@@ -755,12 +768,14 @@ export class Car {
 
           // PRE-ACTIVATION SUM (middle third)
           const preActivationTop = sectionTop - 2 * thirdHeight;
-          const preActivationSum = activations.outputLayer.neurons[0].preActivationSum;
+          const preActivationSum =
+            activations.outputLayer.neurons[0].preActivationSum;
           ctx.fillStyle = this.valueToGrayscale(preActivationSum);
           ctx.fillRect(neuronLeft, preActivationTop, neuronWidth, thirdHeight);
 
           // POST-ACTIVATION OUTPUT (back third)
-          const postActivationOutput = activations.outputLayer.neurons[0].postActivationOutput;
+          const postActivationOutput =
+            activations.outputLayer.neurons[0].postActivationOutput;
           ctx.fillStyle = this.valueToGrayscale(postActivationOutput);
           ctx.fillRect(neuronLeft, sectionBottom, neuronWidth, thirdHeight);
         } else {
@@ -798,17 +813,14 @@ export class Car {
       if (CONFIG.visualization.neuronBorder.width > 0) {
         ctx.strokeStyle = CONFIG.visualization.neuronBorder.color;
         ctx.lineWidth = CONFIG.visualization.neuronBorder.width;
-        ctx.strokeRect(
-          neuronLeft,
-          sectionBottom,
-          neuronWidth,
-          sectionHeight
-        );
+        ctx.strokeRect(neuronLeft, sectionBottom, neuronWidth, sectionHeight);
       }
     }
 
     // Draw overall car border using the car type color
-    ctx.strokeStyle = this.alive ? carNetwork.color : CONFIG.car.colors.bodyDeadStroke;
+    ctx.strokeStyle = this.alive
+      ? carNetwork.color
+      : CONFIG.car.colors.bodyDeadStroke;
     ctx.lineWidth = CONFIG.car.dimensions.detailed.borderWidth;
     ctx.strokeRect(
       -detailedWidth / 2,
@@ -819,24 +831,20 @@ export class Car {
 
     // Draw windshield (direction indicator) inside the input section
     // Drawn last so it appears on top of everything
-    ctx.fillStyle = this.alive ? CONFIG.car.colors.directionIndicatorAlive : CONFIG.car.colors.directionIndicatorDead;
+    ctx.fillStyle = this.alive
+      ? CONFIG.car.colors.directionIndicatorAlive
+      : CONFIG.car.colors.directionIndicatorDead;
     // Position at the very front edge of the car (top of input section)
     const detailedWindshieldHeight = 4;
     const detailedWindshieldY = detailedHeight / 2 - detailedWindshieldHeight;
-    ctx.fillRect(-detailedWidth / 4, detailedWindshieldY, detailedWidth / 2, detailedWindshieldHeight);
+    ctx.fillRect(
+      -detailedWidth / 4,
+      detailedWindshieldY,
+      detailedWidth / 2,
+      detailedWindshieldHeight
+    );
 
     ctx.restore();
-  }
-
-  // Get car polygon for collision detection
-  getPolygon(): Point[] {
-    return createCarPolygon(
-      this.x,
-      this.y,
-      this.angle - Math.PI / 2, // Match visual orientation
-      this.width * this.sizeMultiplier,
-      this.height * this.sizeMultiplier
-    );
   }
 
   // Clone with a new brain
