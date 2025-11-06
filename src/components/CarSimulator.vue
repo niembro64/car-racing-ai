@@ -1357,8 +1357,7 @@ const render = (ctx: CanvasRenderingContext2D) => {
     }
   }
 
-  // Render cars (dead first, then alive, then elites last)
-  // All cars are rendered in simple mode first, then detailed overlays are drawn on top
+  // Render cars in proper layering order: rays -> car bodies -> overlays
   const deadCars = population.value.filter((car) => !car.alive);
   const aliveCars = population.value.filter((car) => car.alive);
 
@@ -1366,23 +1365,36 @@ const render = (ctx: CanvasRenderingContext2D) => {
   const elites = aliveCars.filter((car) => car.sizeMultiplier > 1.0);
   const others = aliveCars.filter((car) => car.sizeMultiplier === 1.0);
 
-  // FIRST PASS: Render all cars with simple mode (physical bodies only)
+  // FIRST PASS: Render all rays (if enabled)
+  if (showRays.value) {
+    // Render rays for other alive cars
+    for (const car of others) {
+      car.renderRays(ctx);
+    }
+
+    // Render rays for elites
+    for (const car of elites) {
+      car.renderRays(ctx);
+    }
+  }
+
+  // SECOND PASS: Render all car bodies (physical cars only)
   // Render dead cars first
   for (const car of deadCars) {
-    car.render(ctx, false, 'simple', visualizationMode.value, rotateBrainOverlay.value);
+    car.render(ctx, 'simple', visualizationMode.value, rotateBrainOverlay.value);
   }
 
   // Render other alive cars
   for (const car of others) {
-    car.render(ctx, showRays.value, 'simple', visualizationMode.value, rotateBrainOverlay.value);
+    car.render(ctx, 'simple', visualizationMode.value, rotateBrainOverlay.value);
   }
 
-  // Render elites last (on top) with rays if enabled
+  // Render elites last (on top)
   for (const car of elites) {
-    car.render(ctx, showRays.value, 'simple', visualizationMode.value, rotateBrainOverlay.value);
+    car.render(ctx, 'simple', visualizationMode.value, rotateBrainOverlay.value);
   }
 
-  // SECOND PASS: Render detailed overlays for lead cars on top of everything
+  // THIRD PASS: Render detailed overlays for lead cars on top of everything
   const isDetailedMode =
     visualizationMode.value === 'vis-weights' ||
     visualizationMode.value === 'vis-think';
@@ -1393,7 +1405,7 @@ const render = (ctx: CanvasRenderingContext2D) => {
       // Check if this car is the lead car for its type
       const leadCar = leadCarByConfigId.value.get(car.configShortName);
       if (car === leadCar) {
-        car.render(ctx, showRays.value, 'detailed', visualizationMode.value, rotateBrainOverlay.value);
+        car.render(ctx, 'detailed', visualizationMode.value, rotateBrainOverlay.value);
       }
     }
   }

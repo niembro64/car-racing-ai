@@ -322,10 +322,64 @@ export class Car {
     return INPUT_COLORS[this.inputModification];
   }
 
+  // Render rays separately (for proper layering)
+  renderRays(ctx: CanvasRenderingContext2D): void {
+    if (!this.alive) return;
+
+    // Render centerline ray (showing distance from car to track center)
+    if (this.lastCenterlinePoint) {
+      const rayColor = this.color;
+      const hitColor = this.color;
+      const lineWidth = CONFIG.sensors.visualization.rayWidth;
+      const hitRadius = CONFIG.sensors.visualization.hitRadius;
+
+      ctx.save();
+      // Draw line to centerline
+      ctx.strokeStyle = rayColor;
+      ctx.lineWidth = lineWidth;
+      ctx.globalAlpha = 0.3;
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y);
+      ctx.lineTo(this.lastCenterlinePoint.x, this.lastCenterlinePoint.y);
+      ctx.stroke();
+
+      // Draw hit point on centerline
+      ctx.fillStyle = hitColor;
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      ctx.arc(
+        this.lastCenterlinePoint.x,
+        this.lastCenterlinePoint.y,
+        hitRadius,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Use car's color for rays and hits
+    const rayColor = this.color;
+    const hitColor = this.color;
+    const lineWidth = CONFIG.sensors.visualization.rayWidth;
+    const hitRadius = CONFIG.sensors.visualization.hitRadius;
+
+    this.rayCaster.renderRays(
+      ctx,
+      { x: this.x, y: this.y },
+      this.angle,
+      this.lastRayHits,
+      rayColor,
+      hitColor,
+      lineWidth,
+      hitRadius,
+      this.radius * this.sizeMultiplier
+    );
+  }
+
   // Render car on canvas
   render(
     ctx: CanvasRenderingContext2D,
-    showRays: boolean = false,
     vizMode: CarVizMode = 'simple',
     visualizationMode: VisualizationMode = 'vis-simple',
     rotateBrainOverlay: boolean = false
@@ -341,59 +395,6 @@ export class Car {
         this.configShortName
       );
       return;
-    }
-
-    // Render rays if requested and car is alive
-    if (showRays && this.alive) {
-      // Render centerline ray (showing distance from car to track center)
-      if (this.lastCenterlinePoint) {
-        const rayColor = this.color;
-        const hitColor = this.color;
-        const lineWidth = CONFIG.sensors.visualization.rayWidth;
-        const hitRadius = CONFIG.sensors.visualization.hitRadius;
-
-        ctx.save();
-        // Draw line to centerline
-        ctx.strokeStyle = rayColor;
-        ctx.lineWidth = lineWidth;
-        ctx.globalAlpha = 0.3;
-        ctx.beginPath();
-        ctx.moveTo(this.x, this.y);
-        ctx.lineTo(this.lastCenterlinePoint.x, this.lastCenterlinePoint.y);
-        ctx.stroke();
-
-        // Draw hit point on centerline
-        ctx.fillStyle = hitColor;
-        ctx.globalAlpha = 0.8;
-        ctx.beginPath();
-        ctx.arc(
-          this.lastCenterlinePoint.x,
-          this.lastCenterlinePoint.y,
-          hitRadius,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
-        ctx.restore();
-      }
-
-      // Use car's color for rays and hits
-      const rayColor = this.color;
-      const hitColor = this.color;
-      const lineWidth = CONFIG.sensors.visualization.rayWidth;
-      const hitRadius = CONFIG.sensors.visualization.hitRadius;
-
-      this.rayCaster.renderRays(
-        ctx,
-        { x: this.x, y: this.y },
-        this.angle,
-        this.lastRayHits,
-        rayColor,
-        hitColor,
-        lineWidth,
-        hitRadius,
-        this.radius * this.sizeMultiplier
-      );
     }
 
     // Render percentage label above car (shows current progress including negative)
