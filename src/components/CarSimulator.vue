@@ -10,88 +10,33 @@
 
     <div class="info-container">
       <div class="controls">
-        <button @click="nextGeneration" class="btn-sync">SYNC</button>
-        <button @click="reset" class="btn-restart">RESTART</button>
-        <button
-          @click="toggleAllCarTypes"
-          class="btn-car-usage"
-          :class="{
-            'usage-few': carUsageLevel === 'use-few',
-            'usage-many': carUsageLevel === 'use-many',
-            'usage-all': carUsageLevel === 'use-all',
-          }"
-        >
-          🚗 {{ activeCarConfigs.length }} TYPES
+        <button @click="nextGeneration" class="btn-sync">
+          SYNC<br />GENERATIONS
         </button>
-        <button
-          @click="cycleVisualizationMode"
-          class="btn-toggle-viz"
-          :class="{
-            'viz-simple': visualizationMode === 'vis-simple',
-            'viz-medium': visualizationMode === 'vis-medium',
-            'viz-weights': visualizationMode === 'vis-weights',
-            'viz-think': visualizationMode === 'vis-think',
-          }"
-        >
-          {{ getVisualizationModeLabel(visualizationMode) }}
+        <button @click="reset" class="btn-restart">
+          RESTART<br />SIMULATION
         </button>
-        <button
-          @click="toggleCarSpeed"
-          class="btn-speed"
-          :class="{
-            'speed-0_2x': carSpeedMultiplier === 0.2,
-            'speed-0_5x': carSpeedMultiplier === 0.5,
-            'speed-1x': carSpeedMultiplier === 1,
-            'speed-2x': carSpeedMultiplier === 2,
-            'speed-3x': carSpeedMultiplier === 3,
-            'speed-4x': carSpeedMultiplier === 4,
-          }"
-        >
-          ⚡ {{ carSpeedMultiplier.toFixed(1) }}x
-        </button>
-        <button
-          @click="toggleSteeringSensitivity"
-          class="btn-steering"
-          :class="{
-            'steering-low': steeringSensitivity === 'low',
-            'steering-medium': steeringSensitivity === 'medium',
-            'steering-high': steeringSensitivity === 'high',
-          }"
-        >
-          🎯
-          {{
-            steeringSensitivity === 'low'
-              ? CONFIG.car.physics.steeringSensitivityLow
-              : steeringSensitivity === 'medium'
-              ? CONFIG.car.physics.steeringSensitivityMedium
-              : CONFIG.car.physics.steeringSensitivityHigh
+        <button @click="toggleAllCarTypes" class="btn-car-usage">
+          TYPES<br />{{
+            activeCarConfigs.length <= 5
+              ? '🚗'.repeat(activeCarConfigs.length)
+              : `${activeCarConfigs.length} x 🚗`
           }}
         </button>
-        <button
-          @click="toggleMutationRate"
-          class="btn-mutation"
-          :class="{
-            'mutation-low': mutationRate === 'low',
-            'mutation-medium': mutationRate === 'medium',
-            'mutation-high': mutationRate === 'high',
-          }"
-        >
-          🧬
-          {{
-            mutationRate === 'low'
-              ? CONFIG.geneticAlgorithm.mutation.startingRateLow
-              : mutationRate === 'medium'
-              ? CONFIG.geneticAlgorithm.mutation.startingRateMedium
-              : CONFIG.geneticAlgorithm.mutation.startingRateHigh
-          }}
+        <button @click="cycleVisualizationMode" class="btn-toggle-viz">
+          <span v-html="getVisualizationModeLabel(visualizationMode)"></span>
+        </button>
+        <button @click="toggleCarSpeed" class="btn-speed">
+          SPEED<br />{{ '🏃'.repeat(carSpeedMultiplierIndex + 1) }}
+        </button>
+        <button @click="toggleSteeringSensitivity" class="btn-steering">
+          STEER<br />{{ '↪️'.repeat(steeringSensitivityIndex + 1) }}
+        </button>
+        <button @click="toggleMutationRate" class="btn-mutation">
+          MUTATE<br />{{ '🧬'.repeat(mutationRateIndex + 1) }}
         </button>
         <button @click="cycleBrainStrategy" class="btn-brain-strategy">
-          {{ TEXT_CHARACTER.saved + TEXT_CHARACTER.brain }}:
-          {{
-            BRAIN_SELECTION_STRATEGIES.find(
-              (s) => s.id === brainSelectionStrategy
-            )?.emoji
-          }}
+          <span v-html="getBrainStrategyLabel(brainSelectionStrategy)"></span>
         </button>
       </div>
 
@@ -416,8 +361,9 @@ import {
   INPUT_COLORS,
   VISUALIZATION_MODES,
 } from '@/types';
-import { SPEED_MULTIPLIERS, STEERING_SENSITIVITIES, MUTATION_RATES } from '@/types';
-import type { SteeringSensitivity, MutationRate } from '@/types';
+import {
+  SPEED_MULTIPLIERS,
+} from '@/types';
 import {
   CONFIG,
   print,
@@ -490,11 +436,11 @@ const leadCarByConfigId = computed(() => {
 });
 
 const speedMultiplier = ref(1);
-const carSpeedMultiplier = ref<SpeedMultiplier>(
-  CONFIG.defaults.speedMultiplier
+const carSpeedMultiplierIndex = ref<number>(
+  CONFIG.defaults.speedMultiplierIndex
 );
-const steeringSensitivity = ref<SteeringSensitivity>('low');
-const mutationRate = ref<MutationRate>('low');
+const steeringSensitivityIndex = ref<number>(CONFIG.car.physics.defaultSteeringSensitivity);
+const mutationRateIndex = ref<number>(CONFIG.geneticAlgorithm.mutation.defaultStartingRate);
 const mutationByDistance = ref(CONFIG.defaults.mutationByDistance);
 const delayedSteering = ref(CONFIG.defaults.delayedSteering);
 const brainSelectionStrategy = ref<BrainSelectionStrategy>(
@@ -502,6 +448,11 @@ const brainSelectionStrategy = ref<BrainSelectionStrategy>(
 );
 const carUsageLevel = ref<CarUsageLevel>(CONFIG.defaults.defaultCarUsageLevel);
 const frameCounter = ref(0);
+
+// Computed values from indices
+const carSpeedMultiplier = computed<SpeedMultiplier>(() => SPEED_MULTIPLIERS[carSpeedMultiplierIndex.value]);
+const steeringSensitivity = computed(() => CONFIG.car.physics.steeringSensitivityValues[steeringSensitivityIndex.value]);
+const mutationRate = computed(() => CONFIG.geneticAlgorithm.mutation.startingRates[mutationRateIndex.value]);
 
 // Parse InfoView config into separate viewMode and graphType states
 const parseInfoView = (
@@ -853,11 +804,11 @@ const mutationRatePercentByConfigId = computed(() => {
         mutationByDistance.value,
         bestDistance,
         trackLength,
-        mutationRate.value
+        mutationRateIndex.value
       );
     } else {
       // When MUT DIST is OFF, use constant minimum mutation
-      baseRate = getMutationRate(false, 0, trackLength, mutationRate.value);
+      baseRate = getMutationRate(false, 0, trackLength, mutationRateIndex.value);
     }
 
     // Apply parameter-based scaling (larger networks get lower rates)
@@ -870,8 +821,8 @@ const mutationRatePercentByConfigId = computed(() => {
     const scaledRate = baseRate * paramScale;
 
     // Normalize to 0-100% range (mutation starting rate is max)
-    const normalizedPercent =
-      (scaledRate / CONFIG.geneticAlgorithm.mutation.startingRateMedium) * 100;
+    const maxStartingRate = Math.max(...CONFIG.geneticAlgorithm.mutation.startingRates);
+    const normalizedPercent = (scaledRate / maxStartingRate) * 100;
     percentages.set(config.shortName, normalizedPercent);
   }
 
@@ -1103,7 +1054,8 @@ const evolvePopulationByConfig = (
     mutationByDistance.value,
     savedPerformanceTargetPerType.value,
     brainSelectionStrategy.value,
-    nearnessRatio
+    nearnessRatio,
+    mutationRateIndex.value
   );
   generationTimeByConfigId.value.set(config.shortName, 0);
   lapCompletionTimeByConfigId.value.set(config.shortName, Infinity); // Reset lap time for new generation
@@ -1371,12 +1323,12 @@ const render = (ctx: CanvasRenderingContext2D) => {
         // Conditionally show emojis based on brain selection strategy
         const showRepeat =
           (brainSelectionStrategy.value === 'generation' ||
-            brainSelectionStrategy.value === 'averaging' ||
+            brainSelectionStrategy.value === 'sexual' ||
             brainSelectionStrategy.value === 'overcorrect') &&
           marker.isLastGenBest;
         const showTrophy =
           (brainSelectionStrategy.value === 'alltime' ||
-            brainSelectionStrategy.value === 'averaging' ||
+            brainSelectionStrategy.value === 'sexual' ||
             brainSelectionStrategy.value === 'overcorrect') &&
           marker.isAllTimeBest;
 
@@ -1688,7 +1640,7 @@ const restartCurrentGeneration = (config: CarBrainConfig) => {
     mutationByDistance.value,
     bestDistance,
     trackLength,
-    mutationRate.value
+    mutationRateIndex.value
   );
 
   // Create cars: 1 elite + (carsPerType - 1) mutations
@@ -1789,24 +1741,46 @@ const cycleVisualizationMode = () => {
   const currentIndex = VISUALIZATION_MODES.indexOf(visualizationMode.value);
   const nextIndex = (currentIndex + 1) % VISUALIZATION_MODES.length;
   visualizationMode.value = VISUALIZATION_MODES[nextIndex];
-  print(
-    `[Visualization] Mode: ${getVisualizationModeLabel(
-      visualizationMode.value
-    )}`
-  );
+
+  // When switching to "show-thinking" mode, automatically set speed to lowest
+  if (visualizationMode.value === 'vis-think') {
+    carSpeedMultiplierIndex.value = 0; // Set to first/lowest speed
+    print(`[Visualization] Mode: ${getVisualizationModeLabel(visualizationMode.value)} (Speed auto-set to ${carSpeedMultiplier.value}x)`);
+  } else {
+    print(
+      `[Visualization] Mode: ${getVisualizationModeLabel(
+        visualizationMode.value
+      )}`
+    );
+  }
 };
 
 // Get button label for visualization mode
 const getVisualizationModeLabel = (mode: VisualizationMode): string => {
   switch (mode) {
     case 'vis-simple':
-      return 'VIS SIMPLE';
+      return 'SHOW<br />CARS';
     case 'vis-medium':
-      return 'VIS MEDIUM';
+      return 'SHOW<br />RAYS';
     case 'vis-weights':
-      return 'VIS WEIGHTS';
+      return 'SHOW<br />BRAIN';
     case 'vis-think':
-      return 'VIS THINK';
+      return 'SHOW<br />THINKING';
+  }
+};
+
+// Get button label for brain strategy
+const getBrainStrategyLabel = (strategy: BrainSelectionStrategy): string => {
+  const brainEmoji = TEXT_CHARACTER.brain;
+  switch (strategy) {
+    case 'alltime':
+      return `SAVE ${brainEmoji}<br />ALL-TIME`;
+    case 'generation':
+      return `SAVE ${brainEmoji}<br />GENERATION`;
+    case 'overcorrect':
+      return `SAVE ${brainEmoji}<br />INVERTED`;
+    case 'sexual':
+      return `SAVE ${brainEmoji}<br />SEXUAL`;
   }
 };
 
@@ -1817,27 +1791,19 @@ const toggleAllCarTypes = () => {
 
 // Toggle Car Speed (cycle through speed multipliers)
 const toggleCarSpeed = () => {
-  const currentIndex = SPEED_MULTIPLIERS.indexOf(carSpeedMultiplier.value);
-  const nextIndex = (currentIndex + 1) % SPEED_MULTIPLIERS.length;
-  carSpeedMultiplier.value = SPEED_MULTIPLIERS[nextIndex];
+  carSpeedMultiplierIndex.value = (carSpeedMultiplierIndex.value + 1) % SPEED_MULTIPLIERS.length;
   print(`[Speed] Car speed set to ${carSpeedMultiplier.value}x`);
 };
 
 // Toggle Steering Sensitivity (cycle through low, medium, high)
 const toggleSteeringSensitivity = () => {
-  const currentIndex = STEERING_SENSITIVITIES.indexOf(
-    steeringSensitivity.value
-  );
-  const nextIndex = (currentIndex + 1) % STEERING_SENSITIVITIES.length;
-  steeringSensitivity.value = STEERING_SENSITIVITIES[nextIndex];
+  steeringSensitivityIndex.value = (steeringSensitivityIndex.value + 1) % CONFIG.car.physics.steeringSensitivityValues.length;
   print(`[Steering] Sensitivity set to ${steeringSensitivity.value}`);
 };
 
 // Toggle Mutation Rate (cycle through low, medium, high)
 const toggleMutationRate = () => {
-  const currentIndex = MUTATION_RATES.indexOf(mutationRate.value);
-  const nextIndex = (currentIndex + 1) % MUTATION_RATES.length;
-  mutationRate.value = MUTATION_RATES[nextIndex];
+  mutationRateIndex.value = (mutationRateIndex.value + 1) % CONFIG.geneticAlgorithm.mutation.startingRates.length;
   print(`[Mutation] Rate set to ${mutationRate.value}`);
 };
 
@@ -2503,7 +2469,7 @@ canvas {
 }
 
 button {
-  padding: 10px 20px;
+  padding: 0;
   border-radius: 4px;
   cursor: pointer;
   font-family: 'Courier New', 'Courier', monospace;
@@ -2511,6 +2477,7 @@ button {
   font-weight: bold;
   line-height: 1.2;
   min-height: 44px;
+  width: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2533,109 +2500,6 @@ button:hover {
 button:active {
   background: #4b5563;
   border-color: #374151;
-}
-
-/* Visualization mode button states */
-.btn-toggle-viz.viz-simple {
-  background: #4b5563;
-  border-color: #374151;
-}
-
-.btn-toggle-viz.viz-simple:hover {
-  background: #6b7280;
-  border-color: #4b5563;
-}
-
-.btn-toggle-viz.viz-medium {
-  background: #7f8794;
-  border-color: #5a6370;
-}
-
-.btn-toggle-viz.viz-medium:hover {
-  background: #9ca3af;
-  border-color: #6b7280;
-}
-
-.btn-toggle-viz.viz-weights {
-  background: #9ca3af;
-  border-color: #6b7280;
-}
-
-.btn-toggle-viz.viz-weights:hover {
-  background: #b0b6c0;
-  border-color: #7f8794;
-}
-
-.btn-toggle-viz.viz-think {
-  background: #c0c7d0;
-  border-color: #9ca3af;
-}
-
-.btn-toggle-viz.vis-think:hover {
-  background: #d0d7e0;
-  border-color: #b0b6c0;
-}
-
-/* Steering sensitivity button states */
-.btn-steering.steering-low {
-  background: #4b5563;
-  border-color: #374151;
-}
-
-.btn-steering.steering-low:hover {
-  background: #6b7280;
-  border-color: #4b5563;
-}
-
-.btn-steering.steering-medium {
-  background: #7f8794;
-  border-color: #5a6370;
-}
-
-.btn-steering.steering-medium:hover {
-  background: #9ca3af;
-  border-color: #6b7280;
-}
-
-.btn-steering.steering-high {
-  background: #c0c7d0;
-  border-color: #9ca3af;
-}
-
-.btn-steering.steering-high:hover {
-  background: #d0d7e0;
-  border-color: #b0b6c0;
-}
-
-/* Mutation rate button states */
-.btn-mutation.mutation-low {
-  background: #4b5563;
-  border-color: #374151;
-}
-
-.btn-mutation.mutation-low:hover {
-  background: #6b7280;
-  border-color: #4b5563;
-}
-
-.btn-mutation.mutation-medium {
-  background: #7f8794;
-  border-color: #5a6370;
-}
-
-.btn-mutation.mutation-medium:hover {
-  background: #9ca3af;
-  border-color: #6b7280;
-}
-
-.btn-mutation.mutation-high {
-  background: #c0c7d0;
-  border-color: #9ca3af;
-}
-
-.btn-mutation.mutation-high:hover {
-  background: #d0d7e0;
-  border-color: #b0b6c0;
 }
 
 /* Graph View */

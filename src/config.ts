@@ -3,7 +3,6 @@ import type {
   InputModificationType,
   ActivationType,
   CarBrainConfig,
-  SpeedMultiplier,
   InfoView,
   CarUsageLevel,
   VisualizationMode,
@@ -85,7 +84,7 @@ export const CONFIG: Config = {
 
   track: {
     halfWidth: 70,
-    segmentsPerCurve: 6,
+    segmentsPerCurve: 10,
     waypoints: {
       base: scaleWaypointsToCanvas(
         track_waypoints_ratios,
@@ -117,9 +116,8 @@ export const CONFIG: Config = {
   car: {
     physics: {
       forwardSpeed: 400,
-      steeringSensitivityLow: 0.001,
-      steeringSensitivityMedium: 0.01,
-      steeringSensitivityHigh: 0.1,
+      steeringSensitivityValues: [0.001, 0.01, 0.1],
+      defaultSteeringSensitivity: 0, // Index into steeringSensitivityValues
       steeringDelaySeconds: 0.2,
     },
     dimensions: {
@@ -134,7 +132,7 @@ export const CONFIG: Config = {
       },
     },
     spawn: {
-      angleWiggle: Math.PI / 20,
+      angleWiggle: Math.PI / 200,
     },
     colors: {
       labelAlive: '#ffffff',
@@ -174,9 +172,8 @@ export const CONFIG: Config = {
 
   geneticAlgorithm: {
     mutation: {
-      startingRateLow: 0.01, // Initial mutation rate at track start
-      startingRateMedium: 0.1, // Initial mutation rate at track start
-      startingRateHigh: 0.5, // Initial mutation rate at track start
+      startingRates: [0.01, 0.1, 1], // Mutation rates (low, medium, high)
+      defaultStartingRate: 0, // Index into startingRates
       minimumRate: 0.01, // Minimum mutation rate at track completion
       networkSizeScale: {
         smallestNetwork: 1.0, // Smallest network gets full mutation
@@ -213,7 +210,7 @@ export const CONFIG: Config = {
       },
     },
     brainSelection: {
-      defaultStrategy: 'alltime',
+      defaultStrategy: 'sexual',
     },
   },
 
@@ -294,7 +291,7 @@ export const CONFIG: Config = {
     killSlowCars: true,
     mutationByDistance: true,
     delayedSteering: true,
-    speedMultiplier: 1 as SpeedMultiplier,
+    speedMultiplierIndex: 2, // Index into SPEED_MULTIPLIERS (0.2, 0.5, 1, 2, 3, 4)
     showRays: true,
     defaultInfoView: 'graph-score' as InfoView,
     defaultCarUsageLevel: 'use-many' as CarUsageLevel,
@@ -369,7 +366,7 @@ export function getMutationRate(
   mutationByDistance: boolean,
   bestDistance: number,
   trackLength: number,
-  mutationRateLevel: 'low' | 'medium' | 'high' = 'low'
+  mutationRateIndex: number = 0
 ): number {
   if (!mutationByDistance) {
     return CONFIG.geneticAlgorithm.mutation.minimumRate;
@@ -387,11 +384,8 @@ export function getMutationRate(
   const easingValue = bezierYForX(trackProgress, p0, p1, p2, p3);
   const decayFactor = 1 - easingValue;
 
-  // Select starting rate based on level
-  const startingRate =
-    mutationRateLevel === 'low' ? CONFIG.geneticAlgorithm.mutation.startingRateLow :
-    mutationRateLevel === 'medium' ? CONFIG.geneticAlgorithm.mutation.startingRateMedium :
-    CONFIG.geneticAlgorithm.mutation.startingRateHigh;
+  // Select starting rate based on index
+  const startingRate = CONFIG.geneticAlgorithm.mutation.startingRates[mutationRateIndex] ?? CONFIG.geneticAlgorithm.mutation.startingRates[0];
 
   const range = startingRate - CONFIG.geneticAlgorithm.mutation.minimumRate;
 

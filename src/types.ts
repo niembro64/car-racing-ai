@@ -47,8 +47,8 @@ export type InputModificationType = 'dir' | 'pair';
 
 // A single neuron with its learned parameters and activation function
 export interface CarNeuron {
-  weights: number[];    // Input weights for this neuron
-  bias: number;         // Bias for this neuron
+  weights: number[]; // Input weights for this neuron
+  bias: number; // Bias for this neuron
   activation: ActivationType; // Activation function for this neuron
 }
 
@@ -64,10 +64,10 @@ export interface CarOutputLayer {
 
 // Complete car neural network structure
 export interface CarNeuralNetwork {
-  inputType: InputModificationType;  // How inputs are processed (pair/dir)
-  hiddenLayers: CarHiddenLayer[];    // Array of hidden layers (can be empty)
-  outputLayer: CarOutputLayer;       // Single output neuron
-  color: string;                     // Car type color (for border rendering)
+  inputType: InputModificationType; // How inputs are processed (pair/dir)
+  hiddenLayers: CarHiddenLayer[]; // Array of hidden layers (can be empty)
+  outputLayer: CarOutputLayer; // Single output neuron
+  color: string; // Car type color (for border rendering)
 }
 
 // ============================================================================
@@ -117,7 +117,7 @@ export function legacyToCarNetwork(
       neurons.push({
         weights: layer.weights[j],
         bias: layer.biases[j],
-        activation: hiddenActivation
+        activation: hiddenActivation,
       });
     }
 
@@ -128,17 +128,17 @@ export function legacyToCarNetwork(
   const outputLayerData = legacy.layers[legacy.layers.length - 1];
   const outputLayer: CarOutputLayer = {
     neuron: {
-      weights: outputLayerData.weights[0],  // Output layer has 1 neuron
+      weights: outputLayerData.weights[0], // Output layer has 1 neuron
       bias: outputLayerData.biases[0],
-      activation: 'linear'
-    }
+      activation: 'linear',
+    },
   };
 
   return {
     inputType,
     hiddenLayers,
     outputLayer,
-    color
+    color,
   };
 }
 
@@ -164,7 +164,7 @@ export function carNetworkToLegacy(car: CarNeuralNetwork): NetworkStructure {
   // Convert output layer
   layers.push({
     weights: [car.outputLayer.neuron.weights],
-    biases: [car.outputLayer.neuron.bias]
+    biases: [car.outputLayer.neuron.bias],
   });
 
   return { layers };
@@ -209,7 +209,12 @@ export const CAR_VIZ_MODES = ['simple', 'detailed'] as const;
 export type CarVizMode = (typeof CAR_VIZ_MODES)[number];
 
 // Visualization mode - controls what debug info is shown
-export const VISUALIZATION_MODES = ['vis-simple', 'vis-medium', 'vis-weights', 'vis-think'] as const;
+export const VISUALIZATION_MODES = [
+  'vis-simple',
+  'vis-medium',
+  'vis-weights',
+  'vis-think',
+] as const;
 export type VisualizationMode = (typeof VISUALIZATION_MODES)[number];
 
 // Info section view types (all 5 clickable views)
@@ -284,7 +289,7 @@ export interface ConfigEvolutionState {
 export type BrainSelectionStrategy =
   | 'generation' // Always save current generation's best
   | 'alltime' // Only save if equal or better than all-time best
-  | 'averaging' // Average saved brain with current generation's best
+  | 'sexual' // Average saved brain with current generation's best
   | 'overcorrect'; // All-time best + (all-time - generation), extrapolates opposite direction
 
 // Strategy metadata for UI display
@@ -309,7 +314,7 @@ export const BRAIN_SELECTION_STRATEGIES: StrategyInfo[] = [
     emoji: TEXT_CHARACTER.trophy,
   },
   {
-    id: 'averaging',
+    id: 'sexual',
     name: 'AVG',
     description: "Average saved brain with current generation's best",
     emoji: TEXT_CHARACTER.sexual,
@@ -331,17 +336,17 @@ export const BRAIN_SELECTION_STRATEGIES: StrategyInfo[] = [
 // Used in both the car rendering and the info table
 
 export const ACTIVATION_COLORS: Record<ActivationType, string> = {
-  '-': '#888',       // Gray (no activation)
-  'linear': '#ea0',  // Orange-yellow (linear activation)
-  'relu': '#58c',    // Blue family
-  'gelu': '#4a8',    // Green-cyan family
-  'step': '#c5c',    // Purple-magenta family
-  'swiglu': '#f69',  // Red-pink family
+  '-': '#888', // Gray (no activation)
+  linear: '#ea0', // Orange-yellow (linear activation)
+  relu: '#58c', // Blue family
+  gelu: '#4a8', // Green-cyan family
+  step: '#c5c', // Purple-magenta family
+  swiglu: '#f69', // Red-pink family
 };
 
 export const INPUT_COLORS: Record<InputModificationType, string> = {
-  'pair': '#e84',    // Bright orange-red (differential pairs)
-  'dir': '#3bd',     // Bright cyan (direct inputs)
+  pair: '#e84', // Bright orange-red (differential pairs)
+  dir: '#3bd', // Bright cyan (direct inputs)
 };
 
 // ============================================================================

@@ -1,7 +1,6 @@
 import type {
   Point,
   BrainSelectionStrategy,
-  SpeedMultiplier,
   InfoView,
   CarUsageLevel,
   VisualizationMode,
@@ -52,9 +51,8 @@ export interface TrackConfig {
 
 export interface CarPhysicsConfig {
   forwardSpeed: number;
-  steeringSensitivityLow: number;
-  steeringSensitivityMedium: number;
-  steeringSensitivityHigh: number;
+  steeringSensitivityValues: number[];
+  defaultSteeringSensitivity: number;
   steeringDelaySeconds: number;
 }
 
@@ -150,9 +148,8 @@ export interface PopulationRankScaleConfig {
 }
 
 export interface MutationConfig {
-  startingRateLow: number;
-  startingRateMedium: number; 
-  startingRateHigh: number;
+  startingRates: number[];
+  defaultStartingRate: number;
   minimumRate: number; // Minimum mutation rate at track completion
   networkSizeScale: NetworkSizeScaleConfig;
   trackProgressCurve: [number, number, number, number]; // Bezier curve for rate decay
@@ -320,7 +317,7 @@ export interface DefaultsConfig {
   killSlowCars: boolean;
   mutationByDistance: boolean;
   delayedSteering: boolean;
-  speedMultiplier: SpeedMultiplier;
+  speedMultiplierIndex: number;
   showRays: boolean;
   defaultInfoView: InfoView;
   defaultCarUsageLevel: CarUsageLevel;

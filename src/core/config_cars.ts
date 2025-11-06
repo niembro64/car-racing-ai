@@ -8,7 +8,6 @@ import {
   NN_ARCH_DIRECT_L,
   NN_ARCH_DIRECT_M,
   NN_ARCH_DIRECT_S,
-  NN_ARCH_DIRECT_XL,
 } from '@/config_nn';
 
 export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [

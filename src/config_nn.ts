@@ -1,5 +1,3 @@
-import { print } from './utils/logger';
-
 const sra = [0, 0.1, 0.25, 0.5];
 
 export const SENSOR_RAY_ANGLES: number[] = [];
@@ -23,15 +21,6 @@ for (let i = 1; i < SENSOR_RAY_ANGLES.length; i += 1) {
 
   SENSOR_RAY_PAIRS.push([i, i + 1]);
 }
-
-print(
-  'Sensor Ray Angles:',
-  SENSOR_RAY_ANGLES.map((a) => a.toFixed(2))
-);
-print(
-  'Sensor Ray Pairs:',
-  SENSOR_RAY_PAIRS.map((p) => `[${p[0]}, ${p[1]}]`)
-);
 
 // Original architectures
 export const NN_ARCH_DIRECT_S = [SENSOR_RAY_ANGLES.length, 1];

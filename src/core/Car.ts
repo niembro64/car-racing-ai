@@ -104,7 +104,7 @@ export class Car {
     steeringDelayEnabled: boolean,
     steeringDelaySeconds: number,
     speedMultiplier: number,
-    steeringSensitivity: 'low' | 'medium' | 'high' = 'low'
+    steeringSensitivity: number
   ): void {
     if (!this.alive) return;
 
@@ -178,7 +178,7 @@ export class Car {
     output: NeuralOutput,
     dt: number,
     speedMultiplier: number = 1,
-    steeringSensitivity: 'low' | 'medium' | 'high' = 'low'
+    steeringSensitivity: number
   ): void {
     // Constant forward speed (with optional multiplier)
     this.speed = CONFIG.car.physics.forwardSpeed * speedMultiplier;
@@ -189,14 +189,8 @@ export class Car {
     this.x += headingX * this.speed * dt;
     this.y += headingY * this.speed * dt;
 
-    // Get the appropriate steering sensitivity value from config
-    const sensitivity =
-      steeringSensitivity === 'low' ? CONFIG.car.physics.steeringSensitivityLow :
-      steeringSensitivity === 'medium' ? CONFIG.car.physics.steeringSensitivityMedium :
-      CONFIG.car.physics.steeringSensitivityHigh;
-
     // Turning is proportional to speed (direction from neural network)
-    this.angle += output.direction * this.speed * sensitivity * dt;
+    this.angle += output.direction * this.speed * steeringSensitivity * dt;
     this.angle = normalizeAngle(this.angle);
 
     // Prevent NaN propagation
@@ -418,7 +412,7 @@ export class Car {
       ctx.fillText(
         `${sign}${formatted}%`,
         this.x,
-        this.y - (this.height * this.sizeMultiplier) / 2 - 6
+        this.y - (this.radius * this.sizeMultiplier) - 6
       );
       ctx.restore();
     }
