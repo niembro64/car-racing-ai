@@ -2162,7 +2162,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  padding: 8px;
+  padding: 0;
   margin: 0;
   height: 100vh;
   max-height: 100vh;
@@ -2211,12 +2211,17 @@ canvas {
   gap: 8px;
   margin: 0;
   padding: 0;
+  width: 100%;
+  max-width: 400px;
+  flex-shrink: 0;
 }
 
 .hud {
   display: flex;
   justify-content: center;
   margin: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .hud-content {
@@ -2453,9 +2458,6 @@ canvas {
   }
 
   .controls {
-    grid-template-columns: repeat(2, 1fr);
-    width: 100%;
-    max-width: 400px;
     margin: 0 auto;
   }
 
@@ -2492,7 +2494,7 @@ button {
   font-weight: bold;
   line-height: 1.2;
   min-height: 44px;
-  width: 120px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
