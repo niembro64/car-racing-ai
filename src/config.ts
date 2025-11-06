@@ -118,7 +118,7 @@ export const CONFIG: Config = {
       forwardSpeed: 400,
       steeringSensitivityValues: [0.001, 0.01, 0.1],
       defaultSteeringSensitivity: 0, // Index into steeringSensitivityValues
-      steeringDelaySeconds: 0.2,
+      steeringDelaySeconds: 0.01,
     },
     dimensions: {
       simple: {

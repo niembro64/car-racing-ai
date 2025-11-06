@@ -15,8 +15,9 @@ export class Track {
   spatialGrid: SpatialGrid;
   cumulativeLengths: number[];
   halfWidth: number;
-  startPosition: Point;
-  startAngle: number;
+  startPosition!: Point; // Initialized via setStartIndex
+  startAngle!: number; // Initialized via setStartIndex
+  startIndex: number;
 
   constructor(halfWidth: number) {
     this.halfWidth = halfWidth;
@@ -54,13 +55,27 @@ export class Track {
     // Compute cumulative lengths for fitness calculation
     this.cumulativeLengths = computeCumulativeLengths(this.centerline);
 
-    // Start position and angle
-    this.startPosition = { ...this.centerline[0] };
-    const next = this.centerline[1];
+    // Initialize start position at beginning (will be set properly by setStartIndex)
+    this.startIndex = 0;
+    this.setStartIndex(0);
+  }
+
+  // Set the start/finish line to a specific centerline index
+  private setStartIndex(index: number): void {
+    this.startIndex = index % this.centerline.length;
+    this.startPosition = { ...this.centerline[this.startIndex] };
+    const nextIndex = (this.startIndex + 1) % this.centerline.length;
+    const next = this.centerline[nextIndex];
     this.startAngle = Math.atan2(
       next.y - this.startPosition.y,
       next.x - this.startPosition.x
     );
+  }
+
+  // Randomize the start/finish line position
+  randomizeStartPosition(): void {
+    const randomIndex = Math.floor(Math.random() * this.centerline.length);
+    this.setStartIndex(randomIndex);
   }
 
   // Catmull-Rom spline interpolation between points
@@ -239,8 +254,8 @@ export class Track {
     ctx.setLineDash([]);
 
     // Draw start line
-    const startIdx = 0;
-    const nextIdx = 1;
+    const startIdx = this.startIndex;
+    const nextIdx = (this.startIndex + 1) % this.centerline.length;
     const p1 = this.centerline[startIdx];
     const p2 = this.centerline[nextIdx];
     const dx = p2.x - p1.x;

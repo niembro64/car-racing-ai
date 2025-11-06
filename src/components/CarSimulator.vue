@@ -392,6 +392,8 @@ const canvasWidth = CONFIG.canvas.width;
 const canvasHeight = CONFIG.canvas.height;
 
 const track = new Track(CONFIG.track.halfWidth);
+// Randomize start/finish line position on initial load
+track.randomizeStartPosition();
 
 // Calculate min/max trainable parameters across all car brain architectures
 // Used for parameter-based mutation scaling
@@ -1715,12 +1717,15 @@ const reset = () => {
   // Reset GA state
   ga.value.reset();
 
+  // Randomize start/finish line position
+  track.randomizeStartPosition();
+
   // Re-initialize population with new random seed using current target population
   randomSeed = Date.now() + Math.random() * 1000000;
   ga.value = new GeneticAlgorithm(randomSeed);
 
   print(
-    `[Reset] Re-creating ${targetPopulationTotal.value} cars (${performanceTargetCarsPerType.value} per type) | Target: ${fps0_1Percent.value} FPS (0.1% low)`
+    `[Reset] Re-creating ${targetPopulationTotal.value} cars (${performanceTargetCarsPerType.value} per type) | Target: ${fps0_1Percent.value} FPS (0.1% low) | New start line position`
   );
 
   population.value = ga.value.initializePopulation(
