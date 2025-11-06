@@ -132,7 +132,8 @@ export const CONFIG: Config = {
       },
     },
     spawn: {
-      angleWiggle: Math.PI / 200,
+      // angleWiggle: Math.PI / 2000000,
+      angleWiggle: 0,
     },
     colors: {
       labelAlive: '#ffffff',
@@ -172,9 +173,9 @@ export const CONFIG: Config = {
 
   geneticAlgorithm: {
     mutation: {
-      startingRates: [0.01, 0.1, 1], // Mutation rates (low, medium, high)
+      startingRates: [0.02, 0.2, 1, 2, 5], // Mutation rates (low, medium, high)
       defaultStartingRate: 0, // Index into startingRates
-      minimumRate: 0.01, // Minimum mutation rate at track completion
+      minimumRate: 0.02, // Minimum mutation rate at track completion
       networkSizeScale: {
         smallestNetwork: 1.0, // Smallest network gets full mutation
         largestNetwork: 0.5, // Largest network gets no mutation (no learning)
