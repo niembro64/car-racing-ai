@@ -278,7 +278,7 @@ export const CONFIG: Config = {
     },
     neuronBorder: {
       color: '#fff',
-      width: 0.3,
+      width: 0,
     },
     rotateBrainOverlay: true, // Whether the brain overlay rotates with the car or stays upright
   },
@@ -386,7 +386,9 @@ export function getMutationRate(
   const decayFactor = 1 - easingValue;
 
   // Select starting rate based on index
-  const startingRate = CONFIG.geneticAlgorithm.mutation.startingRates[mutationRateIndex] ?? CONFIG.geneticAlgorithm.mutation.startingRates[0];
+  const startingRate =
+    CONFIG.geneticAlgorithm.mutation.startingRates[mutationRateIndex] ??
+    CONFIG.geneticAlgorithm.mutation.startingRates[0];
 
   const range = startingRate - CONFIG.geneticAlgorithm.mutation.minimumRate;
 
