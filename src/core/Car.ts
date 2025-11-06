@@ -470,7 +470,13 @@ export class Car {
 
     ctx.save();
     ctx.translate(this.x, this.y);
-    ctx.rotate(this.angle - Math.PI / 2);
+
+    // Conditionally rotate overlay based on config
+    if (CONFIG.visualization.rotateBrainOverlay) {
+      ctx.rotate(this.angle - Math.PI / 2);
+    } else {
+      ctx.rotate(Math.PI); // 180 degrees to flip it upside down when not rotating
+    }
 
     // Use large dimensions for detailed visualization
     const detailedWidth =

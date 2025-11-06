@@ -298,6 +298,7 @@ export interface VisualizationConfig {
   generationMarker: VisualizationGenerationMarkerConfig;
   graph: VisualizationGraphConfig;
   neuronBorder: VisualizationNeuronBorderConfig;
+  rotateBrainOverlay: boolean;
 }
 
 // ============================================================================
