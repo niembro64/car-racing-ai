@@ -14,7 +14,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   // === None/Raw (no hidden layers, no activation function) ===
   // Gray family - neutral/basic
   {
-    useCar: 'use-few',
+    useCar: 'use-all',
     displayName: 'Pico',
     shortName: 'PC',
     description: 'No hidden layers, differential inputs (1 fwd + 4 L-R pairs)',
@@ -47,7 +47,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
   // === Linear activation (orange/amber family) ===
   // Orange hues - warm, simple transformation
   {
-    useCar: 'use-many',
+    useCar: 'use-all',
     displayName: 'Spark',
     shortName: 'SP',
     description: 'Linear activation, differential inputs, 1 hidden layer (3)',
@@ -157,14 +157,14 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: 'use-many',
+    useCar: 'use-all',
     displayName: 'Mist',
     shortName: 'MI',
     description: 'ReLU activation, direct inputs, 1 hidden layer (3)',
     nn: {
       architecture: NN_ARCH_DIRECT_M,
       inputModification: 'dir',
-      activationType: 'relu',
+      activationType: 'swish',
     },
     colors: {
       light: '#66ccd4', // Cyan - direct, 1 hidden
