@@ -1,12 +1,14 @@
 import type { CarBrainConfig, CarUsageLevel, CarUsageLevelInfo } from '@/types';
 import { CAR_USAGE_LEVELS } from '@/types';
 import {
-  NN_ARCH_DIFF_LARGE,
-  NN_ARCH_DIFF_MEDIUM,
-  NN_ARCH_DIFF_SMALL,
-  NN_ARCH_LARGE,
-  NN_ARCH_MEDIUM,
-  NN_ARCH_SMALL,
+  NN_ARCH_PAIR_L,
+  NN_ARCH_PAIR_M,
+  NN_ARCH_PAIR_S,
+  NN_ARCH_PAIR_XL,
+  NN_ARCH_DIRECT_L,
+  NN_ARCH_DIRECT_M,
+  NN_ARCH_DIRECT_S,
+  NN_ARCH_DIRECT_XL,
 } from '@/config_nn';
 
 export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
@@ -18,7 +20,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'PC',
     description: 'No hidden layers, differential inputs (1 fwd + 4 L-R pairs)',
     nn: {
-      architecture: NN_ARCH_DIFF_SMALL,
+      architecture: NN_ARCH_PAIR_S,
       inputModification: 'pair',
       activationType: '-',
     },
@@ -28,12 +30,12 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     },
   },
   {
-    useCar: 'use-few',
+    useCar: 'use-all',
     displayName: 'Nano',
     shortName: 'NA',
     description: 'No hidden layers, direct raw sensor inputs (9 rays)',
     nn: {
-      architecture: NN_ARCH_SMALL,
+      architecture: NN_ARCH_DIRECT_S,
       inputModification: 'dir',
       activationType: '-',
     },
@@ -51,7 +53,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'SP',
     description: 'Linear activation, differential inputs, 1 hidden layer (3)',
     nn: {
-      architecture: NN_ARCH_DIFF_MEDIUM,
+      architecture: NN_ARCH_PAIR_M,
       inputModification: 'pair',
       activationType: 'linear',
     },
@@ -67,7 +69,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     description:
       'Linear activation, differential inputs, 2 hidden layers (3, 2)',
     nn: {
-      architecture: NN_ARCH_DIFF_LARGE,
+      architecture: NN_ARCH_PAIR_L,
       inputModification: 'pair',
       activationType: 'linear',
     },
@@ -82,7 +84,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'GL',
     description: 'Linear activation, direct inputs, 1 hidden layer (3)',
     nn: {
-      architecture: NN_ARCH_MEDIUM,
+      architecture: NN_ARCH_DIRECT_M,
       inputModification: 'dir',
       activationType: 'linear',
     },
@@ -97,13 +99,29 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'SH',
     description: 'Linear activation, direct inputs, 2 hidden layers (3, 2)',
     nn: {
-      architecture: NN_ARCH_LARGE,
+      architecture: NN_ARCH_DIRECT_L,
       inputModification: 'dir',
       activationType: 'linear',
     },
     colors: {
       light: '#cc6633', // Brown-orange - direct, 2 hidden
       dark: '#944822',
+    },
+  },
+  {
+    useCar: 'use-few',
+    displayName: 'Blaze',
+    shortName: 'BL',
+    description:
+      'Linear activation, differential inputs, 3 hidden layers (4, 3, 2)',
+    nn: {
+      architecture: NN_ARCH_PAIR_XL,
+      inputModification: 'pair',
+      activationType: 'linear',
+    },
+    colors: {
+      light: '#e85833', // Deep red-orange - differential, 3 hidden (largest)
+      dark: '#a83820',
     },
   },
 
@@ -115,7 +133,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'DR',
     description: 'ReLU activation, differential inputs, 1 hidden layer (3)',
     nn: {
-      architecture: NN_ARCH_DIFF_MEDIUM,
+      architecture: NN_ARCH_PAIR_M,
       inputModification: 'pair',
       activationType: 'relu',
     },
@@ -130,7 +148,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'WV',
     description: 'ReLU activation, differential inputs, 2 hidden layers (3, 2)',
     nn: {
-      architecture: NN_ARCH_DIFF_LARGE,
+      architecture: NN_ARCH_PAIR_L,
       inputModification: 'pair',
       activationType: 'relu',
     },
@@ -145,7 +163,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'MI',
     description: 'ReLU activation, direct inputs, 1 hidden layer (3)',
     nn: {
-      architecture: NN_ARCH_MEDIUM,
+      architecture: NN_ARCH_DIRECT_M,
       inputModification: 'dir',
       activationType: 'relu',
     },
@@ -160,13 +178,28 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'TD',
     description: 'ReLU activation, direct inputs, 2 hidden layers (3, 2)',
     nn: {
-      architecture: NN_ARCH_LARGE,
+      architecture: NN_ARCH_DIRECT_L,
       inputModification: 'dir',
       activationType: 'relu',
     },
     colors: {
       light: '#5fa3b8', // Teal - direct, 2 hidden
       dark: '#3b7485',
+    },
+  },
+  {
+    useCar: 'use-few',
+    displayName: 'Surge',
+    shortName: 'SG',
+    description: 'SWIGLU activation, direct inputs, 3 hidden layers (4, 3, 2)',
+    nn: {
+      architecture: NN_ARCH_PAIR_XL,
+      inputModification: 'pair',
+      activationType: 'swiglu',
+    },
+    colors: {
+      light: '#4d8fb8', // Deep blue - direct, 2 hidden (larger)
+      dark: '#2f5c85',
     },
   },
 
@@ -178,7 +211,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'LF',
     description: 'GELU activation, differential inputs, 1 hidden layer (3)',
     nn: {
-      architecture: NN_ARCH_DIFF_MEDIUM,
+      architecture: NN_ARCH_PAIR_M,
       inputModification: 'pair',
       activationType: 'gelu',
     },
@@ -193,7 +226,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'VN',
     description: 'GELU activation, differential inputs, 2 hidden layers (3, 2)',
     nn: {
-      architecture: NN_ARCH_DIFF_LARGE,
+      architecture: NN_ARCH_PAIR_L,
       inputModification: 'pair',
       activationType: 'gelu',
     },
@@ -208,7 +241,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'MS',
     description: 'GELU activation, direct inputs, 1 hidden layer (3)',
     nn: {
-      architecture: NN_ARCH_MEDIUM,
+      architecture: NN_ARCH_DIRECT_M,
       inputModification: 'dir',
       activationType: 'gelu',
     },
@@ -223,7 +256,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'FN',
     description: 'GELU activation, direct inputs, 2 hidden layers (3, 2)',
     nn: {
-      architecture: NN_ARCH_LARGE,
+      architecture: NN_ARCH_DIRECT_L,
       inputModification: 'dir',
       activationType: 'gelu',
     },
@@ -241,7 +274,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'BT',
     description: 'Step activation, differential inputs, 1 hidden layer (3)',
     nn: {
-      architecture: NN_ARCH_DIFF_MEDIUM,
+      architecture: NN_ARCH_PAIR_M,
       inputModification: 'pair',
       activationType: 'step',
     },
@@ -256,7 +289,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'BY',
     description: 'Step activation, differential inputs, 2 hidden layers (3, 2)',
     nn: {
-      architecture: NN_ARCH_DIFF_LARGE,
+      architecture: NN_ARCH_PAIR_L,
       inputModification: 'pair',
       activationType: 'step',
     },
@@ -271,7 +304,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'CH',
     description: 'Step activation, direct inputs, 1 hidden layer (3)',
     nn: {
-      architecture: NN_ARCH_MEDIUM,
+      architecture: NN_ARCH_DIRECT_M,
       inputModification: 'dir',
       activationType: 'step',
     },
@@ -286,7 +319,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'CR',
     description: 'Step activation, direct inputs, 2 hidden layers (3, 2)',
     nn: {
-      architecture: NN_ARCH_LARGE,
+      architecture: NN_ARCH_DIRECT_L,
       inputModification: 'dir',
       activationType: 'step',
     },
@@ -304,7 +337,7 @@ export const CAR_BRAIN_CONFIGS_DEFINED: CarBrainConfig[] = [
     shortName: 'NE',
     description: 'SWIGLU activation, differential inputs, 1 hidden layer (3)',
     nn: {
-      architecture: NN_ARCH_DIFF_MEDIUM,
+      architecture: NN_ARCH_PAIR_M,
       inputModification: 'pair',
       activationType: 'swiglu',
     },
@@ -325,14 +358,19 @@ export const CAR_BRAIN_CONFIGS_MANY = CAR_BRAIN_CONFIGS_DEFINED.filter(
 );
 
 export const CAR_BRAIN_CONFIGS_ALL = CAR_BRAIN_CONFIGS_DEFINED.filter(
-  (config) => config.useCar === 'use-few' || config.useCar === 'use-many' || config.useCar === 'use-all'
+  (config) =>
+    config.useCar === 'use-few' ||
+    config.useCar === 'use-many' ||
+    config.useCar === 'use-all'
 );
 
 // Default export - currently set to 'use-few' (2 cars)
 export const CAR_BRAIN_CONFIGS = CAR_BRAIN_CONFIGS_FEW;
 
 // Helper function to get configs by usage level
-export function getCarBrainConfigsByLevel(level: CarUsageLevel): CarBrainConfig[] {
+export function getCarBrainConfigsByLevel(
+  level: CarUsageLevel
+): CarBrainConfig[] {
   switch (level) {
     case 'use-few':
       return CAR_BRAIN_CONFIGS_FEW;

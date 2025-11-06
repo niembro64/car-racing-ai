@@ -107,6 +107,7 @@ export interface NeuralNetworkArchitecturesConfig {
   diffSmall: number[];
   diffMedium: number[];
   diffLarge: number[];
+  diffXL: number[];
 }
 
 export interface NeuralNetworkSensorRaysConfig {

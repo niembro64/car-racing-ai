@@ -372,7 +372,6 @@ import type {
   CarUsageLevel,
   ViewMode,
   InfoView,
-  CarVizMode,
   VisualizationMode,
 } from '@/types';
 import { BRAIN_SELECTION_STRATEGIES, ACTIVATION_COLORS, INPUT_COLORS, VISUALIZATION_MODES } from '@/types';

@@ -34,15 +34,11 @@ print(
 );
 
 // Original architectures
-export const NN_ARCH_SMALL = [SENSOR_RAY_ANGLES.length, 1];
-export const NN_ARCH_MEDIUM = [SENSOR_RAY_ANGLES.length, 3, 1];
-export const NN_ARCH_LARGE = [SENSOR_RAY_ANGLES.length, 3, 2, 1];
-export const NN_ARCH_DIFF_SMALL = [1 + SENSOR_RAY_PAIRS.length, 1];
-export const NN_ARCH_DIFF_MEDIUM = [1 + SENSOR_RAY_PAIRS.length, 3, 1];
-export const NN_ARCH_DIFF_LARGE = [1 + SENSOR_RAY_PAIRS.length, 3, 2, 1];
-
-// Enhanced architectures with more capacity
-export const NN_ARCH_XL = [SENSOR_RAY_ANGLES.length, 6, 3, 1];
-export const NN_ARCH_XXL = [SENSOR_RAY_ANGLES.length, 8, 4, 1];
-export const NN_ARCH_DIFF_XL = [1 + SENSOR_RAY_PAIRS.length, 6, 3, 1];
-export const NN_ARCH_DIFF_XXL = [1 + SENSOR_RAY_PAIRS.length, 8, 4, 1];
+export const NN_ARCH_DIRECT_S = [SENSOR_RAY_ANGLES.length, 1];
+export const NN_ARCH_DIRECT_M = [SENSOR_RAY_ANGLES.length, 2, 1];
+export const NN_ARCH_DIRECT_L = [SENSOR_RAY_ANGLES.length, 3, 2, 1];
+export const NN_ARCH_DIRECT_XL = [SENSOR_RAY_ANGLES.length, 10, 10, 1];
+export const NN_ARCH_PAIR_S = [1 + SENSOR_RAY_PAIRS.length, 1];
+export const NN_ARCH_PAIR_M = [1 + SENSOR_RAY_PAIRS.length, 2, 1];
+export const NN_ARCH_PAIR_L = [1 + SENSOR_RAY_PAIRS.length, 3, 2, 1];
+export const NN_ARCH_PAIR_XL = [1 + SENSOR_RAY_PAIRS.length, 10, 10, 1];

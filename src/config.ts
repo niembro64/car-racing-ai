@@ -12,16 +12,13 @@ import type { Config } from './config.types';
 import {
   SENSOR_RAY_ANGLES as _SENSOR_RAY_ANGLES,
   SENSOR_RAY_PAIRS as _SENSOR_RAY_PAIRS,
-  NN_ARCH_SMALL as _NN_ARCH_SMALL,
-  NN_ARCH_MEDIUM as _NN_ARCH_MEDIUM,
-  NN_ARCH_LARGE as _NN_ARCH_LARGE,
-  NN_ARCH_DIFF_SMALL as _NN_ARCH_DIFF_SMALL,
-  NN_ARCH_DIFF_MEDIUM as _NN_ARCH_DIFF_MEDIUM,
-  NN_ARCH_DIFF_LARGE as _NN_ARCH_DIFF_LARGE,
-  NN_ARCH_XL as _NN_ARCH_XL,
-  NN_ARCH_XXL as _NN_ARCH_XXL,
-  NN_ARCH_DIFF_XL as _NN_ARCH_DIFF_XL,
-  NN_ARCH_DIFF_XXL as _NN_ARCH_DIFF_XXL,
+  NN_ARCH_DIRECT_S as _NN_ARCH_SMALL,
+  NN_ARCH_DIRECT_M as _NN_ARCH_MEDIUM,
+  NN_ARCH_DIRECT_L as _NN_ARCH_LARGE,
+  NN_ARCH_PAIR_S as _NN_ARCH_DIFF_SMALL,
+  NN_ARCH_PAIR_M as _NN_ARCH_DIFF_MEDIUM,
+  NN_ARCH_PAIR_L as _NN_ARCH_DIFF_LARGE,
+  NN_ARCH_PAIR_XL as _NN_ARCH_DIFF_XL,
 } from './config_nn';
 import {
   CAR_BRAIN_CONFIGS,
@@ -166,6 +163,7 @@ export const CONFIG: Config = {
       diffSmall: _NN_ARCH_DIFF_SMALL,
       diffMedium: _NN_ARCH_DIFF_MEDIUM,
       diffLarge: _NN_ARCH_DIFF_LARGE,
+      diffXL: _NN_ARCH_DIFF_XL,
     },
     sensorRays: {
       angles: _SENSOR_RAY_ANGLES,
@@ -175,15 +173,15 @@ export const CONFIG: Config = {
 
   geneticAlgorithm: {
     mutation: {
-      startingRate: 0.1, // Initial mutation rate at track start
-      minimumRate: 0.001, // Minimum mutation rate at track completion
+      startingRate: 0.2, // Initial mutation rate at track start
+      minimumRate: 0.01, // Minimum mutation rate at track completion
       networkSizeScale: {
         smallestNetwork: 1.0, // Smallest network gets full mutation
-        largestNetwork: 0.1, // Largest network gets no mutation (no learning)
+        largestNetwork: 0.5, // Largest network gets no mutation (no learning)
       },
       trackProgressCurve: [0, 0, 1, 1], // Linear decay as cars progress through track
       populationRankScale: {
-        firstMutant: 0.000000000001, // First mutant explores cautiously
+        firstMutant: 0.001, // First mutant explores cautiously
         lastMutant: 1, // Last mutant explores aggressively
         curvePower: 50, // Quadratic progression between first and last
       },
