@@ -425,11 +425,23 @@ const visualizationMode = ref<VisualizationMode>(CONFIG.defaults.defaultVisualiz
 
 // Computed properties derived from visualizationMode
 const showRays = computed(() => visualizationMode.value !== 'vis-simple');
-const carVizMode = computed<CarVizMode>(() =>
-  (visualizationMode.value === 'vis-weights' || visualizationMode.value === 'vis-think')
-    ? 'detailed'
-    : 'simple'
-);
+
+// Computed property to find the lead car (max distance) for each car type
+const leadCarByConfigId = computed(() => {
+  const leadCars = new Map<string, Car>();
+
+  // Group cars by config type and find the one with max distance for each
+  for (const car of population.value) {
+    if (!car.alive) continue; // Only consider alive cars
+
+    const currentLead = leadCars.get(car.configShortName);
+    if (!currentLead || car.maxDistanceReached > currentLead.maxDistanceReached) {
+      leadCars.set(car.configShortName, car);
+    }
+  }
+
+  return leadCars;
+});
 
 const speedMultiplier = ref(1);
 const carSpeedMultiplier = ref<SpeedMultiplier>(
@@ -808,9 +820,9 @@ const mutationRatePercentByConfigId = computed(() => {
     );
     const scaledRate = baseRate * paramScale;
 
-    // Normalize to 0-100% range (mutation base is max)
+    // Normalize to 0-100% range (mutation starting rate is max)
     const normalizedPercent =
-      (scaledRate / CONFIG.geneticAlgorithm.mutation.base) * 100;
+      (scaledRate / CONFIG.geneticAlgorithm.mutation.startingRate) * 100;
     percentages.set(config.shortName, normalizedPercent);
   }
 
@@ -1340,6 +1352,7 @@ const render = (ctx: CanvasRenderingContext2D) => {
   }
 
   // Render cars (dead first, then alive, then elites last)
+  // All cars are rendered in simple mode first, then detailed overlays are drawn on top
   const deadCars = population.value.filter((car) => !car.alive);
   const aliveCars = population.value.filter((car) => car.alive);
 
@@ -1347,19 +1360,34 @@ const render = (ctx: CanvasRenderingContext2D) => {
   const elites = aliveCars.filter((car) => car.sizeMultiplier > 1.0);
   const others = aliveCars.filter((car) => car.sizeMultiplier === 1.0);
 
+  // FIRST PASS: Render all cars with simple mode (physical bodies only)
   // Render dead cars first
   for (const car of deadCars) {
-    car.render(ctx, false, carVizMode.value, visualizationMode.value);
+    car.render(ctx, false, 'simple', visualizationMode.value);
   }
 
   // Render other alive cars
   for (const car of others) {
-    car.render(ctx, showRays.value, carVizMode.value, visualizationMode.value);
+    car.render(ctx, showRays.value, 'simple', visualizationMode.value);
   }
 
   // Render elites last (on top) with rays if enabled
   for (const car of elites) {
-    car.render(ctx, showRays.value, carVizMode.value, visualizationMode.value);
+    car.render(ctx, showRays.value, 'simple', visualizationMode.value);
+  }
+
+  // SECOND PASS: Render detailed overlays for lead cars on top of everything
+  const isDetailedMode = visualizationMode.value === 'vis-weights' || visualizationMode.value === 'vis-think';
+  if (isDetailedMode) {
+    for (const car of population.value) {
+      if (!car.alive) continue; // Only show overlays for alive cars
+
+      // Check if this car is the lead car for its type
+      const leadCar = leadCarByConfigId.value.get(car.configShortName);
+      if (car === leadCar) {
+        car.render(ctx, showRays.value, 'detailed', visualizationMode.value);
+      }
+    }
   }
 };
 

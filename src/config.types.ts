@@ -123,31 +123,23 @@ export interface NeuralNetworkConfig {
 // GENETIC ALGORITHM CONFIG
 // ============================================================================
 
-export interface MutationParameterScaleConfig {
-  min: number;
-  max: number;
+export interface NetworkSizeScaleConfig {
+  smallestNetwork: number; // Scale for smallest network (most mutation)
+  largestNetwork: number;  // Scale for largest network (least mutation, 0 = no learning)
 }
 
-export interface MutationRankMultiplierConfig {
-  min: number;
-  max: number;
-  curvePower: number;
-}
-
-export interface ProgressiveMutationConfig {
-  enabled: boolean;
-  baseVariance: number;
-  growthRate: number;
-  growthType: 'linear' | 'exponential';
+export interface PopulationRankScaleConfig {
+  firstMutant: number;     // Multiplier for first mutant (after elite)
+  lastMutant: number;      // Multiplier for last mutant (most exploration)
+  curvePower: number;      // Shape of progression curve (2 = quadratic)
 }
 
 export interface MutationConfig {
-  base: number;
-  min: number;
-  startingMutationParameterScaleAgainstSize: MutationParameterScaleConfig;
-  bezierPoints: [number, number, number, number];
-  rankMultiplier: MutationRankMultiplierConfig;
-  progressive: ProgressiveMutationConfig;
+  startingRate: number;    // Initial mutation rate at track start
+  minimumRate: number;     // Minimum mutation rate at track completion
+  networkSizeScale: NetworkSizeScaleConfig;
+  trackProgressCurve: [number, number, number, number]; // Bezier curve for rate decay
+  populationRankScale: PopulationRankScaleConfig;
 }
 
 export interface PopulationInitialConfig {

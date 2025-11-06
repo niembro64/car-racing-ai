@@ -23,7 +23,10 @@ import {
   NN_ARCH_DIFF_XL as _NN_ARCH_DIFF_XL,
   NN_ARCH_DIFF_XXL as _NN_ARCH_DIFF_XXL,
 } from './config_nn';
-import { CAR_BRAIN_CONFIGS } from './core/config_cars';
+import {
+  CAR_BRAIN_CONFIGS,
+  CAR_BRAIN_CONFIGS_DEFINED,
+} from './core/config_cars';
 
 export type { Point, InputModificationType, ActivationType, CarBrainConfig };
 export type { Config } from './config.types';
@@ -117,7 +120,7 @@ export const CONFIG: Config = {
   car: {
     physics: {
       forwardSpeed: 400,
-      steeringSensitivity: 0.05,
+      steeringSensitivity: 0.006,
       steeringDelaySeconds: 0.2,
     },
     dimensions: {
@@ -133,7 +136,7 @@ export const CONFIG: Config = {
       },
     },
     spawn: {
-      angleWiggle: Math.PI / 2000000,
+      angleWiggle: Math.PI / 20,
     },
     colors: {
       labelAlive: '#ffffff',
@@ -172,23 +175,17 @@ export const CONFIG: Config = {
 
   geneticAlgorithm: {
     mutation: {
-      base: 0.001, // Standard starting mutation rate
-      min: 0.00001, // Minimum mutation rate when approaching track completion
-      startingMutationParameterScaleAgainstSize: {
-        min: 0.0, // Larger networks get slightly lower mutation rates
-        max: 1.0,
+      startingRate: 0.1, // Initial mutation rate at track start
+      minimumRate: 0.001, // Minimum mutation rate at track completion
+      networkSizeScale: {
+        smallestNetwork: 1.0, // Smallest network gets full mutation
+        largestNetwork: 0.1, // Largest network gets no mutation (no learning)
       },
-      bezierPoints: [0, 0, 1, 1], // Linear decay from base to min
-      rankMultiplier: {
-        min: 0.00000001, // Standard minimum multiplier (50% of base)
-        max: 0.3, // Standard maximum multiplier (200% of base)
-        curvePower: 2, // Quadratic curve for gradual increase
-      },
-      progressive: {
-        enabled: false, // Disabled for standard training
-        baseVariance: 0.01,
-        growthRate: 0.05,
-        growthType: 'exponential',
+      trackProgressCurve: [0, 0, 1, 1], // Linear decay as cars progress through track
+      populationRankScale: {
+        firstMutant: 0.000000000001, // First mutant explores cautiously
+        lastMutant: 1, // Last mutant explores aggressively
+        curvePower: 50, // Quadratic progression between first and last
       },
     },
     population: {
@@ -373,11 +370,12 @@ export function getMutationRate(
   trackLength: number
 ): number {
   if (!mutationByDistance) {
-    return CONFIG.geneticAlgorithm.mutation.min;
+    return CONFIG.geneticAlgorithm.mutation.minimumRate;
   }
 
   const trackProgress = Math.max(0, Math.min(1, bestDistance / trackLength));
-  const [p1x, p1y, p2x, p2y] = CONFIG.geneticAlgorithm.mutation.bezierPoints;
+  const [p1x, p1y, p2x, p2y] =
+    CONFIG.geneticAlgorithm.mutation.trackProgressCurve;
 
   const p0: Point = { x: 0, y: 0 };
   const p1: Point = { x: p1x, y: p1y };
@@ -387,10 +385,10 @@ export function getMutationRate(
   const easingValue = bezierYForX(trackProgress, p0, p1, p2, p3);
   const decayFactor = 1 - easingValue;
   const range =
-    CONFIG.geneticAlgorithm.mutation.base -
-    CONFIG.geneticAlgorithm.mutation.min;
+    CONFIG.geneticAlgorithm.mutation.startingRate -
+    CONFIG.geneticAlgorithm.mutation.minimumRate;
 
-  return CONFIG.geneticAlgorithm.mutation.min + range * decayFactor;
+  return CONFIG.geneticAlgorithm.mutation.minimumRate + range * decayFactor;
 }
 
 export function countTrainableParameters(architecture: number[]): number {
@@ -410,20 +408,43 @@ export function getParameterBasedMutationScale(
   minParams: number,
   maxParams: number
 ): number {
+  // If all active networks have the same size, we need to compare against the global range
   if (maxParams === minParams) {
-    return CONFIG.geneticAlgorithm.mutation
-      .startingMutationParameterScaleAgainstSize.max;
+    // Calculate global min/max from all defined configs (not just active ones)
+    let globalMin = Infinity;
+    let globalMax = 0;
+    for (const config of CAR_BRAIN_CONFIGS_DEFINED) {
+      const paramCount = countTrainableParameters(config.nn.architecture);
+      globalMin = Math.min(globalMin, paramCount);
+      globalMax = Math.max(globalMax, paramCount);
+    }
+
+    // If even globally all networks are the same size, return average scale
+    if (globalMax === globalMin) {
+      return (
+        (CONFIG.geneticAlgorithm.mutation.networkSizeScale.smallestNetwork +
+          CONFIG.geneticAlgorithm.mutation.networkSizeScale.largestNetwork) /
+        2
+      );
+    }
+
+    // Scale based on where this network sits in the global range
+    const normalized = (parameterCount - globalMin) / (globalMax - globalMin);
+    return (
+      CONFIG.geneticAlgorithm.mutation.networkSizeScale.smallestNetwork -
+      normalized *
+        (CONFIG.geneticAlgorithm.mutation.networkSizeScale.smallestNetwork -
+          CONFIG.geneticAlgorithm.mutation.networkSizeScale.largestNetwork)
+    );
   }
 
+  // Normal case: scale based on active network range
   const normalized = (parameterCount - minParams) / (maxParams - minParams);
   const scale =
-    CONFIG.geneticAlgorithm.mutation.startingMutationParameterScaleAgainstSize
-      .max -
+    CONFIG.geneticAlgorithm.mutation.networkSizeScale.smallestNetwork -
     normalized *
-      (CONFIG.geneticAlgorithm.mutation
-        .startingMutationParameterScaleAgainstSize.max -
-        CONFIG.geneticAlgorithm.mutation
-          .startingMutationParameterScaleAgainstSize.min);
+      (CONFIG.geneticAlgorithm.mutation.networkSizeScale.smallestNetwork -
+        CONFIG.geneticAlgorithm.mutation.networkSizeScale.largestNetwork);
 
   return scale;
 }
@@ -463,23 +484,6 @@ export function getCarBrainConfig(
   shortName: string
 ): CarBrainConfig | undefined {
   return CAR_BRAIN_CONFIGS.find((config) => config.shortName === shortName);
-}
-
-export function getVarianceForIndex(
-  index: number,
-  baseVariance: number = CONFIG.geneticAlgorithm.mutation.progressive
-    .baseVariance,
-  growthRate: number = CONFIG.geneticAlgorithm.mutation.progressive.growthRate,
-  growthType: 'linear' | 'exponential' = CONFIG.geneticAlgorithm.mutation
-    .progressive.growthType
-): number {
-  if (index === 0) return 0;
-
-  if (growthType === 'exponential') {
-    return baseVariance * Math.pow(1 + growthRate, index);
-  }
-
-  return baseVariance + growthRate * index;
 }
 
 export function mutateParameter(

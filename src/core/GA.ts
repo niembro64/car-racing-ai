@@ -9,7 +9,6 @@ import {
   getMutationRate,
   countTrainableParameters,
   getParameterBasedMutationScale,
-  getVarianceForIndex,
 } from '@/config';
 import { CAR_BRAIN_CONFIGS, CAR_BRAIN_CONFIGS_DEFINED } from './config_cars';
 import { TEXT_CHARACTER } from './config_text';
@@ -75,10 +74,10 @@ export class GeneticAlgorithm {
     }
 
     const progress = (index - 1) / (subPopSize - 2);
-    const range = CONFIG.geneticAlgorithm.mutation.rankMultiplier.max - CONFIG.geneticAlgorithm.mutation.rankMultiplier.min;
+    const range = CONFIG.geneticAlgorithm.mutation.populationRankScale.lastMutant - CONFIG.geneticAlgorithm.mutation.populationRankScale.firstMutant;
     return (
-      CONFIG.geneticAlgorithm.mutation.rankMultiplier.min +
-      range * Math.pow(progress, CONFIG.geneticAlgorithm.mutation.rankMultiplier.curvePower)
+      CONFIG.geneticAlgorithm.mutation.populationRankScale.firstMutant +
+      range * Math.pow(progress, CONFIG.geneticAlgorithm.mutation.populationRankScale.curvePower)
     );
   }
 
@@ -343,20 +342,12 @@ export class GeneticAlgorithm {
         // Mutated car
         const mutationSeed = this.rng.next() * 1000000 + i + state.generation * 10000;
 
-        let sigma: number;
-
-        if (CONFIG.geneticAlgorithm.mutation.progressive.enabled) {
-          // Progressive mutation: variance increases with brain index
-          const variance = getVarianceForIndex(i);
-          sigma = variance;
-        } else {
-          // Legacy mutation: apply mutation curve only when NOT using distance-based mutation
-          // Distance-based mutation already provides enough variation
-          // Note: scaledMutationRate already includes parameter-based scaling
-          sigma = mutationByDistance
-            ? scaledMutationRate
-            : scaledMutationRate * this.getMutationMultiplier(i, carsPerType);
-        }
+        // Apply rank-based mutation multiplier only when NOT using distance-based mutation
+        // Distance-based mutation already provides enough variation
+        // Note: scaledMutationRate already includes parameter-based scaling
+        const sigma = mutationByDistance
+          ? scaledMutationRate
+          : scaledMutationRate * this.getMutationMultiplier(i, carsPerType);
 
         const mutatedBrain = eliteBrain.mutate(sigma, mutationSeed);
 
