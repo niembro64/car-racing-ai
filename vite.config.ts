@@ -14,7 +14,8 @@ export default defineConfig({
     port: 5173,
     strictPort: false
   },
-  base: '/genetic-racing/', // Base path for deployment at https://niemo.io/genetic-racing
+  // base: '/genetic-racing/', // Base path for deployment at https://niemo.io/genetic-racing
+  base: '/', // Base path for deployment at https://niemo.io/genetic-racing
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
